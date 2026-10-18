@@ -1,0 +1,19 @@
+{
+  "name": "scripts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node src/sync-server.ts",
+    "seed": "ts-node src/seed.ts"
+  },
+  "dependencies": {
+    "@foodcourt/shared": "workspace:*",
+    "@foodcourt/firebase-client": "workspace:*",
+    "firebase-admin": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

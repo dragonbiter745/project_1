@@ -1,0 +1,23 @@
+{
+  "projects": {
+    "default": "reva-nest-foodcourt",
+    "staging": "reva-nest-foodcourt",
+    "prod": "reva-nest-foodcourt"
+  },
+  "targets": {
+    "reva-nest-foodcourt": {
+      "hosting": {
+        "customer": [
+          "reva-nest-foodcourt"
+        ],
+        "vendor": [
+          "reva-nest-vendor"
+        ],
+        "master": [
+          "reva-nest-master"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

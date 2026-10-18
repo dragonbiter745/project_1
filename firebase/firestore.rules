@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isMaster() {
+      return isAuthenticated() && request.auth.token.role == 'master';
+    }
+    
+    function isVendor(vendorId) {
+      return isAuthenticated() && 
+        (request.auth.token.role == 'vendorAdmin' || request.auth.token.role == 'vendorStaff') &&
+        request.auth.token.vendorId == vendorId;
+    }
+    
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Venues: Public read, master write
+    match /venues/{venueId} {
+      allow read: if true;
+      allow write: if isMaster();
+    }
+
+    // Vendors: Public read for active shops, master write
+    match /vendors/{vendorId} {
+      allow read: if true;
+      allow write: if isMaster() || (isVendor(vendorId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['acceptingOrders', 'pausedUntil', 'defaultPrepMin']));
+    }
+
+    // Menus: Public read, vendor or master write
+    match /menus/{vendorId} {
+      allow read: if true;
+      allow write: if isMaster() || isVendor(vendorId);
+    }
+
+    // Availability: Public read, vendor quick stock toggle
+    match /availability/{vendorId} {
+      allow read: if true;
+      allow write: if isMaster() || isVendor(vendorId);
+    }
+
+    // Tables: Read only, master write
+    match /tables/{tableId} {
+      allow read: if true;
+      allow write: if isMaster();
+    }
+
+    // Sessions: User can read their own session; creation through callable function only
+    match /sessions/{sessionId} {
+      allow read: if isOwner(resource.data.uid) || isMaster();
+      allow write: if false; // Only server-side functions write sessions
+    }
+
+    // Orders: Diner can read their own orders; no client writes (server-authoritative)
+    match /orders/{orderId} {
+      allow read: if isOwner(resource.data.uid) || isMaster();
+      allow write: if false;
+    }
+
+    // SubOrders: Diner can read own, vendor can read their scoped orders
+    match /subOrders/{subOrderId} {
+      allow read: if isMaster() || 
+        isVendor(resource.data.vendorId) || 
+        (isAuthenticated() && request.auth.uid == resource.data.uid);
+      allow write: if false; // All state transitions happen via vendorAction callable
+    }
+
+    // Users & Loyalty points: Read own, no direct client modification of points
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isMaster();
+      allow write: if false;
+    }
+
+    match /pointsLedger/{id} {
+      allow read: if isOwner(resource.data.uid) || isMaster();
+      allow write: if false;
+    }
+
+    // Issues: Any authenticated customer or vendor can submit an issue
+    match /issues/{id} {
+      allow create: if isAuthenticated();
+      allow read: if isMaster();
+      allow update, delete: if isMaster();
+    }
+
+    // System configurations: Public read of global flags, master write
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if isMaster();
+    }
+
+    // Audit logs: Strictly master read-only, append via functions
+    match /auditLogs/{logId} {
+      allow read: if isMaster();
+      allow write: if false;
+    }
+  }
+}

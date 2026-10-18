@@ -1,0 +1,204 @@
+{
+  "vendorId": "vendor-siddi-vinayaka",
+  "vendorName": "Siddi Vinayaka Garden",
+  "vendorCode": "SV",
+  "version": 2,
+  "categories": [
+    {
+      "id": "sv-breakfast",
+      "name": "☀️ Breakfast & Beverages",
+      "sort": 1,
+      "items": [
+        { "id": "sv-bv-1", "name": "Coffee / Tea", "pricePaise": 1500, "veg": true, "sort": 1 },
+        { "id": "sv-bv-2", "name": "Badam Milk", "pricePaise": 1500, "veg": true, "sort": 2 },
+        { "id": "sv-bv-3", "name": "Green Tea / Lemon Tea", "pricePaise": 1500, "veg": true, "sort": 3 },
+        { "id": "sv-bv-4", "name": "Boost / Horlicks", "pricePaise": 2000, "veg": true, "sort": 4 },
+        { "id": "sv-bv-5", "name": "Butter Milk", "pricePaise": 1500, "veg": true, "sort": 5 },
+        { "id": "sv-bv-6", "name": "Soft Drink", "pricePaise": 2000, "veg": true, "sort": 6 },
+        { "id": "sv-bv-7", "name": "Cold Badam Milk", "pricePaise": 3500, "veg": true, "sort": 7 },
+        { "id": "sv-bk-1", "name": "Idly (2 pcs)", "pricePaise": 3500, "veg": true, "sort": 8 },
+        { "id": "sv-bk-2", "name": "Idly (3 pcs)", "pricePaise": 4500, "veg": true, "sort": 9 },
+        { "id": "sv-bk-3", "name": "Idly Vada", "pricePaise": 6500, "veg": true, "sort": 10 },
+        { "id": "sv-bk-4", "name": "Single Idly Vada", "pricePaise": 5000, "veg": true, "sort": 11 },
+        { "id": "sv-bk-5", "name": "Vada (1 pc)", "pricePaise": 3000, "veg": true, "sort": 12 },
+        { "id": "sv-bk-6", "name": "Khara Bath", "pricePaise": 3500, "veg": true, "sort": 13 },
+        { "id": "sv-bk-7", "name": "Chow Chow Bath", "pricePaise": 6000, "veg": true, "sort": 14 },
+        { "id": "sv-bk-8", "name": "Rice Bath", "pricePaise": 6000, "veg": true, "sort": 15 },
+        { "id": "sv-bk-9", "name": "Poori", "pricePaise": 6000, "veg": true, "sort": 16 },
+        { "id": "sv-bk-10", "name": "Pakoda / Bajji", "pricePaise": 3500, "veg": true, "sort": 17 },
+        { "id": "sv-bk-11", "name": "Rava Idly", "pricePaise": 3500, "veg": true, "sort": 18 },
+        { "id": "sv-bk-12", "name": "Thatte Idly", "pricePaise": 3500, "veg": true, "sort": 19 },
+        { "id": "sv-bk-13", "name": "Curd Vada", "pricePaise": 3500, "veg": true, "sort": 20 },
+        { "id": "sv-bk-14", "name": "Mangaluru Bun", "pricePaise": 3500, "veg": true, "sort": 21 },
+        { "id": "sv-bk-15", "name": "Pongal", "pricePaise": 6000, "veg": true, "sort": 22 },
+        { "id": "sv-bk-16", "name": "Shavige Bath", "pricePaise": 6500, "veg": true, "sort": 23 },
+        { "id": "sv-bk-17", "name": "Bounda Soup (2 Nos)", "pricePaise": 4000, "veg": true, "sort": 24 },
+        { "id": "sv-bk-18", "name": "Avalakki", "pricePaise": 4000, "veg": true, "sort": 25 }
+      ]
+    },
+    {
+      "id": "sv-dosa",
+      "name": "Dosa",
+      "sort": 2,
+      "items": [
+        { "id": "sv-dosa-1", "name": "Plain Dosa", "pricePaise": 5000, "veg": true, "sort": 1 },
+        { "id": "sv-dosa-2", "name": "Masala Dosa", "pricePaise": 6500, "veg": true, "sort": 2 },
+        { "id": "sv-dosa-3", "name": "Khali Dosa", "pricePaise": 5500, "veg": true, "sort": 3 },
+        { "id": "sv-dosa-4", "name": "Set Dosa", "pricePaise": 6500, "veg": true, "sort": 4 },
+        { "id": "sv-dosa-5", "name": "Paper Masala Dosa", "pricePaise": 9000, "veg": true, "sort": 5 },
+        { "id": "sv-dosa-6", "name": "Paper Plain Dosa", "pricePaise": 6500, "veg": true, "sort": 6 },
+        { "id": "sv-dosa-7", "name": "Ghee Masala Dosa", "pricePaise": 7500, "veg": true, "sort": 7 },
+        { "id": "sv-dosa-8", "name": "Butter Masala Dosa", "pricePaise": 7500, "veg": true, "sort": 8 },
+        { "id": "sv-dosa-9", "name": "Tomato Dosa", "pricePaise": 7000, "veg": true, "sort": 9 },
+        { "id": "sv-dosa-10", "name": "Rava Dosa", "pricePaise": 5500, "veg": true, "sort": 10 },
+        { "id": "sv-dosa-11", "name": "Rava Onion Dosa", "pricePaise": 6000, "veg": true, "sort": 11 },
+        { "id": "sv-dosa-12", "name": "Rava Onion Masala Dosa", "pricePaise": 8000, "veg": true, "sort": 12 },
+        { "id": "sv-dosa-13", "name": "Onion Dosa", "pricePaise": 7000, "veg": true, "sort": 13 }
+      ]
+    },
+    {
+      "id": "sv-special-dosa",
+      "name": "Special Dosa",
+      "sort": 3,
+      "items": [
+        { "id": "sv-sd-1", "name": "Cheese Masala Dosa", "pricePaise": 9000, "veg": true, "sort": 1 },
+        { "id": "sv-sd-2", "name": "Rava Cheese Masala", "pricePaise": 10000, "veg": true, "sort": 2 },
+        { "id": "sv-sd-3", "name": "Paneer Cheese Masala", "pricePaise": 12000, "veg": true, "sort": 3 },
+        { "id": "sv-sd-4", "name": "Mysore Masala Dosa", "pricePaise": 8500, "veg": true, "sort": 4 },
+        { "id": "sv-sd-5", "name": "Mysore Masala with Cheese", "pricePaise": 10000, "veg": true, "sort": 5 },
+        { "id": "sv-sd-6", "name": "Corn Masala Dosa", "pricePaise": 9000, "veg": true, "sort": 6 },
+        { "id": "sv-sd-7", "name": "Corn Masala with Cheese", "pricePaise": 10000, "veg": true, "sort": 7 },
+        { "id": "sv-sd-8", "name": "Pineapple Dosa", "pricePaise": 8000, "veg": true, "sort": 8 },
+        { "id": "sv-sd-9", "name": "Beetroot Dosa", "pricePaise": 8000, "veg": true, "sort": 9 },
+        { "id": "sv-sd-10", "name": "Palak Dosa", "pricePaise": 8000, "veg": true, "sort": 10 },
+        { "id": "sv-sd-11", "name": "Ragi Dosa", "pricePaise": 8000, "veg": true, "sort": 11 }
+      ]
+    },
+    {
+      "id": "sv-starters",
+      "name": "Crispy Starters & Manchurian",
+      "sort": 4,
+      "items": [
+        { "id": "sv-st-1", "name": "Paneer Hyderabadi", "pricePaise": 11000, "veg": true, "sort": 1 },
+        { "id": "sv-st-2", "name": "Paneer Kabab (10 Nos)", "pricePaise": 11000, "veg": true, "sort": 2 },
+        { "id": "sv-st-3", "name": "Paneer Pepper Fry", "pricePaise": 11000, "veg": true, "sort": 3 },
+        { "id": "sv-st-4", "name": "Paneer Chilli", "pricePaise": 10000, "veg": true, "sort": 4 },
+        { "id": "sv-st-5", "name": "Mushroom Kabab", "pricePaise": 11000, "veg": true, "sort": 5 },
+        { "id": "sv-st-6", "name": "Mushroom Pepper Fry", "pricePaise": 10000, "veg": true, "sort": 6 },
+        { "id": "sv-st-7", "name": "Mushroom Chilli", "pricePaise": 10000, "veg": true, "sort": 7 },
+        { "id": "sv-st-8", "name": "Baby Corn Kabab", "pricePaise": 11000, "veg": true, "sort": 8 },
+        { "id": "sv-st-9", "name": "Baby Corn Pepper Fry", "pricePaise": 10000, "veg": true, "sort": 9 },
+        { "id": "sv-st-10", "name": "Baby Corn Chilli", "pricePaise": 10000, "veg": true, "sort": 10 },
+        { "id": "sv-st-11", "name": "Gobi Kabab", "pricePaise": 9000, "veg": true, "sort": 11 },
+        { "id": "sv-st-12", "name": "Gobi Pepper Fry", "pricePaise": 9000, "veg": true, "sort": 12 },
+        { "id": "sv-st-13", "name": "Gobi Dry Chilli", "pricePaise": 9000, "veg": true, "sort": 13 },
+        { "id": "sv-st-14", "name": "Aloo Kabab", "pricePaise": 8000, "veg": true, "sort": 14 },
+        { "id": "sv-st-15", "name": "Aloo Dry Chilli", "pricePaise": 8000, "veg": true, "sort": 15 },
+        { "id": "sv-st-16", "name": "Soya Chilli", "pricePaise": 9000, "veg": true, "sort": 16 }
+      ]
+    },
+    {
+      "id": "sv-manchurian",
+      "name": "Manchurian",
+      "sort": 5,
+      "items": [
+        { "id": "sv-mc-1", "name": "Gobi Manchurian", "pricePaise": 9000, "veg": true, "sort": 1 },
+        { "id": "sv-mc-2", "name": "Aloo Manchurian", "pricePaise": 7000, "veg": true, "sort": 2 },
+        { "id": "sv-mc-3", "name": "Paneer Manchurian", "pricePaise": 10000, "veg": true, "sort": 3 },
+        { "id": "sv-mc-4", "name": "Baby Corn Manchurian", "pricePaise": 10000, "veg": true, "sort": 4 },
+        { "id": "sv-mc-5", "name": "Mushroom Manchurian", "pricePaise": 10000, "veg": true, "sort": 5 },
+        { "id": "sv-mc-6", "name": "Paneer 65", "pricePaise": 11000, "veg": true, "sort": 6 },
+        { "id": "sv-mc-7", "name": "Mushroom 65", "pricePaise": 11000, "veg": true, "sort": 7 },
+        { "id": "sv-mc-8", "name": "Soya Manchurian", "pricePaise": 9000, "veg": true, "sort": 8 }
+      ]
+    },
+    {
+      "id": "sv-rice",
+      "name": "Rice Specials & Biriyani",
+      "sort": 6,
+      "items": [
+        { "id": "sv-rc-1", "name": "North Indian Veg Biriyani", "pricePaise": 8000, "veg": true, "sort": 1 },
+        { "id": "sv-rc-2", "name": "Schezwan Rice", "pricePaise": 8000, "veg": true, "sort": 2 },
+        { "id": "sv-rc-3", "name": "Paneer Schezwan Rice", "pricePaise": 9500, "veg": true, "sort": 3 },
+        { "id": "sv-rc-4", "name": "Mushroom Schezwan Rice", "pricePaise": 9500, "veg": true, "sort": 4 },
+        { "id": "sv-rc-5", "name": "Veg Fried Rice", "pricePaise": 7000, "veg": true, "sort": 5 },
+        { "id": "sv-rc-6", "name": "Ghee Rice", "pricePaise": 7500, "veg": true, "sort": 6 },
+        { "id": "sv-rc-7", "name": "Jeera Rice", "pricePaise": 7500, "veg": true, "sort": 7 },
+        { "id": "sv-rc-8", "name": "Mushroom Fried Rice", "pricePaise": 8000, "veg": true, "sort": 8 },
+        { "id": "sv-rc-9", "name": "Paneer Fried Rice", "pricePaise": 8000, "veg": true, "sort": 9 },
+        { "id": "sv-rc-10", "name": "Sweet Corn Rice", "pricePaise": 7500, "veg": true, "sort": 10 },
+        { "id": "sv-rc-11", "name": "Green Peas Rice", "pricePaise": 7500, "veg": true, "sort": 11 },
+        { "id": "sv-rc-12", "name": "Coconut Rice", "pricePaise": 6000, "veg": true, "sort": 12 },
+        { "id": "sv-rc-13", "name": "Triple Fried Rice", "pricePaise": 9000, "veg": true, "sort": 13 },
+        { "id": "sv-rc-14", "name": "Singapore Rice", "pricePaise": 8000, "veg": true, "sort": 14 },
+        { "id": "sv-rc-15", "name": "Soya Fried Rice", "pricePaise": 8000, "veg": true, "sort": 15 },
+        { "id": "sv-rc-16", "name": "Curd Rice", "pricePaise": 6000, "veg": true, "sort": 16 }
+      ]
+    },
+    {
+      "id": "sv-noodles",
+      "name": "Noodles Specials",
+      "sort": 7,
+      "items": [
+        { "id": "sv-nd-1", "name": "Veg Noodles", "pricePaise": 7500, "veg": true, "sort": 1 },
+        { "id": "sv-nd-2", "name": "Veg Cheese Noodles", "pricePaise": 8500, "veg": true, "sort": 2 },
+        { "id": "sv-nd-3", "name": "Gobi Noodles", "pricePaise": 10000, "veg": true, "sort": 3 },
+        { "id": "sv-nd-4", "name": "Paneer Noodles", "pricePaise": 8000, "veg": true, "sort": 4 },
+        { "id": "sv-nd-5", "name": "Paneer Cheese Noodles", "pricePaise": 9000, "veg": true, "sort": 5 },
+        { "id": "sv-nd-6", "name": "Mushroom Noodles", "pricePaise": 8000, "veg": true, "sort": 6 },
+        { "id": "sv-nd-7", "name": "Mushroom Cheese Noodles", "pricePaise": 9000, "veg": true, "sort": 7 },
+        { "id": "sv-nd-8", "name": "Schezwan Noodles", "pricePaise": 9000, "veg": true, "sort": 8 },
+        { "id": "sv-nd-9", "name": "Singapore Noodles", "pricePaise": 9000, "veg": true, "sort": 9 }
+      ]
+    },
+    {
+      "id": "sv-rotis",
+      "name": "Rotis & Meals",
+      "sort": 8,
+      "items": [
+        { "id": "sv-rt-1", "name": "Parota Curry", "pricePaise": 6000, "veg": true, "sort": 1 },
+        { "id": "sv-rt-2", "name": "Channa Batura", "pricePaise": 7500, "veg": true, "sort": 2 },
+        { "id": "sv-rt-3", "name": "Aloo Parota", "pricePaise": 6500, "veg": true, "sort": 3 },
+        { "id": "sv-rt-4", "name": "Aloo Parota with Cheese", "pricePaise": 7500, "veg": true, "sort": 4 },
+        { "id": "sv-rt-5", "name": "Chapathi 3 Nos / Curry", "pricePaise": 6000, "veg": true, "sort": 5 },
+        { "id": "sv-rt-6", "name": "Chapathi 4 Nos / Dal Fry", "pricePaise": 10000, "veg": true, "sort": 6 },
+        { "id": "sv-rt-7", "name": "Dal Fry", "pricePaise": 8000, "veg": true, "sort": 7 },
+        { "id": "sv-rt-8", "name": "Paneer Burji", "pricePaise": 9900, "veg": true, "sort": 8 },
+        { "id": "sv-rt-9", "name": "Parota (1 No)", "pricePaise": 2000, "veg": true, "sort": 9 },
+        { "id": "sv-rt-10", "name": "Chapathi (1 No)", "pricePaise": 1500, "veg": true, "sort": 10 },
+        { "id": "sv-rt-11", "name": "South Indian Meals", "pricePaise": 7500, "veg": true, "sort": 11 },
+        { "id": "sv-rt-12", "name": "Parota Meals", "pricePaise": 8000, "veg": true, "sort": 12 },
+        { "id": "sv-rt-13", "name": "Rice Sambar", "pricePaise": 6000, "veg": true, "sort": 13 }
+      ]
+    },
+    {
+      "id": "sv-svg-special",
+      "name": "SVG Special",
+      "sort": 9,
+      "items": [
+        { "id": "sv-sp-1", "name": "Dal Khichdi", "pricePaise": 10000, "veg": true, "sort": 1 },
+        { "id": "sv-sp-2", "name": "Palak Khichdi", "pricePaise": 11000, "veg": true, "sort": 2 },
+        { "id": "sv-sp-3", "name": "Gobi Rice", "pricePaise": 10000, "veg": true, "sort": 3 },
+        { "id": "sv-sp-4", "name": "Idli Manchurian", "pricePaise": 8000, "veg": true, "sort": 4 }
+      ]
+    },
+    {
+      "id": "sv-desserts-combos",
+      "name": "Desserts & Combos",
+      "sort": 10,
+      "items": [
+        { "id": "sv-ds-1", "name": "Gulab Jamoon", "pricePaise": 2000, "veg": true, "sort": 1 },
+        { "id": "sv-ds-2", "name": "Kesari Bath", "pricePaise": 3500, "veg": true, "sort": 2 },
+        { "id": "sv-ds-3", "name": "Carrot Halwa", "pricePaise": 3500, "veg": true, "sort": 3 },
+        { "id": "sv-ds-4", "name": "Champakali", "pricePaise": 2500, "veg": true, "sort": 4 },
+        { "id": "sv-ds-5", "name": "Holige (Dal / Coconut)", "pricePaise": 2500, "veg": true, "sort": 5 },
+        { "id": "sv-cb-1", "name": "Dum Biriyani + Paneer Chilli + Jamoon", "pricePaise": 16500, "veg": true, "sort": 6 },
+        { "id": "sv-cb-2", "name": "Fried Rice + Gobi Manchurian + French Fries", "pricePaise": 12500, "veg": true, "sort": 7 },
+        { "id": "sv-cb-3", "name": "Paneer Semi Gravy + Chapathi/Parota + Jamoon", "pricePaise": 17900, "veg": true, "sort": 8 },
+        { "id": "sv-cb-4", "name": "Paneer Bhurji + Chapathi/Parota + Jamoon", "pricePaise": 17900, "veg": true, "sort": 9 },
+        { "id": "sv-cb-5", "name": "Dal Khichdi + Soft Drinks + Jamoon", "pricePaise": 14900, "veg": true, "sort": 10 },
+        { "id": "sv-cb-6", "name": "Gobi Rice + Soft Drinks + Jamoon", "pricePaise": 14900, "veg": true, "sort": 11 }
+      ]
+    }
+  ]
+}

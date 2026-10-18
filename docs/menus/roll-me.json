@@ -1,0 +1,182 @@
+{
+  "vendorId": "vendor-roll-me",
+  "vendorName": "Roll Me",
+  "vendorCode": "RM",
+  "version": 2,
+  "categories": [
+    {
+      "id": "rm-featured",
+      "name": "⭐ Featured Specials",
+      "sort": 1,
+      "items": [
+        { "id": "rm-feat-1", "name": "Chickpet Donne Biriyani", "pricePaise": 14900, "veg": false, "sort": 1 },
+        { "id": "rm-feat-2", "name": "Chickpet Donne Biriyani Combo", "pricePaise": 17900, "veg": false, "sort": 2 }
+      ]
+    },
+    {
+      "id": "rm-rice",
+      "name": "Rice & Biriyani",
+      "sort": 2,
+      "items": [
+        { "id": "rm-rice-1", "name": "Biriyani Rice", "pricePaise": 9900, "veg": true, "sort": 1 },
+        { "id": "rm-rice-2", "name": "Donne Biriyani Rice", "pricePaise": 9900, "veg": true, "sort": 2 },
+        { "id": "rm-rice-3", "name": "Hyderabadi Chicken Biriyani", "pricePaise": 15900, "veg": false, "sort": 3 },
+        { "id": "rm-rice-4", "name": "Donne Chicken Biriyani", "pricePaise": 15900, "veg": false, "sort": 4 },
+        { "id": "rm-rice-5", "name": "Lollipop Chicken Biriyani", "pricePaise": 15900, "veg": false, "sort": 5 },
+        { "id": "rm-rice-6", "name": "Grill Chicken Biriyani", "desc": "2 pcs grilled chicken + Hyd. biriyani rice", "pricePaise": 19900, "veg": false, "sort": 6 },
+        { "id": "rm-rice-7", "name": "Chicken 65 Biriyani (Boneless)", "pricePaise": 19900, "veg": false, "sort": 7 },
+        { "id": "rm-rice-8", "name": "Egg Biriyani", "pricePaise": 12900, "veg": false, "sort": 8 },
+        { "id": "rm-rice-9", "name": "Naati Egg Rice", "pricePaise": 8900, "veg": false, "sort": 9 },
+        { "id": "rm-rice-10", "name": "Naati Chicken Rice", "pricePaise": 12900, "veg": false, "sort": 10 },
+        { "id": "rm-rice-11", "name": "Ghee Rice", "pricePaise": 9900, "veg": true, "sort": 11 }
+      ]
+    },
+    {
+      "id": "rm-noodles",
+      "name": "Noodles",
+      "sort": 3,
+      "items": [
+        { "id": "rm-nd-1", "name": "Egg Noodles", "pricePaise": 8900, "veg": false, "sort": 1 },
+        { "id": "rm-nd-2", "name": "Schezwan Egg Noodles", "pricePaise": 10900, "veg": false, "sort": 2 },
+        { "id": "rm-nd-3", "name": "Chicken Noodles", "pricePaise": 10900, "veg": false, "sort": 3 },
+        { "id": "rm-nd-4", "name": "Schezwan Chicken Noodles", "pricePaise": 12900, "veg": false, "sort": 4 }
+      ]
+    },
+    {
+      "id": "rm-andra",
+      "name": "Andra Chicken Special",
+      "sort": 4,
+      "items": [
+        { "id": "rm-ac-1", "name": "Spicy Wings", "pricePaise": 14900, "veg": false, "sort": 1 },
+        { "id": "rm-ac-2", "name": "Pepper Wings", "pricePaise": 15900, "veg": false, "sort": 2 },
+        { "id": "rm-ac-3", "name": "Chicken Pepper Dry", "pricePaise": 15900, "veg": false, "sort": 3 },
+        { "id": "rm-ac-4", "name": "Govan Chicken", "pricePaise": 15900, "veg": false, "sort": 4 },
+        { "id": "rm-ac-5", "name": "Royal Chicken", "pricePaise": 15900, "veg": false, "sort": 5 },
+        { "id": "rm-ac-6", "name": "Lollipop 666", "pricePaise": 15900, "veg": false, "sort": 6 }
+      ]
+    },
+    {
+      "id": "rm-curry",
+      "name": "Curry & Gravy",
+      "sort": 5,
+      "items": [
+        { "id": "rm-cr-1", "name": "Egg Curry", "pricePaise": 9900, "veg": false, "sort": 1 },
+        { "id": "rm-cr-2", "name": "Chicken Masala", "pricePaise": 13900, "veg": false, "sort": 2 },
+        { "id": "rm-cr-3", "name": "Chicken Chop", "pricePaise": 13900, "veg": false, "sort": 3 }
+      ]
+    },
+    {
+      "id": "rm-platter",
+      "name": "Chicken Platter",
+      "sort": 6,
+      "items": [
+        { "id": "rm-pl-1", "name": "Hyderabadi Chilli Chicken", "pricePaise": 14900, "veg": false, "sort": 1 },
+        { "id": "rm-pl-2", "name": "Chicken Manchurian", "pricePaise": 14900, "veg": false, "sort": 2 },
+        { "id": "rm-pl-3", "name": "Lemon Chicken", "pricePaise": 16900, "veg": false, "sort": 3 },
+        { "id": "rm-pl-4", "name": "Garlic Chicken", "pricePaise": 14900, "veg": false, "sort": 4 },
+        { "id": "rm-pl-5", "name": "Chicken 65", "pricePaise": 14900, "veg": false, "sort": 5 },
+        { "id": "rm-pl-6", "name": "Domestic Chicken", "pricePaise": 14900, "veg": false, "sort": 6 },
+        { "id": "rm-pl-7", "name": "Dom. Chicken Lollipop", "pricePaise": 17900, "veg": false, "sort": 7 },
+        { "id": "rm-pl-8", "name": "Egg Chilli", "pricePaise": 11900, "veg": false, "sort": 8 }
+      ]
+    },
+    {
+      "id": "rm-rolls-nv",
+      "name": "Rolls (Non-Veg)",
+      "sort": 7,
+      "items": [
+        { "id": "rm-rnv-1", "name": "Chicken Liver Roll", "pricePaise": 4900, "veg": false, "sort": 1 },
+        { "id": "rm-rnv-2", "name": "Double Egg Roll", "pricePaise": 5900, "veg": false, "sort": 2 },
+        { "id": "rm-rnv-3", "name": "Chicken Kebab Roll", "pricePaise": 6900, "veg": false, "sort": 3 },
+        { "id": "rm-rnv-4", "name": "Chicken Tikka Roll", "pricePaise": 7900, "veg": false, "sort": 4 },
+        { "id": "rm-rnv-5", "name": "Chicken Egg Kebab Roll", "pricePaise": 8900, "veg": false, "sort": 5 },
+        { "id": "rm-rnv-6", "name": "Chicken Egg Tikka Roll", "pricePaise": 9900, "veg": false, "sort": 6 },
+        { "id": "rm-rnv-7", "name": "Double Chicken Liver Roll", "pricePaise": 7900, "veg": false, "sort": 7 },
+        { "id": "rm-rnv-8", "name": "Double Chicken Kebab Roll", "pricePaise": 9900, "veg": false, "sort": 8 },
+        { "id": "rm-rnv-9", "name": "Double Chicken Tikka Roll", "pricePaise": 10900, "veg": false, "sort": 9 },
+        { "id": "rm-rnv-10", "name": "Roll Me Special", "pricePaise": 12900, "veg": false, "sort": 10 }
+      ]
+    },
+    {
+      "id": "rm-rolls-veg",
+      "name": "Rolls (Veg)",
+      "sort": 8,
+      "items": [
+        { "id": "rm-rv-1", "name": "Potato Roll", "pricePaise": 4900, "veg": true, "sort": 1 },
+        { "id": "rm-rv-2", "name": "Mushroom Roll", "pricePaise": 5900, "veg": true, "sort": 2 },
+        { "id": "rm-rv-3", "name": "Babycorn Roll", "pricePaise": 5900, "veg": true, "sort": 3 },
+        { "id": "rm-rv-4", "name": "Paneer Roll", "pricePaise": 6900, "veg": true, "sort": 4 },
+        { "id": "rm-rv-5", "name": "Double Paneer Roll", "pricePaise": 8900, "veg": true, "sort": 5 },
+        { "id": "rm-rv-6", "name": "Double Mushroom Roll", "pricePaise": 7900, "veg": true, "sort": 6 },
+        { "id": "rm-rv-7", "name": "Double Babycorn Roll", "pricePaise": 7900, "veg": true, "sort": 7 },
+        { "id": "rm-rv-8", "name": "Chef's Special Veg Roll", "pricePaise": 9900, "veg": true, "sort": 8 }
+      ]
+    },
+    {
+      "id": "rm-shawarma",
+      "name": "Shawarma",
+      "sort": 9,
+      "items": [
+        { "id": "rm-sh-1", "name": "Regular Shawarma", "pricePaise": 9900, "veg": false, "sort": 1 },
+        { "id": "rm-sh-2", "name": "Whole Chicken Shawarma", "pricePaise": 12900, "veg": false, "sort": 2 },
+        { "id": "rm-sh-3", "name": "Plate Shawarma", "pricePaise": 14900, "veg": false, "sort": 3 },
+        { "id": "rm-sh-4", "name": "Paneer Shawarma", "pricePaise": 9900, "veg": true, "sort": 4 },
+        { "id": "rm-sh-5", "name": "Plate Paneer Shawarma", "pricePaise": 14900, "veg": true, "sort": 5 }
+      ]
+    },
+    {
+      "id": "rm-indian-bread",
+      "name": "Indian Bread",
+      "sort": 10,
+      "items": [
+        { "id": "rm-ib-1", "name": "Parota", "pricePaise": 1900, "veg": true, "sort": 1 },
+        { "id": "rm-ib-2", "name": "Chapati", "pricePaise": 1900, "veg": true, "sort": 2 },
+        { "id": "rm-ib-3", "name": "Kuboos", "pricePaise": 1500, "veg": true, "sort": 3 }
+      ]
+    },
+    {
+      "id": "rm-combos",
+      "name": "Value Combos",
+      "sort": 11,
+      "items": [
+        { "id": "rm-cb-1", "name": "Grilled Chicken Quarter + 2 Kuboos", "pricePaise": 13900, "veg": false, "sort": 1 },
+        { "id": "rm-cb-2", "name": "Parota + Egg Curry", "pricePaise": 7900, "veg": false, "sort": 2 },
+        { "id": "rm-cb-3", "name": "Chapathi + Egg Curry", "pricePaise": 7900, "veg": false, "sort": 3 },
+        { "id": "rm-cb-4", "name": "Idli + Chicken Chop Curry", "pricePaise": 9900, "veg": false, "sort": 4 },
+        { "id": "rm-cb-5", "name": "Parota + Chicken Curry", "pricePaise": 9900, "veg": false, "sort": 5 },
+        { "id": "rm-cb-6", "name": "Chapathi + Chicken Curry", "pricePaise": 9900, "veg": false, "sort": 6 },
+        { "id": "rm-cb-7", "name": "Govan Chicken + 2 pcs Parota", "pricePaise": 9900, "veg": false, "sort": 7 },
+        { "id": "rm-cb-8", "name": "Biriyani Rice + 2 pcs Kebab", "pricePaise": 12900, "veg": false, "sort": 8 },
+        { "id": "rm-cb-9", "name": "Donne Biriyani Rice + 2 pcs Kebab", "pricePaise": 13900, "veg": false, "sort": 9 },
+        { "id": "rm-cb-10", "name": "Naati Egg Rice + 2 pcs Kebab", "pricePaise": 13900, "veg": false, "sort": 10 },
+        { "id": "rm-cb-11", "name": "Ghee Rice + 2 pcs Kebab", "pricePaise": 13900, "veg": false, "sort": 11 },
+        { "id": "rm-cb-12", "name": "Naati Chicken Rice + 2 pcs Kebab", "pricePaise": 15900, "veg": false, "sort": 12 },
+        { "id": "rm-cb-13", "name": "Rice + Chicken Curry + 2 Kebab + Parota + Salad", "pricePaise": 15900, "veg": false, "sort": 13 },
+        { "id": "rm-cb-14", "name": "Hyderabadi Chicken Biriyani + 2 pcs Kebab", "pricePaise": 18900, "veg": false, "sort": 14 },
+        { "id": "rm-cb-15", "name": "Donne Chicken Biriyani + 2 pcs Kebab", "pricePaise": 18900, "veg": false, "sort": 15 }
+      ]
+    },
+    {
+      "id": "rm-starters",
+      "name": "Grill & Starters",
+      "sort": 12,
+      "items": [
+        { "id": "rm-st-1", "name": "Chicken Kebab", "pricePaise": 12900, "veg": false, "sort": 1 },
+        { "id": "rm-st-2", "name": "Chicken Kebab Boneless", "pricePaise": 14900, "veg": false, "sort": 2 },
+        { "id": "rm-st-3", "name": "Chicken Lollipop", "pricePaise": 14900, "veg": false, "sort": 3 },
+        { "id": "rm-st-4", "name": "Grill Chicken Quarter", "pricePaise": 11900, "veg": false, "sort": 4 },
+        { "id": "rm-st-5", "name": "Grill Chicken Full", "pricePaise": 37900, "veg": false, "sort": 5 }
+      ]
+    },
+    {
+      "id": "rm-lassi",
+      "name": "Lassi & Drinks",
+      "sort": 13,
+      "items": [
+        { "id": "rm-ls-1", "name": "Sweet Lassi", "pricePaise": 5900, "veg": true, "sort": 1 },
+        { "id": "rm-ls-2", "name": "Mango Lassi", "pricePaise": 5900, "veg": true, "sort": 2 },
+        { "id": "rm-ls-3", "name": "Strawberry Lassi", "pricePaise": 5900, "veg": true, "sort": 3 }
+      ]
+    }
+  ]
+}

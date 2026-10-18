@@ -1,0 +1,16 @@
+{
+  "projects": {
+    "default": "reva-nest-foodcourt",
+    "staging": "reva-nest-foodcourt",
+    "prod": "reva-nest-foodcourt"
+  },
+  "targets": {
+    "fc-dev": {
+      "hosting": {
+        "customer": ["fc-customer-dev"],
+        "vendor": ["fc-vendor-dev"],
+        "master": ["fc-master-dev"]
+      }
+    }
+  }
+}
