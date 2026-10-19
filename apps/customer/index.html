@@ -2,17 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>FoodCourt — Order & Pay</title>
-    <meta name="description" content="Multi-vendor QR Order and Pay at REVA Food Court" />
-    <meta name="theme-color" content="#ea580c" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Order · REVA Food Court</title>
+    <meta name="description" content="Scan, order from every shop in one cart, and pay once at REVA Food Court." />
+    <meta name="theme-color" content="#f6f6f7" />
+    <meta name="color-scheme" content="light" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="preconnect" href="https://sdk.cashfree.com" crossorigin />
+    <style>
+      /* Static first-paint shell: visible before JS arrives, replaced on mount. */
+      html,body{margin:0;background:#f6f6f7}
+      .boot{max-width:28rem;margin:0 auto;padding:16px;font-family:system-ui,-apple-system,sans-serif}
+      .boot i{display:block;border-radius:12px;background:#efeff2}
+      .boot .h{height:40px;width:55%;margin-bottom:16px}
+      .boot .s{height:44px;margin-bottom:12px}
+      .boot .c{height:72px;border-radius:16px;background:#fff;margin-bottom:8px}
+    </style>
   </head>
-  <body class="bg-slate-50 text-slate-900 antialiased font-['Plus_Jakarta_Sans',sans-serif] selection:bg-orange-100 selection:text-orange-900">
-    <div id="root"></div>
+  <body>
+    <div id="root"><div class="boot" aria-hidden="true"><i class="h"></i><i class="s"></i><i class="s"></i><i class="c"></i><i class="c"></i><i class="c"></i><i class="c"></i></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
