@@ -75,3 +75,10 @@ export function resumeOrders(vendorId: string): void {
     vendor.pausedUntil = null;
   });
 }
+
+export function setPrepMinutes(vendorId: string, minutes: number): void {
+  localStore.mutate((draft) => {
+    const vendor = draft.vendors.find((v) => v.id === vendorId);
+    if (vendor) vendor.defaultPrepMin = Math.min(60, Math.max(3, Math.round(minutes)));
+  });
+}

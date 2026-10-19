@@ -6,7 +6,7 @@ type Size = 'sm' | 'md' | 'lg';
 
 const variants: Record<Variant, string> = {
   ink: 'bg-ink text-surface disabled:bg-ink/35',
-  accent: 'bg-accent text-on-accent disabled:bg-accent/40',
+  accent: 'bg-accent-ink text-on-accent disabled:bg-accent-ink/40',
   positive: 'bg-ready text-on-accent disabled:bg-ready/40',
   tint: 'bg-accent-tint text-accent-ink ring-1 ring-inset ring-accent-line',
   quiet: 'bg-surface-2 text-ink',

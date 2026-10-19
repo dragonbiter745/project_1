@@ -129,7 +129,7 @@ export function Board({ vendorId, alarmOn }: { vendorId: string; alarmOn: boolea
       key: 'new',
       title: 'New',
       list: columns.new,
-      tone: 'bg-accent text-on-accent',
+      tone: 'bg-accent-ink text-on-accent',
       empty: <Empty icon={<Inbox className="h-6 w-6" strokeWidth={1.5} />} text="No new orders" />,
     },
     {
@@ -175,7 +175,7 @@ export function Board({ vendorId, alarmOn }: { vendorId: string; alarmOn: boolea
           <section
             key={col.key}
             aria-label={`${col.title} orders`}
-            className={cx('min-h-0 flex-col rounded-sheet bg-surface/40 ring-1 ring-inset ring-line', tab === col.key ? 'flex' : 'hidden lg:flex')}
+            className={cx('min-h-0 flex-col rounded-sheet bg-surface-2/60', tab === col.key ? 'flex' : 'hidden lg:flex')}
           >
             <header className="flex items-center justify-between px-4 pb-2 pt-4">
               <h2 className="text-lg font-semibold tracking-tight text-ink">{col.title}</h2>

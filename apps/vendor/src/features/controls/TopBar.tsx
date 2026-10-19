@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Loader2, PackageX, PauseCircle, PlayCircle, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, Loader2, PackageX, PauseCircle, PlayCircle, Volume2, VolumeX } from 'lucide-react';
 import type { Vendor } from '@foodcourt/shared';
 import type { SyncStatus } from '@foodcourt/firebase-client/local-store';
 import { Button, IconButton, cx } from '@foodcourt/ui';
@@ -10,6 +10,7 @@ interface TopBarProps {
   soldOutCount: number;
   onToggleAlarm: () => void;
   onOpenStock: () => void;
+  onOpenToday: () => void;
   onPause: () => void;
   onResume: () => void;
   onSwitchShop: () => void;
@@ -44,6 +45,9 @@ export function TopBar(props: TopBarProps) {
           >
             {alarmOn ? <Volume2 className="h-[18px] w-[18px]" strokeWidth={2} /> : <VolumeX className="h-[18px] w-[18px]" strokeWidth={2} />}
           </IconButton>
+          <Button variant="quiet" onClick={props.onOpenToday} icon={<BarChart3 className="h-4 w-4" strokeWidth={2} />}>
+            Today
+          </Button>
           <Button variant="quiet" onClick={props.onOpenStock} icon={<PackageX className="h-4 w-4" strokeWidth={2} />}>
             Stock
             {soldOutCount > 0 && (

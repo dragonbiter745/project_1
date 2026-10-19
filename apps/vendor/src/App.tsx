@@ -3,6 +3,7 @@ import { useNow, useWakeLock } from '@foodcourt/ui';
 import { Board } from './features/board/Board';
 import { PauseSheet } from './features/controls/PauseSheet';
 import { StockSheet } from './features/controls/StockSheet';
+import { TodaySheet } from './features/controls/TodaySheet';
 import { TopBar } from './features/controls/TopBar';
 import { ShopPicker } from './features/shop/ShopPicker';
 import { StartOverlay } from './features/shop/StartOverlay';
@@ -39,7 +40,7 @@ export default function App() {
   const sync = useSyncStatus();
   const [started, setStarted] = useState(false);
   const [alarmOn, setAlarmOn] = useState(true);
-  const [sheet, setSheet] = useState<'stock' | 'pause' | null>(null);
+  const [sheet, setSheet] = useState<'stock' | 'pause' | 'today' | null>(null);
   const now = useNow(15_000, Boolean(vendor && !vendor.acceptingOrders));
 
   useWakeLock(started && Boolean(vendor));
@@ -71,6 +72,7 @@ export default function App() {
         soldOutCount={soldOutCount}
         onToggleAlarm={() => setAlarmOn((on) => !on)}
         onOpenStock={() => setSheet('stock')}
+        onOpenToday={() => setSheet('today')}
         onPause={() => setSheet('pause')}
         onResume={() => resumeOrders(vendor.id)}
         onSwitchShop={() => {
@@ -82,6 +84,7 @@ export default function App() {
       <Board vendorId={vendor.id} alarmOn={started && alarmOn} />
 
       <StockSheet vendorId={vendor.id} open={sheet === 'stock'} onClose={() => setSheet(null)} />
+      <TodaySheet vendor={vendor} open={sheet === 'today'} onClose={() => setSheet(null)} />
       <PauseSheet
         shopName={vendor.name}
         open={sheet === 'pause'}

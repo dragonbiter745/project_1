@@ -29,7 +29,7 @@ export const TicketCard = memo(function TicketCard({ sub, now, onAccept, onRejec
       aria-label={`Order ${sub.token}`}
       className={cx(
         'flex flex-col rounded-card bg-surface p-4 ring-1 ring-inset',
-        isNew ? 'ticket-alert ring-accent/70' : isReady ? 'ticket-in ring-ready/40' : 'ticket-in ring-line'
+        isNew ? 'ticket-alert shadow-thumb ring-accent/60' : isReady ? 'ticket-in ring-ready/35' : 'ticket-in ring-line'
       )}
     >
       <header className="flex items-start justify-between gap-3">
@@ -37,10 +37,8 @@ export const TicketCard = memo(function TicketCard({ sub, now, onAccept, onRejec
           <p className={cx('font-mono text-2xl font-semibold tracking-tight', isReady ? 'text-ready' : 'text-ink')}>
             {sub.token}
           </p>
-          <p className="mt-0.5 truncate text-sm text-ink-3">
-            Table {sub.tableLabel}
-            {sub.customerDisplay && ` · ${sub.customerDisplay}`}
-          </p>
+          <p className="mt-0.5 text-sm font-medium text-ink-2">Table {sub.tableLabel}</p>
+          {sub.customerDisplay && <p className="truncate text-sm text-ink-3">{sub.customerDisplay}</p>}
         </div>
         <span
           aria-label={`Placed ${minutes} minutes ago`}

@@ -109,11 +109,11 @@ function StockSwitch({ label, checked, onChange }: { label: string; checked: boo
       <span
         className={cx(
           'relative block h-7 w-12 rounded-full transition-colors duration-200',
-          checked ? 'bg-ready' : 'bg-surface ring-1 ring-inset ring-line-strong'
+          checked ? 'bg-ready' : 'bg-line-strong'
         )}
       >
         <span
-          className="switch-thumb absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-ink shadow-thumb"
+          className="switch-thumb absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-surface shadow-thumb"
           style={{ transform: checked ? 'translateX(20px)' : undefined }}
         />
       </span>
