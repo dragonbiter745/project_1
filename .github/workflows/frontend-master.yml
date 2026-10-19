@@ -1,0 +1,46 @@
+name: Frontend · Master admin
+
+on:
+  pull_request:
+    paths:
+      - apps/master/**
+      - packages/shared/**
+      - packages/ui/**
+      - packages/firebase-client/**
+      - package.json
+      - pnpm-lock.yaml
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-master.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/master/**
+      - packages/shared/**
+      - packages/ui/**
+      - packages/firebase-client/**
+      - package.json
+      - pnpm-lock.yaml
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-master.yml
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-master-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  master:
+    uses: ./.github/workflows/_frontend.yml
+    with:
+      app: master
+      live-url: https://reva-nest-master.web.app
+    secrets: inherit

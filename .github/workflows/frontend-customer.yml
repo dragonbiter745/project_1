@@ -1,0 +1,49 @@
+name: Frontend · Customer
+
+on:
+  pull_request:
+    paths:
+      - apps/customer/**
+      - packages/shared/**
+      - packages/ui/**
+      - packages/firebase-client/**
+      - package.json
+      - pnpm-lock.yaml
+      - firebase.json
+      - scripts/ci/**
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-customer.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/customer/**
+      - packages/shared/**
+      - packages/ui/**
+      - packages/firebase-client/**
+      - package.json
+      - pnpm-lock.yaml
+      - firebase.json
+      - scripts/ci/**
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-customer.yml
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-customer-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  customer:
+    uses: ./.github/workflows/_frontend.yml
+    with:
+      app: customer
+      bundle-budget-kb: 150
+      live-url: https://reva-nest-foodcourt.web.app
+    secrets: inherit

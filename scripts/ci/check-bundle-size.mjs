@@ -1,12 +1,13 @@
-// Fails CI when the customer app's initial load (entry JS, its preloaded chunks and CSS)
+// Fails CI when an app's initial load (entry JS, its preloaded chunks and CSS)
 // exceeds the PRD §5 budget. Lazy chunks are excluded: they are not on the first paint.
 import { appendFileSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const dist = process.argv[2] ?? 'apps/customer/dist';
 const budgetKb = Number(process.env.BUNDLE_BUDGET_KB ?? 150);
-const warnKb = Number(process.env.BUNDLE_WARN_KB ?? 120);
+const warnKb = Number(process.env.BUNDLE_WARN_KB ?? budgetKb * 0.8);
+const app = basename(dirname(dist));
 
 const html = readFileSync(join(dist, 'index.html'), 'utf8');
 const assets = [...new Set([...html.matchAll(/(?:src|href)="\/(assets\/[^"]+\.(?:js|css))"/g)].map((m) => m[1]))];
@@ -27,7 +28,7 @@ console.log(`${totalKb.toFixed(1).padStart(7)} KB  total (budget ${budgetKb} KB 
 
 if (process.env.GITHUB_STEP_SUMMARY) {
   const lines = [
-    '### Customer initial bundle (gzip)',
+    `### ${app} initial bundle (gzip)`,
     '',
     '| Asset | KB |',
     '| --- | ---: |',
@@ -39,9 +40,9 @@ if (process.env.GITHUB_STEP_SUMMARY) {
 }
 
 if (totalKb > budgetKb) {
-  console.error(`::error::Customer initial bundle is ${totalKb.toFixed(1)} KB gz, over the ${budgetKb} KB budget.`);
+  console.error(`::error::${app} initial bundle is ${totalKb.toFixed(1)} KB gz, over the ${budgetKb} KB budget.`);
   process.exit(1);
 }
 if (totalKb > warnKb) {
-  console.log(`::warning::Customer initial bundle is ${totalKb.toFixed(1)} KB gz, approaching the ${budgetKb} KB budget.`);
+  console.log(`::warning::${app} initial bundle is ${totalKb.toFixed(1)} KB gz, approaching the ${budgetKb} KB budget.`);
 }

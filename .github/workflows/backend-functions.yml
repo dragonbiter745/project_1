@@ -1,0 +1,108 @@
+name: Backend · Cloud Functions
+
+on:
+  pull_request:
+    paths:
+      - functions/**
+      - pnpm-lock.yaml
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/backend-functions.yml
+  push:
+    branches: [main]
+    paths:
+      - functions/**
+      - pnpm-lock.yaml
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/backend-functions.yml
+  workflow_dispatch:
+
+concurrency:
+  group: backend-functions-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  FIREBASE_PROJECT_ID: reva-nest-foodcourt
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup
+
+      - name: Typecheck and build functions
+        run: pnpm turbo run build --filter=functions
+
+  deploy:
+    name: Deploy
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Functions move money: the backend-production environment should require a reviewer.
+    environment: backend-production
+    concurrency:
+      group: deploy-functions
+      cancel-in-progress: false
+    env:
+      HAS_FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - name: Firebase credentials missing
+        if: env.HAS_FIREBASE_SA != 'true'
+        run: echo "::warning::FIREBASE_SERVICE_ACCOUNT is not set, so functions were not deployed. See docs/runbook.md."
+
+      - uses: actions/checkout@v4
+        if: env.HAS_FIREBASE_SA == 'true'
+
+      - uses: ./.github/actions/setup
+        if: env.HAS_FIREBASE_SA == 'true'
+
+      - name: Build functions
+        if: env.HAS_FIREBASE_SA == 'true'
+        run: pnpm turbo run build --filter=functions
+
+      # Functions read Cashfree config from process.env, loaded from functions/.env at deploy.
+      # The values live only in this environment's secrets and the file is deleted afterwards.
+      - name: Write functions/.env from environment secrets
+        if: env.HAS_FIREBASE_SA == 'true'
+        env:
+          CASHFREE_APP_ID: ${{ secrets.CASHFREE_APP_ID }}
+          CASHFREE_SECRET_KEY: ${{ secrets.CASHFREE_SECRET_KEY }}
+          CASHFREE_ENV: ${{ secrets.CASHFREE_ENV }}
+          CASHFREE_API_VERSION: ${{ secrets.CASHFREE_API_VERSION }}
+        run: |
+          set -euo pipefail
+          for name in CASHFREE_APP_ID CASHFREE_SECRET_KEY CASHFREE_ENV; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not set on the backend-production environment"
+              exit 1
+            fi
+          done
+          umask 077
+          {
+            echo "CASHFREE_APP_ID=$CASHFREE_APP_ID"
+            echo "CASHFREE_SECRET_KEY=$CASHFREE_SECRET_KEY"
+            echo "CASHFREE_ENV=$CASHFREE_ENV"
+            echo "CASHFREE_API_VERSION=${CASHFREE_API_VERSION:-2023-08-01}"
+          } > functions/.env
+
+      - uses: google-github-actions/auth@v2
+        if: env.HAS_FIREBASE_SA == 'true'
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy functions
+        if: env.HAS_FIREBASE_SA == 'true'
+        run: npx --yes firebase-tools@13 deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive
+
+      - name: Remove functions/.env
+        if: always()
+        run: rm -f functions/.env

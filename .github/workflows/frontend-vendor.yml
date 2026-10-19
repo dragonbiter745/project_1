@@ -1,0 +1,46 @@
+name: Frontend · Vendor
+
+on:
+  pull_request:
+    paths:
+      - apps/vendor/**
+      - packages/shared/**
+      - packages/ui/**
+      - packages/firebase-client/**
+      - package.json
+      - pnpm-lock.yaml
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-vendor.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/vendor/**
+      - packages/shared/**
+      - packages/ui/**
+      - packages/firebase-client/**
+      - package.json
+      - pnpm-lock.yaml
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-vendor.yml
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-vendor-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  vendor:
+    uses: ./.github/workflows/_frontend.yml
+    with:
+      app: vendor
+      live-url: https://reva-nest-vendor.web.app
+    secrets: inherit

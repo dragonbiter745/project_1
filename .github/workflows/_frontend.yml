@@ -1,0 +1,136 @@
+name: Frontend pipeline (reusable)
+
+# Shared by frontend-customer / frontend-vendor / frontend-master. Verify once, then
+# deploy that exact build: a preview channel on PRs, the live site on main.
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: customer | vendor | master (also the Firebase Hosting target)
+        type: string
+        required: true
+      bundle-budget-kb:
+        description: Initial-load gzip budget; 0 skips the check
+        type: number
+        default: 0
+      live-url:
+        type: string
+        required: true
+    secrets:
+      FIREBASE_SERVICE_ACCOUNT:
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  APP: ${{ inputs.app }}
+  FIREBASE_PROJECT_ID: reva-nest-foodcourt
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Optional repo variables; the apps fall back to the checked-in public web config.
+      VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+      VITE_FIREBASE_MEASUREMENT_ID: ${{ vars.VITE_FIREBASE_MEASUREMENT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup
+
+      - name: Typecheck shared packages
+        run: pnpm turbo run lint
+
+      - name: Typecheck and build
+        run: pnpm turbo run build --filter="@foodcourt/$APP"
+
+      - name: Bundle budget
+        if: inputs.bundle-budget-kb > 0
+        env:
+          BUNDLE_BUDGET_KB: ${{ inputs.bundle-budget-kb }}
+        run: node scripts/ci/check-bundle-size.mjs "apps/$APP/dist"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ inputs.app }}
+          path: apps/${{ inputs.app }}/dist
+          retention-days: 7
+          if-no-files-found: error
+
+  preview:
+    name: Preview
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    env:
+      HAS_FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ inputs.app }}
+          path: apps/${{ inputs.app }}/dist
+
+      - name: Firebase credentials missing
+        if: env.HAS_FIREBASE_SA != 'true'
+        run: echo "::notice::FIREBASE_SERVICE_ACCOUNT is not set, so the preview deploy was skipped. See docs/runbook.md."
+
+      - name: Deploy preview channel
+        if: env.HAS_FIREBASE_SA == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ env.FIREBASE_PROJECT_ID }}
+          target: ${{ inputs.app }}
+          expires: 7d
+
+  live:
+    name: Deploy live
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: ${{ inputs.app }}-production
+      url: ${{ inputs.live-url }}
+    concurrency:
+      group: deploy-${{ inputs.app }}-live
+      cancel-in-progress: false
+    env:
+      HAS_FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ inputs.app }}
+          path: apps/${{ inputs.app }}/dist
+
+      - name: Firebase credentials missing
+        if: env.HAS_FIREBASE_SA != 'true'
+        run: echo "::warning::FIREBASE_SERVICE_ACCOUNT is not set, so main was not deployed. See docs/runbook.md."
+
+      - name: Deploy live channel
+        if: env.HAS_FIREBASE_SA == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ env.FIREBASE_PROJECT_ID }}
+          target: ${{ inputs.app }}
+          channelId: live
