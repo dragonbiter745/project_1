@@ -63,3 +63,10 @@
 - **Kit additions:** `BrandMark` (saffron squircle logo), `Monogram` (shop code tile), `.ambient` saffron light, fixed `.grain` overlay, `.live-dot` for real live state, and a warm-tinted `shadow-card` token.
 - **Master:** branded sidebar with active indicator and a live "Right now" card; page header with description and live clock; bento KPIs (`KpiTile`, featured saffron tile with a sales sparkline); status filters with counts; table rows with shop monograms, table chips and age chips; shop cards with a tinted header, icon metrics and a stock bar; Insights charts (hourly orders bars with hover tooltips, sales-by-shop bars) built to the dataviz skill's mark specs, saffron validated against the light surface.
 - **Vendor:** shop monogram and live clock in the top bar; status-tinted columns with icon headers; tickets with a status edge, table chip, quantity badges and note callouts; branded shop picker and start-service card.
+
+## ADR 009: Phone layout for the kitchen display
+- **Context:** shop staff also run the board from a phone; the tablet layout squeezed onto a phone put every control out of thumb reach.
+- **Decision:** under 768px the vendor app switches to a one-handed layout: slim header, a snapping rail of full-width columns (native CSS scroll snap), a bottom tab bar whose indicator follows the scroll position directly, a More sheet for Today / Stock / Pause / alarm / switch shop, and a new-order alert that drops in from the top while the cook is on another column.
+- **Gestures:** tickets swipe right to advance (Accept, Ready, Collected) and left on a new order to open Reject. They are built on pointer events with `touch-action: pan-y`, so vertical scrolling stays native. A commit needs 38% of the card width or a quick flick (0.11 px/ms). The existing buttons and undo windows stay as the fallback. No gesture library was added.
+- **Haptics:** `navigator.vibrate` where supported (Android); it does nothing on iOS.
+- **Trade-off:** a swipe that starts on a ticket belongs to the ticket, so switching columns sideways only works from a column header, an empty column or the tab bar.

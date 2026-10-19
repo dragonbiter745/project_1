@@ -1,11 +1,13 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { MessageSquareText } from 'lucide-react';
 import type { SubOrder } from '@foodcourt/shared';
 import { Button, cx } from '@foodcourt/ui';
 
-interface TicketCardProps {
+export interface TicketCardProps {
   sub: SubOrder;
   now: number;
+  /** Phone layout: tighter spacing and long orders folded after a few lines. */
+  compact?: boolean;
   onAccept: (sub: SubOrder) => void;
   onReject: (sub: SubOrder) => void;
   onReady: (sub: SubOrder) => void;
@@ -22,7 +24,12 @@ function urgency(minutes: number): string {
 
 const EDGE = { NEW: 'bg-accent', COOKING: 'bg-prep', READY: 'bg-ready' } as const;
 
-export const TicketCard = memo(function TicketCard({ sub, now, onAccept, onReject, onReady, onCollect }: TicketCardProps) {
+const FOLD_AFTER = 3;
+
+export const TicketCard = memo(function TicketCard({ sub, now, compact, onAccept, onReject, onReady, onCollect }: TicketCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const items = compact && !expanded ? sub.items.slice(0, FOLD_AFTER) : sub.items;
+  const folded = sub.items.length - items.length;
   const minutes = Math.max(0, Math.floor((now - sub.ts.placed) / 60_000));
   const isNew = sub.status === 'NEW';
   const isReady = sub.status === 'READY';
@@ -38,9 +45,9 @@ export const TicketCard = memo(function TicketCard({ sub, now, onAccept, onRejec
     >
       <span aria-hidden className={cx('absolute inset-y-0 left-0 w-1.5', edge)} />
 
-      <header className={cx('flex items-start justify-between gap-3 py-3.5 pl-5 pr-4', isNew && 'bg-accent-tint/60', isReady && 'bg-ready-tint/60')}>
+      <header className={cx('flex items-start justify-between gap-3 pl-5 pr-4', compact ? 'py-3' : 'py-3.5', isNew && 'bg-accent-tint/60', isReady && 'bg-ready-tint/60')}>
         <div className="min-w-0">
-          <p className={cx('font-mono text-[26px] font-semibold leading-none tracking-tight', isReady ? 'text-ready' : 'text-ink')}>
+          <p className={cx('font-mono font-semibold leading-none tracking-tight', compact ? 'text-[22px]' : 'text-[26px]', isReady ? 'text-ready' : 'text-ink')}>
             {sub.token}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -62,7 +69,7 @@ export const TicketCard = memo(function TicketCard({ sub, now, onAccept, onRejec
       </header>
 
       <ul className="space-y-3 border-t border-line/70 py-3.5 pl-5 pr-4">
-        {sub.items.map((item, i) => (
+        {items.map((item, i) => (
           <li key={`${item.id}-${i}`} className="flex gap-3">
             <span className="grid h-8 min-w-8 shrink-0 place-items-center rounded-[9px] bg-surface-2 px-1.5 font-mono text-base font-semibold tabular-nums text-ink">
               {item.qty}
@@ -78,6 +85,17 @@ export const TicketCard = memo(function TicketCard({ sub, now, onAccept, onRejec
             </div>
           </li>
         ))}
+        {folded > 0 && (
+          <li>
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="pressable h-8 rounded-full bg-surface-2 px-3 text-sm font-semibold text-ink-2 transition-colors hover:bg-line/60"
+            >
+              +{folded} more {folded === 1 ? 'item' : 'items'}
+            </button>
+          </li>
+        )}
       </ul>
 
       <footer className="pb-4 pl-5 pr-4">

@@ -109,3 +109,54 @@
     transition: none;
   }
 }
+
+/* Phone board */
+.swipe-card {
+  touch-action: pan-y;
+}
+.swipe-icon {
+  transition: transform 160ms var(--ease-out);
+}
+.swipe-layer[data-armed='true'] .swipe-icon {
+  transform: scale(1.2);
+}
+.tab-indicator {
+  will-change: transform;
+}
+.order-drop {
+  animation: order-drop 340ms var(--ease-drawer) both;
+}
+.order-drop[data-leaving='true'] {
+  animation: order-lift 200ms var(--ease-out) both;
+}
+@keyframes order-drop {
+  from {
+    transform: translateY(calc(-100% - 24px));
+  }
+}
+@keyframes order-lift {
+  to {
+    transform: translateY(calc(-100% - 24px));
+    opacity: 0;
+  }
+}
+.bell-ring {
+  transform-origin: 50% 0;
+  animation: bell-ring 900ms var(--ease-out) 2;
+}
+@keyframes bell-ring {
+  15% { rotate: 14deg; }
+  30% { rotate: -12deg; }
+  45% { rotate: 8deg; }
+  60% { rotate: -5deg; }
+  75% { rotate: 2deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .order-drop,
+  .order-drop[data-leaving='true'] {
+    animation-duration: 1ms;
+  }
+  .bell-ring {
+    animation: none;
+  }
+}

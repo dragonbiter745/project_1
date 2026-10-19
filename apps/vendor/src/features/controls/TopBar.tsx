@@ -5,6 +5,8 @@ import { Button, IconButton, Monogram, cx, useNow } from '@foodcourt/ui';
 
 interface TopBarProps {
   vendor: Vendor;
+  /** Phone layout: slim header; the other controls live in the More sheet. */
+  phone?: boolean;
   sync: SyncStatus;
   alarmOn: boolean;
   soldOutCount: number;
@@ -20,22 +22,29 @@ const timeFormat = new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '
 const formatTime = (iso: string) => timeFormat.format(new Date(iso));
 
 export function TopBar(props: TopBarProps) {
-  const { vendor, sync, alarmOn, soldOutCount } = props;
+  const { vendor, sync, alarmOn, soldOutCount, phone } = props;
   const paused = !vendor.acceptingOrders;
   const now = useNow(15_000);
 
   return (
     <>
-      <header className="relative z-header flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-line/70 bg-surface/80 px-4 backdrop-blur-xl lg:px-6">
+      <header
+        className={cx(
+          'relative z-header flex shrink-0 items-center justify-between gap-3 border-b border-line/70 bg-surface/80 backdrop-blur-xl',
+          phone ? 'h-[60px] px-3 pt-[env(safe-area-inset-top)]' : 'h-[72px] px-4 lg:px-6'
+        )}
+      >
         <div className="flex min-w-0 items-center gap-3">
-          <Monogram code={vendor.code} tone="solid" />
+          <Monogram code={vendor.code} tone="solid" size={phone ? 'sm' : 'md'} />
           <div className="min-w-0">
             <p className="truncate text-lg font-semibold leading-tight tracking-tight text-ink">{vendor.name}</p>
             <SyncLabel sync={sync} paused={paused} />
           </div>
-          <IconButton label="Switch shop" onClick={props.onSwitchShop}>
-            <ArrowLeftRight className="h-4 w-4" strokeWidth={2} />
-          </IconButton>
+          {!phone && (
+            <IconButton label="Switch shop" onClick={props.onSwitchShop}>
+              <ArrowLeftRight className="h-4 w-4" strokeWidth={2} />
+            </IconButton>
+          )}
         </div>
 
         <p className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 font-mono text-[28px] font-semibold tabular-nums tracking-tight text-ink xl:block" aria-label="Current time">
@@ -43,6 +52,7 @@ export function TopBar(props: TopBarProps) {
         </p>
 
         <div className="flex shrink-0 items-center gap-2">
+          {phone && <p className="font-mono text-base font-semibold tabular-nums text-ink-2">{timeFormat.format(now)}</p>}
           <IconButton
             label={alarmOn ? 'Mute new-order alarm' : 'Turn on new-order alarm'}
             onClick={props.onToggleAlarm}
@@ -51,6 +61,8 @@ export function TopBar(props: TopBarProps) {
           >
             {alarmOn ? <Volume2 className="h-[18px] w-[18px]" strokeWidth={2} /> : <VolumeX className="h-[18px] w-[18px]" strokeWidth={2} />}
           </IconButton>
+          {!phone && (
+          <>
           <div className="flex items-center gap-1 rounded-full bg-surface-2 p-1">
             <Button variant="ghost" onClick={props.onOpenToday} icon={<BarChart3 className="h-4 w-4" strokeWidth={2} />} className="hover:bg-surface">
               Today
@@ -72,6 +84,8 @@ export function TopBar(props: TopBarProps) {
             <Button variant="outline" onClick={props.onPause} icon={<PauseCircle className="h-4 w-4" strokeWidth={2} />}>
               Pause
             </Button>
+          )}
+          </>
           )}
         </div>
       </header>
