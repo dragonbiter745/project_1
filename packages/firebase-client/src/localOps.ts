@@ -1,5 +1,5 @@
 import { canTransitionSubOrder, type SubOrder, type SubOrderStatus } from '@foodcourt/shared';
-import { localStore } from './store';
+import { localStore } from './localStore';
 
 // Local stand-in for the vendorAction callable. Every change is checked against the shared
 // status machine (AGENTS.md); an illegal step leaves the ticket untouched.
@@ -82,3 +82,20 @@ export function setPrepMinutes(vendorId: string, minutes: number): void {
     if (vendor) vendor.defaultPrepMin = Math.min(60, Math.max(3, Math.round(minutes)));
   });
 }
+
+// Admin cancel (PRD FR-M4). The machine only allows it before READY.
+export const cancelSubOrder = (id: string, reason: string) =>
+  transition(id, ['CANCELLED'], (sub) => {
+    sub.rejectReason = reason;
+    sub.refund = { status: 'PENDING', amountPaise: sub.subtotalPaise };
+  });
+
+export const setPaymentsEnabled = (enabled: boolean) =>
+  localStore.mutate((draft) => {
+    draft.config.flags.paymentsEnabled = enabled;
+  });
+
+export const setMaintenance = (on: boolean) =>
+  localStore.mutate((draft) => {
+    draft.config.flags.maintenance = on;
+  });

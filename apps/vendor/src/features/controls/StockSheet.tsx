@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { formatPaise } from '@foodcourt/shared';
 import { Sheet, cx } from '@foodcourt/ui';
-import { setItemAvailable } from '../../lib/kitchen';
+import { setItemAvailable } from '@foodcourt/firebase-client/local-ops';
 import { jsonEqual, useLocal } from '../../lib/store';
 
 const NONE: Record<string, boolean> = {};

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Button, Sheet, cx } from '@foodcourt/ui';
+import { Button } from './Button';
+import { Sheet } from './Sheet';
+import { cx } from './utils';
 
 const OPTIONS: Array<{ label: string; minutes: number | null }> = [
   { label: '15 minutes', minutes: 15 },

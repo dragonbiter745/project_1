@@ -6,3 +6,4 @@ export * from './tokens';
 export * from './pricing';
 export * from './schemas/index';
 export * from './tables';
+export * from './kitchenStats';

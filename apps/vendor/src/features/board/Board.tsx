@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { ChefHat, Inbox, PackageCheck } from 'lucide-react';
 import type { SubOrder, SubOrderStatus } from '@foodcourt/shared';
 import { cx, useNow } from '@foodcourt/ui';
-import { acceptOrder, markCollected, markReady, rejectOrder, undoReady } from '../../lib/kitchen';
+import { acceptOrder, markCollected, markReady, rejectOrder, undoReady } from '@foodcourt/firebase-client/local-ops';
 import { playNewOrderChime } from '../../lib/sound';
 import { jsonEqual, useLocal } from '../../lib/store';
 import { RejectSheet } from './RejectSheet';

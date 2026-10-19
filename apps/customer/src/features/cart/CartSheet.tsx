@@ -45,7 +45,9 @@ export function CartSheet({ session }: { session: TableSession }) {
     return null;
   };
   const hasBlocked = list.some((i) => blockedReason(i) !== null);
-  const payBlocker = !online
+  const payBlocker = config.flags.maintenance
+    ? 'Ordering is paused for a few minutes. Please try again shortly.'
+    : !online
     ? "You're offline. Reconnect to pay."
     : hasBlocked
       ? 'Remove unavailable items to continue.'

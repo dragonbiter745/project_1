@@ -10,7 +10,8 @@
     "./auth": "./src/auth.ts",
     "./functions": "./src/functions.ts",
     "./issues": "./src/issues.ts",
-    "./local-store": "./src/localStore.ts"
+    "./local-store": "./src/localStore.ts",
+    "./local-ops": "./src/localOps.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

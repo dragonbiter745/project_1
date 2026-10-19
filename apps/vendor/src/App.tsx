@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNow, useWakeLock } from '@foodcourt/ui';
+import { PauseSheet, useNow, useWakeLock } from '@foodcourt/ui';
 import { Board } from './features/board/Board';
-import { PauseSheet } from './features/controls/PauseSheet';
+
 import { StockSheet } from './features/controls/StockSheet';
 import { TodaySheet } from './features/controls/TodaySheet';
 import { TopBar } from './features/controls/TopBar';
 import { ShopPicker } from './features/shop/ShopPicker';
 import { StartOverlay } from './features/shop/StartOverlay';
-import { pauseOrders, resumeOrders } from './lib/kitchen';
+import { pauseOrders, resumeOrders } from '@foodcourt/firebase-client/local-ops';
 import { unlockAudio } from './lib/sound';
 import { jsonEqual, useLocal, useSyncStatus } from './lib/store';
 

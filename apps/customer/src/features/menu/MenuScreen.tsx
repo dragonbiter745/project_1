@@ -47,6 +47,7 @@ export function MenuScreen({ session }: { session: TableSession }) {
   const menu = useLocal((s) => s.menus[vendorId]);
   const unavailable = useLocal((s) => s.availability[vendorId]?.unavailable ?? NONE_UNAVAILABLE, jsonEqual);
   const paused = vendor ? !vendor.acceptingOrders : false;
+  const maintenance = useLocal((s) => s.config.flags.maintenance);
 
   const sections = useMemo(
     () =>
@@ -97,6 +98,12 @@ export function MenuScreen({ session }: { session: TableSession }) {
       </header>
 
       <main className="px-4 pb-44">
+        {maintenance && (
+          <div role="status" className="mt-4 rounded-card bg-danger-tint p-4 text-sm text-ink-2 ring-1 ring-inset ring-danger/20">
+            <span className="font-semibold text-ink">Ordering is paused for a few minutes.</span> You can keep browsing; your
+            cart is saved.
+          </div>
+        )}
         {paused && vendor && (
           <div
             role="status"

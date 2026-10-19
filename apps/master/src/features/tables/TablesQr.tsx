@@ -1,0 +1,169 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Printer, Search } from 'lucide-react';
+import { Button, cx } from '@foodcourt/ui';
+import { Stat } from '../../components/Stat';
+import { jsonEqual, useLocal } from '../../lib/store';
+
+// QR codes are generated in the browser. The previous version sent every table code to a
+// third-party QR API.
+const CUSTOMER_URL =
+  import.meta.env.VITE_CUSTOMER_APP_URL ||
+  (window.location.hostname === 'localhost' ? 'http://localhost:5173' : 'https://reva-nest-foodcourt.web.app');
+
+const qrCache = new Map<string, string>();
+
+function useQrCode(text: string): string | null {
+  const [src, setSrc] = useState<string | null>(() => qrCache.get(text) ?? null);
+  useEffect(() => {
+    const cached = qrCache.get(text);
+    if (cached) {
+      setSrc(cached);
+      return;
+    }
+    let live = true;
+    void import('qrcode')
+      .then((qr) =>
+        qr.toDataURL(text, { margin: 1, width: 320, errorCorrectionLevel: 'M', color: { dark: '#121214', light: '#ffffff' } })
+      )
+      .then((dataUrl) => {
+        qrCache.set(text, dataUrl);
+        if (live) setSrc(dataUrl);
+      });
+    return () => {
+      live = false;
+    };
+  }, [text]);
+  return src;
+}
+
+type Capacity = 'ALL' | 4 | 6;
+
+export function TablesQr() {
+  const tables = useLocal((s) => s.tables, jsonEqual);
+  const [capacity, setCapacity] = useState<Capacity>('ALL');
+  const [zone, setZone] = useState('ALL');
+  const [query, setQuery] = useState('');
+
+  const zones = useMemo(() => Array.from(new Set(tables.map((t) => t.zone))), [tables]);
+  const seats = tables.reduce((n, t) => n + (t.capacity ?? 4), 0);
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return tables.filter(
+      (t) =>
+        (capacity === 'ALL' || (t.capacity ?? 4) === capacity) &&
+        (zone === 'ALL' || t.zone === zone) &&
+        (!q || t.label.toLowerCase().includes(q) || t.code.toLowerCase().includes(q))
+    );
+  }, [tables, capacity, zone, query]);
+
+  return (
+    <>
+      <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4" data-print="hide">
+        <Stat label="Tables" value={String(tables.length)} />
+        <Stat label="Seats" value={String(seats)} />
+        <Stat label="4-seat tables" value={String(tables.filter((t) => (t.capacity ?? 4) === 4).length)} />
+        <Stat label="6-seat tables" value={String(tables.filter((t) => t.capacity === 6).length)} />
+      </dl>
+
+      <div className="mt-6 flex flex-wrap items-center gap-3" data-print="hide">
+        <Chips
+          label="Seats"
+          value={capacity}
+          options={[
+            { value: 'ALL', label: 'All sizes' },
+            { value: 4, label: '4 seats' },
+            { value: 6, label: '6 seats' },
+          ]}
+          onChange={setCapacity}
+        />
+        <Chips
+          label="Zone"
+          value={zone}
+          options={[{ value: 'ALL', label: 'All zones' }, ...zones.map((z) => ({ value: z, label: z }))]}
+          onChange={setZone}
+        />
+        <label className="relative w-full sm:w-56">
+          <span className="sr-only">Find a table</span>
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" strokeWidth={2} />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Find a table"
+            className="h-10 w-full rounded-full bg-surface pl-10 pr-4 text-sm text-ink outline-none ring-1 ring-inset ring-line placeholder:text-ink-3 focus:ring-2 focus:ring-accent/50"
+          />
+        </label>
+        <Button
+          variant="ink"
+          className="ml-auto"
+          disabled={visible.length === 0}
+          onClick={() => window.print()}
+          icon={<Printer className="h-4 w-4" strokeWidth={2} />}
+        >
+          Print {visible.length} QR codes
+        </Button>
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="mt-10 text-center text-sm text-ink-3">No tables match these filters.</p>
+      ) : (
+        <div data-print="grid" className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
+          {visible.map((t) => (
+            <TableCard key={t.id} label={t.label} code={t.code} zone={t.zone} seats={t.capacity ?? 4} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function TableCard({ label, code, zone, seats }: { label: string; code: string; zone: string; seats: number }) {
+  const url = `${CUSTOMER_URL}/t/${code}`;
+  const qr = useQrCode(url);
+  return (
+    <figure data-print="card" className="rounded-card bg-surface p-4 text-center ring-1 ring-inset ring-line">
+      <div className="mx-auto aspect-square w-full max-w-[200px] overflow-hidden rounded-field bg-surface-2">
+        {qr ? <img src={qr} alt={`QR code for table ${label}`} className="h-full w-full" /> : <span className="shimmer block h-full w-full" />}
+      </div>
+      <figcaption className="mt-3">
+        <p className="text-xl font-semibold tracking-tight text-ink">Table {label}</p>
+        <p className="mt-0.5 text-sm text-ink-3">
+          {zone} · {seats} seats
+        </p>
+        <p className="mt-1 text-xs font-medium text-ink-2">Scan to order and pay</p>
+      </figcaption>
+    </figure>
+  );
+}
+
+function Chips<T extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: Array<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
+      {options.map((o) => (
+        <button
+          key={String(o.value)}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={cx(
+            'h-9 rounded-full px-3.5 text-sm font-medium ring-1 ring-inset transition-colors',
+            value === o.value ? 'bg-ink text-surface ring-ink' : 'bg-surface text-ink-2 ring-line hover:bg-surface-2'
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}

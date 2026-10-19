@@ -1,0 +1,95 @@
+@import '@fontsource-variable/geist/wght.css';
+@import '@fontsource-variable/geist-mono/wght.css';
+@import '../../../../packages/ui/src/kit/kit.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Same light palette as the customer app and kitchen display. */
+:root {
+  color-scheme: light;
+
+  --bg: 246 246 247;
+  --surface: 255 255 255;
+  --surface-2: 239 239 242;
+  --line: 226 226 231;
+  --line-strong: 208 208 215;
+
+  --ink: 18 18 20;
+  --ink-2: 74 74 85;
+  --ink-3: 100 100 110;
+
+  --accent: 228 87 15;
+  --accent-ink: 180 67 11;
+  --accent-tint: 255 242 234;
+  --accent-line: 249 214 194;
+  --scrim: 18 18 20;
+  --on-accent: 255 255 255;
+
+  --veg: 21 128 61;
+  --nonveg: 185 28 28;
+  --ready: 21 128 61;
+  --ready-tint: 236 253 243;
+  --prep: 180 83 9;
+  --prep-tint: 255 248 235;
+  --danger: 192 38 45;
+  --danger-tint: 255 241 241;
+
+  --shadow-float: 0 12px 32px -10px rgb(18 18 20 / 0.32), 0 2px 6px rgb(18 18 20 / 0.08);
+  --shadow-sheet: 0 -10px 40px rgb(18 18 20 / 0.12);
+  --shadow-thumb: 0 1px 2px rgb(18 18 20 / 0.12), 0 2px 8px rgb(18 18 20 / 0.08);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    background: rgb(var(--bg));
+  }
+
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
+  }
+}
+
+.switch-thumb {
+  transition: transform 200ms var(--ease-out);
+}
+
+/* QR sheet: only the selected table cards print, three per row, with labels. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body {
+    background: #fff;
+  }
+  [data-print='hide'] {
+    display: none !important;
+  }
+  [data-print='grid'] {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8mm !important;
+  }
+  [data-print='card'] {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch-thumb {
+    transition: none;
+  }
+}

@@ -1,9 +1,9 @@
 import { Minus, Plus } from 'lucide-react';
 import { formatPaise, type SubOrder, type Vendor } from '@foodcourt/shared';
 import { Sheet, cx, useNow } from '@foodcourt/ui';
-import { setPrepMinutes } from '../../lib/kitchen';
+import { setPrepMinutes } from '@foodcourt/firebase-client/local-ops';
 import { jsonEqual, useLocal } from '../../lib/store';
-import { todayStats } from '../../lib/today';
+import { todayStats } from '@foodcourt/shared';
 
 const formatTime = (ms: number) =>
   new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }).format(ms);
