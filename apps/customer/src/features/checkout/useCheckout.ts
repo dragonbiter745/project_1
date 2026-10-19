@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { notifyError } from '../../lib/toast';
 import { getIstDateKey, type CartItem, type Order, type OrderTotals } from '@foodcourt/shared';
 import { ensureAnonymousUser, getCallable } from '../../lib/firebase';
 import { localStore } from '../../lib/store';
@@ -151,7 +151,7 @@ export function useCheckout(session: TableSession) {
       console.error('createCheckout callable failed:', err);
       setPending(false);
       const offline = !navigator.onLine || (err as { code?: string })?.code === 'functions/unavailable';
-      toast.error("Couldn't start payment", {
+      notifyError("Couldn't start payment", {
         description: offline
           ? 'Check your connection. Your cart is saved.'
           : 'Nothing was charged. Your cart is saved.',

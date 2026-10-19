@@ -1,25 +1,25 @@
-import { Toaster } from 'sonner';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { registerToasterMount } from '../../lib/toast';
 
-// Top-center keeps toasts clear of the cart bar and the thumb zone.
+const SonnerToaster = lazy(() => import('./SonnerToaster'));
+
 export function AppToaster() {
-  return (
-    <Toaster
-      position="top-center"
-      gap={8}
-      visibleToasts={3}
-      mobileOffset={{ top: 'max(12px, env(safe-area-inset-top))' }}
-      toastOptions={{
-        duration: 4000,
-        style: { fontFamily: 'inherit' },
-        classNames: {
-          toast: '!rounded-card !border-line !bg-surface !text-ink !shadow-float !gap-3 !px-4 !py-3.5',
-          title: '!text-base !font-semibold !leading-snug',
-          description: '!text-sm !text-ink-3',
-          actionButton: '!h-9 !rounded-full !bg-ink !px-3.5 !text-sm !font-semibold !text-white',
-          error: '[&_[data-icon]]:!text-danger',
-          success: '[&_[data-icon]]:!text-ready',
-        },
-      }}
-    />
-  );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const mount = () => setMounted(true);
+    registerToasterMount(mount);
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(mount, { timeout: 3000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = setTimeout(mount, 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  return mounted ? (
+    <Suspense fallback={null}>
+      <SonnerToaster />
+    </Suspense>
+  ) : null;
 }

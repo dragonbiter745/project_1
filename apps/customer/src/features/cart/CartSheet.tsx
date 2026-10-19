@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { notify } from '../../lib/toast';
 import { Gift, NotebookPen, ShoppingBag } from 'lucide-react';
 import { calculatePointsEarned, computeOrderTotals, formatPaise, type CartItem } from '@foodcourt/shared';
 import { VegDot } from '@foodcourt/ui';
@@ -63,13 +63,13 @@ export function CartSheet({ session }: { session: TableSession }) {
   const removeOne = (item: CartItem) => {
     decrement(item.itemId);
     if (item.qty > 1) return;
-    toast(`Removed ${item.name}`, { action: { label: 'Undo', onClick: () => restore([item]) } });
+    notify(`Removed ${item.name}`, { action: { label: 'Undo', onClick: () => restore([item]) } });
   };
 
   const clearAll = () => {
     const snapshot = list;
     clear();
-    toast('Cart cleared', { action: { label: 'Undo', onClick: () => restore(snapshot) } });
+    notify('Cart cleared', { action: { label: 'Undo', onClick: () => restore(snapshot) } });
   };
 
   return (
