@@ -9,6 +9,7 @@
     "./app": "./src/app.ts",
     "./auth": "./src/auth.ts",
     "./functions": "./src/functions.ts",
+    "./issues": "./src/issues.ts",
     "./local-store": "./src/localStore.ts"
   },
   "scripts": {

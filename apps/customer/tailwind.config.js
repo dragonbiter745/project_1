@@ -61,6 +61,7 @@ export default {
         search: '25',
         float: '30',
         sheet: '40',
+        spotlight: '50',
       },
     },
   },

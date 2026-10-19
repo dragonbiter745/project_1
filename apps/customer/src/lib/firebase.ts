@@ -1,4 +1,5 @@
 import type { HttpsCallable } from '@foodcourt/firebase-client/functions';
+import type { IssueInput } from '@foodcourt/firebase-client/issues';
 
 let userPromise: Promise<string> | null = null;
 
@@ -38,6 +39,15 @@ export function warmAuthWhenIdle(): void {
   } else {
     setTimeout(run, 1500);
   }
+}
+
+// Firestore is only needed here, so it loads on the first report rather than at startup.
+export async function reportIssue(input: IssueInput): Promise<string> {
+  const [{ submitIssue }] = await Promise.all([
+    import('@foodcourt/firebase-client/issues'),
+    ensureAnonymousUser(),
+  ]);
+  return submitIssue(input);
 }
 
 export async function getCallable<Req, Res>(name: string): Promise<HttpsCallable<Req, Res>> {

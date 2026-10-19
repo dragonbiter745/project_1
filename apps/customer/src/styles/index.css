@@ -116,6 +116,16 @@
   }
 }
 
+.spotlight {
+  animation: spotlight 260ms var(--ease-out) both;
+}
+@keyframes spotlight {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
 .tick {
   animation: tick 200ms var(--ease-out);
 }
@@ -227,6 +237,7 @@
 @media (prefers-reduced-motion: reduce) {
   .enter-up,
   .enter-down,
+  .spotlight,
   .tick,
   .shimmer {
     animation: none;

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { cx } from '../../lib/format';
 
 type Variant = 'ink' | 'tint' | 'quiet' | 'outline' | 'ghost' | 'danger';
@@ -25,9 +25,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   block?: boolean;
   icon?: ReactNode;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function Button({
+  ref,
   variant = 'ink',
   size = 'md',
   loading = false,
@@ -41,6 +43,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
+      ref={ref}
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
