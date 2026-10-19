@@ -58,6 +58,7 @@ export default {
       },
       zIndex: {
         header: '20',
+        search: '25',
         float: '30',
         sheet: '40',
       },

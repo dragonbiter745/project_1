@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useBackDismiss } from '../../lib/backStack';
+import { lockScroll, unlockScroll } from '../../lib/scrollLock';
 import { IconButton } from './IconButton';
 
 interface SheetProps {
@@ -15,14 +17,6 @@ interface SheetProps {
 const EXIT_MS = 280;
 const DISMISS_VELOCITY = 0.11; // px per ms; a quick flick closes regardless of distance
 
-let scrollLocks = 0;
-const lockScroll = () => {
-  if (scrollLocks++ === 0) document.documentElement.style.overflow = 'hidden';
-};
-const unlockScroll = () => {
-  if (--scrollLocks === 0) document.documentElement.style.overflow = '';
-};
-
 export function Sheet({ open, onClose, title, description, children, footer }: SheetProps) {
   const [mounted, setMounted] = useState(open);
   const [visible, setVisible] = useState(false);
@@ -32,6 +26,8 @@ export function Sheet({ open, onClose, title, description, children, footer }: S
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const titleId = useId();
+
+  useBackDismiss(open, onClose);
 
   useEffect(() => {
     if (open) {

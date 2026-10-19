@@ -88,12 +88,6 @@
     scrollbar-width: none;
   }
 
-  /* Off-screen menu sections skip layout and paint until scrolled near. */
-  .cv-auto {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 640px;
-  }
-
   .safe-bottom {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
@@ -167,6 +161,21 @@
   transition: none;
 }
 
+/* Search: quick fade-down in, quicker out. Not interactive while leaving. */
+.search-overlay {
+  opacity: 0;
+  transform: translate3d(0, -8px, 0);
+  transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out);
+}
+.search-overlay[data-visible='true'] {
+  opacity: 1;
+  transform: none;
+  transition-duration: 220ms;
+}
+.search-overlay[data-visible='false'] {
+  pointer-events: none;
+}
+
 /* Floating bars slide in from below their own height. */
 .float-bar {
   transform: translate3d(0, calc(100% + 24px), 0);
@@ -210,6 +219,10 @@
   .tick,
   .shimmer {
     animation: none;
+  }
+  .search-overlay,
+  .search-overlay[data-visible='true'] {
+    transform: none;
   }
   .sheet-panel,
   .float-bar {
