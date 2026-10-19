@@ -45,7 +45,7 @@ export function OrderPanel() {
 
 function PanelHeader({ title, sub, onBack }: { title: string; sub?: string; onBack?: () => void }) {
   return (
-    <header className="flex items-center gap-3 px-5 pb-3 pt-4">
+    <header className="flex shrink-0 items-center gap-3 px-5 pb-3 pt-4">
       {onBack && (
         <button type="button" aria-label="Back" onClick={onBack} className="pressable grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-ink-2">
           <ArrowLeft className="h-4 w-4" strokeWidth={2.25} />
@@ -99,7 +99,7 @@ function MenuStep({ onCheckout }: { onCheckout: () => void }) {
   return (
     <>
       <PanelHeader title="Order from any shop" sub="One cart across all eight kitchens, one payment." />
-      <div className="px-5">
+      <div className="shrink-0 px-5">
         <label className="flex h-11 items-center gap-2 rounded-full bg-white/80 px-4 ring-1 ring-inset ring-line/70 focus-within:ring-2 focus-within:ring-accent/40">
           <Search className="h-4 w-4 text-ink-3" strokeWidth={2} />
           <span className="sr-only">Search dishes</span>
@@ -120,7 +120,11 @@ function MenuStep({ onCheckout }: { onCheckout: () => void }) {
         </div>
       </div>
       {!q && (
-        <div ref={shopRow} className="no-scrollbar mt-3 flex gap-2 overflow-x-auto px-5 pb-1">
+        // shrink-0: a scrolling row would otherwise collapse to nothing inside the flex column.
+        <div
+          ref={shopRow}
+          className="no-scrollbar mt-2 flex shrink-0 snap-x gap-2 overflow-x-auto scroll-px-5 px-5 py-1.5 [mask-image:linear-gradient(to_right,black_85%,transparent)]"
+        >
           {SHOPS.map((s) => (
             <button
               key={s.id}
@@ -131,7 +135,7 @@ function MenuStep({ onCheckout }: { onCheckout: () => void }) {
                 useUi.getState().select({ kind: 'shop', id: s.id });
               }}
               className={cx(
-                'pressable flex h-10 shrink-0 items-center gap-2 rounded-full pl-1.5 pr-3.5 text-sm font-semibold transition-[background-color,color,box-shadow]',
+                'pressable flex h-10 shrink-0 snap-start items-center gap-2 whitespace-nowrap rounded-full pl-1.5 pr-3.5 text-sm font-semibold transition-[background-color,color,box-shadow]',
                 s.id === shopId ? 'bg-ink text-white shadow-thumb' : 'bg-white/70 text-ink-2 hover:bg-white'
               )}
             >
@@ -222,7 +226,7 @@ function MenuStep({ onCheckout }: { onCheckout: () => void }) {
         )}
       </ul>
 
-      <footer className="border-t border-line/70 p-3">
+      <footer className="shrink-0 border-t border-line/70 p-3">
         <button
           type="button"
           disabled={count === 0}
@@ -374,7 +378,7 @@ function PayStep({ onBack, onPlaced }: { onBack: () => void; onPlaced: () => voi
           </p>
         )}
       </div>
-      <footer className="border-t border-line/70 p-3">
+      <footer className="shrink-0 border-t border-line/70 p-3">
         <button type="button" onClick={place} disabled={lines.length === 0} className="pressable h-14 w-full rounded-full bg-accent-ink text-base font-semibold text-white shadow-float transition-[filter] hover:brightness-110 disabled:opacity-40">
           Pay {formatPaise(totals.totalPaise, true)} and watch it arrive
         </button>
@@ -427,7 +431,7 @@ function TrackStep({ onAgain }: { onAgain: () => void }) {
           <Ticket key={o.token} order={o} />
         ))}
       </div>
-      <footer className="flex gap-2 border-t border-line/70 p-3">
+      <footer className="flex shrink-0 gap-2 border-t border-line/70 p-3">
         <button
           type="button"
           onClick={() => useUi.getState().set(following ? { follow: null, cameraMode: 'orbit' } : { follow: you.agentId, cameraMode: 'follow' })}
