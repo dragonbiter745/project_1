@@ -1,9 +1,7 @@
 import { memo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { formatPaise, type MenuItem } from '@foodcourt/shared';
-import { VegDot } from '@foodcourt/ui';
-import { Button } from '../../components/ui/Button';
-import { QtyStepper } from '../../components/ui/QtyStepper';
+import { Button, QtyStepper, VegDot } from '@foodcourt/ui';
 import { cx } from '../../lib/format';
 import { useCart } from '../cart/cartStore';
 

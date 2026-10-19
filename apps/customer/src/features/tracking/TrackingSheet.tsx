@@ -1,18 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Maximize2, MessageSquareWarning } from 'lucide-react';
 import { formatPaise, type Order, type SubOrder } from '@foodcourt/shared';
-import { Button } from '../../components/ui/Button';
-import { Sheet } from '../../components/ui/Sheet';
 import { cx, prefersReducedMotion } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
-import { useNow } from '../../lib/useNow';
-import { useWakeLock } from '../../lib/useWakeLock';
 import { useCart } from '../cart/cartStore';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 import { ReportProblemSheet, type ReportTarget } from './ReportProblemSheet';
 import { TokenSpotlight, type Spotlight } from './TokenSpotlight';
 import { STEP_LABELS, isClosedWithRefund, stepIndex, useActiveOrder, useReadyAlert } from './useActiveOrder';
+import { Button, Sheet, useNow, useWakeLock } from '@foodcourt/ui';
 
 const MINUTE = 60_000;
 

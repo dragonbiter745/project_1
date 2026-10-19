@@ -1,11 +1,13 @@
 import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
-import { cx } from '../../lib/format';
+import { cx } from './utils';
 
-type Variant = 'ink' | 'tint' | 'quiet' | 'outline' | 'ghost' | 'danger';
+type Variant = 'ink' | 'accent' | 'positive' | 'tint' | 'quiet' | 'outline' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const variants: Record<Variant, string> = {
-  ink: 'bg-ink text-white disabled:bg-ink/35',
+  ink: 'bg-ink text-surface disabled:bg-ink/35',
+  accent: 'bg-accent text-on-accent disabled:bg-accent/40',
+  positive: 'bg-ready text-on-accent disabled:bg-ready/40',
   tint: 'bg-accent-tint text-accent-ink ring-1 ring-inset ring-accent-line',
   quiet: 'bg-surface-2 text-ink',
   outline: 'bg-surface text-ink ring-1 ring-inset ring-line-strong',

@@ -1,9 +1,8 @@
 import { useEffect, useId, useState } from 'react';
-import { Button } from '../../components/ui/Button';
-import { Sheet } from '../../components/ui/Sheet';
 import { reportIssue } from '../../lib/firebase';
 import { cx } from '../../lib/format';
 import { notify, notifyError } from '../../lib/toast';
+import { Button, Sheet } from '@foodcourt/ui';
 
 export interface ReportTarget {
   orderId: string;

@@ -9,7 +9,7 @@ import {
   type SubOrder,
   type Vendor,
 } from '@foodcourt/shared';
-import { Badge, Button } from '@foodcourt/ui';
+import { Badge, LegacyButton as Button } from '@foodcourt/ui';
 import {
   Activity,
   Store,

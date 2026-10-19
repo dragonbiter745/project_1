@@ -1,9 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDailyCustomerNo } from '@foodcourt/shared';
-import { Button } from '../../components/ui/Button';
-import { useBackDismiss } from '../../lib/backStack';
-import { lockScroll, unlockScroll } from '../../lib/scrollLock';
+import { Button, lockScroll, unlockScroll, useBackDismiss } from '@foodcourt/ui';
 
 export interface Spotlight {
   token: string;

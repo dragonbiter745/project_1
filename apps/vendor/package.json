@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
     "@foodcourt/firebase-client": "workspace:*",
     "@foodcourt/shared": "workspace:*",
     "@foodcourt/ui": "workspace:*",

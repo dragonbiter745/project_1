@@ -1,0 +1,110 @@
+@import '@fontsource-variable/geist/wght.css';
+@import '@fontsource-variable/geist-mono/wght.css';
+@import '../../../../packages/ui/src/kit/kit.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Kitchen display: dark, high-contrast, built for a tablet left on all day. */
+:root {
+  color-scheme: dark;
+
+  --bg: 11 12 14;
+  --surface: 22 23 27;
+  --surface-2: 34 36 41;
+  --line: 45 47 54;
+  --line-strong: 66 69 78;
+
+  --ink: 245 245 247;
+  --ink-2: 192 194 202;
+  --ink-3: 146 149 160;
+
+  --accent: 255 122 51;
+  --accent-ink: 255 150 98;
+  --accent-tint: 58 32 18;
+  --accent-line: 112 58 28;
+  --scrim: 0 0 0;
+  --on-accent: 11 12 14;
+
+  --veg: 52 199 89;
+  --nonveg: 255 92 92;
+  --ready: 52 199 89;
+  --ready-tint: 16 48 28;
+  --prep: 255 184 72;
+  --prep-tint: 58 43 16;
+  --danger: 255 99 99;
+  --danger-tint: 66 22 24;
+
+  --shadow-float: 0 16px 40px -12px rgb(0 0 0 / 0.7), 0 2px 6px rgb(0 0 0 / 0.4);
+  --shadow-sheet: 0 -12px 48px rgb(0 0 0 / 0.6);
+  --shadow-thumb: 0 1px 2px rgb(0 0 0 / 0.5), 0 2px 8px rgb(0 0 0 / 0.35);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    background: rgb(var(--bg));
+  }
+
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+    overscroll-behavior: none;
+  }
+
+  button,
+  [role='button'],
+  [role='switch'] {
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
+  }
+}
+
+/* New tickets slide in and pulse twice so they are noticed across the kitchen. */
+.ticket-in {
+  animation: ticket-in 360ms var(--ease-out) both;
+}
+@keyframes ticket-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+.ticket-alert {
+  animation:
+    ticket-in 360ms var(--ease-out) both,
+    ticket-alert 1.4s var(--ease-out) 360ms 2;
+}
+@keyframes ticket-alert {
+  from {
+    box-shadow: 0 0 0 0 rgb(var(--accent) / 0.55);
+  }
+  to {
+    box-shadow: 0 0 0 16px rgb(var(--accent) / 0);
+  }
+}
+
+.switch-thumb {
+  transition: transform 200ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticket-in,
+  .ticket-alert {
+    animation: none;
+  }
+  .switch-thumb {
+    transition: none;
+  }
+}

@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { useBackDismiss } from '../../lib/backStack';
-import { lockScroll, unlockScroll } from '../../lib/scrollLock';
+import { useBackDismiss } from './backStack';
+import { lockScroll, unlockScroll } from './scrollLock';
 import { IconButton } from './IconButton';
 
 interface SheetProps {
@@ -108,7 +108,7 @@ export function Sheet({ open, onClose, title, description, children, footer }: S
         ref={backdropRef}
         data-visible={visible}
         onClick={onClose}
-        className="sheet-backdrop absolute inset-0 bg-ink/40"
+        className="sheet-backdrop absolute inset-0 bg-scrim/45"
         aria-hidden
       />
       <div

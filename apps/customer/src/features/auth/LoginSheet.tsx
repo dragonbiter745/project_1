@@ -1,12 +1,11 @@
 import { useEffect, useId, useState, type FormEvent } from 'react';
-import { Button } from '../../components/ui/Button';
-import { Sheet } from '../../components/ui/Sheet';
 import { cx } from '../../lib/format';
 import { localStore } from '../../lib/store';
 import { notify } from '../../lib/toast';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 import { useProfile } from './profileStore';
+import { Button, Sheet } from '@foodcourt/ui';
 
 type Step = 'phone' | 'details';
 

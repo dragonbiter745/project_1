@@ -1,5 +1,5 @@
 import { Minus, Plus } from 'lucide-react';
-import { cx } from '../../lib/format';
+import { cx } from './utils';
 
 interface QtyStepperProps {
   qty: number;

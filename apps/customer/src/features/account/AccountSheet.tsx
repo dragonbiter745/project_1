@@ -1,7 +1,5 @@
 import { LogOut, RotateCcw } from 'lucide-react';
 import { calculatePointsEarned, formatPaise, type Order, type OrderStatus } from '@foodcourt/shared';
-import { Button } from '../../components/ui/Button';
-import { Sheet } from '../../components/ui/Sheet';
 import { jsonEqual, localStore, useLocal } from '../../lib/store';
 import { notify, notifyError } from '../../lib/toast';
 import { useProfile } from '../auth/profileStore';
@@ -10,6 +8,7 @@ import { useOrderHistory } from '../history/orderHistory';
 import { planReorder } from '../history/reorder';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
+import { Button, Sheet } from '@foodcourt/ui';
 
 const ORDER_STATUS: Partial<Record<OrderStatus, string>> = {
   CREATED: 'Created',

@@ -1,0 +1,228 @@
+/* Shared motion and interaction primitives used by @foodcourt/ui kit components.
+   Each app imports this and defines the colour/easing tokens it references. */
+
+.pressable {
+  transition: transform 160ms var(--ease-out);
+}
+.pressable:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.safe-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+/* ---------- Motion primitives ---------- */
+
+.enter-up {
+  animation: enter-up 420ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.enter-down {
+  animation: enter-down 320ms var(--ease-out) both;
+}
+@keyframes enter-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.step-forward {
+  animation: step-forward 240ms var(--ease-out) both;
+}
+.step-back {
+  animation: step-back 240ms var(--ease-out) both;
+}
+@keyframes step-forward {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+@keyframes step-back {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+.spotlight {
+  animation: spotlight 260ms var(--ease-out) both;
+}
+@keyframes spotlight {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.tick {
+  animation: tick 200ms var(--ease-out);
+}
+@keyframes tick {
+  from {
+    opacity: 0;
+    transform: translateY(45%);
+  }
+}
+
+.spinner {
+  animation: spin 600ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, rgb(var(--surface-2)) 0%, rgb(var(--line)) 50%, rgb(var(--surface-2)) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.3s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Sheet: enter uses the iOS drawer curve, exit is quicker. */
+.sheet-backdrop {
+  opacity: 0;
+  transition: opacity 250ms var(--ease-out);
+}
+.sheet-backdrop[data-visible='true'] {
+  opacity: 1;
+  transition-duration: 400ms;
+}
+.sheet-panel {
+  transform: translate3d(0, 100%, 0);
+  transition: transform 260ms var(--ease-drawer);
+}
+.sheet-panel[data-visible='true'] {
+  transform: translate3d(0, 0, 0);
+  transition-duration: 420ms;
+}
+.sheet-panel[data-dragging='true'],
+.sheet-backdrop[data-dragging='true'] {
+  transition: none;
+}
+
+/* Search: quick fade-down in, quicker out. Not interactive while leaving. */
+.search-overlay {
+  opacity: 0;
+  transform: translate3d(0, -8px, 0);
+  transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out);
+}
+.search-overlay[data-visible='true'] {
+  opacity: 1;
+  transform: none;
+  transition-duration: 220ms;
+}
+.search-overlay[data-visible='false'] {
+  pointer-events: none;
+}
+
+/* Floating bars slide in from below their own height. */
+.float-bar {
+  transform: translate3d(0, calc(100% + 24px), 0);
+  transition: transform 260ms var(--ease-drawer);
+}
+.float-bar[data-visible='true'] {
+  transform: translate3d(0, 0, 0);
+  transition-duration: 380ms;
+}
+
+/* Two-layer crossfade (Add button <-> stepper). Blur hides the overlap. */
+.swap-layer {
+  transition: opacity 180ms var(--ease-out), filter 180ms var(--ease-out), transform 180ms var(--ease-out);
+}
+.swap-layer[data-active='false'] {
+  opacity: 0;
+  filter: blur(2px);
+  transform: scale(0.96);
+  pointer-events: none;
+}
+/* A layer mounted already active (the stepper on first add) still fades in. */
+@starting-style {
+  .swap-layer[data-active='true'] {
+    opacity: 0;
+    filter: blur(2px);
+    transform: scale(0.96);
+  }
+}
+
+.progress-fill {
+  transform-origin: left center;
+  transition: transform 420ms var(--ease-out);
+}
+
+/* Segmented control: indicator and clipped active-label copy move together. */
+.seg-indicator,
+.seg-active-layer {
+  transition: transform 260ms var(--ease-in-out), clip-path 260ms var(--ease-in-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hover-surface:hover {
+    background: rgb(var(--surface-2));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter-up,
+  .enter-down,
+  .step-forward,
+  .step-back,
+  .spotlight,
+  .tick,
+  .shimmer {
+    animation: none;
+  }
+  .search-overlay,
+  .search-overlay[data-visible='true'] {
+    transform: none;
+  }
+  .sheet-panel,
+  .float-bar {
+    transform: none;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  .sheet-panel[data-visible='true'],
+  .float-bar[data-visible='true'] {
+    transform: none;
+    opacity: 1;
+  }
+  .swap-layer[data-active='false'] {
+    transform: none;
+    filter: none;
+  }
+  .seg-indicator,
+  .seg-active-layer,
+  .progress-fill {
+    transition: none;
+  }
+  .pressable:active:not(:disabled) {
+    transform: none;
+  }
+}

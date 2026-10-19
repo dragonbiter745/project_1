@@ -2,8 +2,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { flushSync } from 'react-dom';
 import { Store, UtensilsCrossed } from 'lucide-react';
 import { formatDailyCustomerNo } from '@foodcourt/shared';
-import { Button } from '../../components/ui/Button';
-import { Skeleton } from '../../components/ui/Skeleton';
 import { cleanLabel, cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
 import { useProfile } from '../auth/profileStore';
@@ -14,6 +12,7 @@ import { CategoryRail } from './CategoryRail';
 import { ItemRow } from './ItemRow';
 import { ShopSwitcher } from './ShopSwitcher';
 import { MENU_END_ID, sectionDomId, useScrollSpy } from './useScrollSpy';
+import { Button, Skeleton } from '@foodcourt/ui';
 
 const NONE_UNAVAILABLE: Record<string, boolean> = {};
 let entrancePlayed = false;

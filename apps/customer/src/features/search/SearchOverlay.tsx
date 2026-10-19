@@ -1,11 +1,8 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, SearchX, X } from 'lucide-react';
-import { VegDot } from '@foodcourt/ui';
-import { Button } from '../../components/ui/Button';
-import { useBackDismiss } from '../../lib/backStack';
+import { Button, lockScroll, unlockScroll, useBackDismiss, VegDot } from '@foodcourt/ui';
 import { cx, pluralize } from '../../lib/format';
-import { lockScroll, unlockScroll } from '../../lib/scrollLock';
 import { jsonEqual, useLocal } from '../../lib/store';
 import { ItemRow } from '../menu/ItemRow';
 import { searchMenu } from './searchMenu';
