@@ -1,0 +1,29 @@
+name: Setup workspace
+description: Node 22, pnpm pinned by package.json "packageManager", cached store, frozen install.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    # pnpm/action-setup's self-installer fails for pnpm 12, so install the pinned version from npm.
+    - name: Install pnpm
+      shell: bash
+      run: npm install -g "$(node -p "require('./package.json').packageManager")"
+
+    - name: Locate pnpm store
+      id: store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/cache@v4
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-store-${{ runner.os }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
