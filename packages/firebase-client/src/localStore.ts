@@ -4,18 +4,19 @@
  * using BroadcastChannel and LocalStorage with the exact same data contracts.
  * SSE bridge syncs across ports (5173 customer ↔ 5174 vendor ↔ 5175 master).
  */
-import type {
-  Venue,
-  Vendor,
-  VendorMenu,
-  VendorAvailability,
-  Table,
-  Session,
-  Order,
-  SubOrder,
-  UserProfile,
-  PointsLedgerEntry,
-  GlobalConfig,
+import {
+  generateFoodCourtTables,
+  type Venue,
+  type Vendor,
+  type VendorMenu,
+  type VendorAvailability,
+  type Table,
+  type Session,
+  type Order,
+  type SubOrder,
+  type UserProfile,
+  type PointsLedgerEntry,
+  type GlobalConfig,
 } from '@foodcourt/shared';
 
 import rollMeMenu from '../../../docs/menus/roll-me.json';
@@ -92,12 +93,7 @@ export const INITIAL_DATA_STATE: FoodCourtDataState = {
       updatedAt: Date.now(),
     },
   },
-  tables: [
-    { id: 'tbl-1', code: 'T14', label: 'T-14', zone: 'Central Courtyard', active: true },
-    { id: 'tbl-2', code: 'T15', label: 'T-15', zone: 'Central Courtyard', active: true },
-    { id: 'tbl-3', code: 'T01', label: 'T-01', zone: 'Terrace Garden', active: true },
-    { id: 'tbl-4', code: 'T02', label: 'T-02', zone: 'Terrace Garden', active: true },
-  ],
+  tables: generateFoodCourtTables(),
   sessions: {},
   orders: {},
   subOrders: {},

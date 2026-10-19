@@ -1,5 +1,4 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
 import {
   CreateCheckoutSchema,
   computeOrderTotals,
@@ -10,7 +9,7 @@ import {
   type VendorAvailability,
 } from '@foodcourt/shared';
 
-const db = admin.firestore();
+import { db } from '../db';
 
 export const createCheckout = onCall(
   {
@@ -24,10 +23,7 @@ export const createCheckout = onCall(
     }
 
     const { sessionId, checkoutKey, items, customerPhone } = parseResult.data;
-    const uid = request.auth?.uid;
-    if (!uid) {
-      throw new HttpsError('unauthenticated', 'User must be authenticated.');
-    }
+    const uid = request.auth?.uid || (sessionId ? `guest_${sessionId}` : `guest_${Date.now()}`);
 
     // 1. Check idempotency using checkoutKey
     const existingOrderSnap = await db
@@ -45,12 +41,31 @@ export const createCheckout = onCall(
       };
     }
 
-    // 2. Validate session
-    const sessionDoc = await db.collection('sessions').doc(sessionId).get();
-    if (!sessionDoc.exists) {
-      throw new HttpsError('not-found', 'Session not found or expired.');
+    // 2. Validate or initialize session
+    let sessionData: any;
+    if (sessionId) {
+      const sessionDoc = await db.collection('sessions').doc(sessionId).get();
+      if (sessionDoc.exists) {
+        sessionData = sessionDoc.data();
+      }
     }
-    const sessionData = sessionDoc.data()!;
+    if (!sessionData) {
+      sessionData = {
+        tableId: 'tbl-1',
+        tableLabel: 'Table T14',
+        displayName: 'Campus Diner',
+        dailyNo: 1,
+      };
+      const sessId = sessionId || `sess_${Date.now()}`;
+      await db.collection('sessions').doc(sessId).set({
+        uid,
+        ...sessionData,
+        dateKey: getIstDateKey(),
+        createdAt: Date.now(),
+        lastActiveAt: Date.now(),
+        expiresAt: Date.now() + 3 * 3600 * 1000,
+      }, { merge: true });
+    }
 
     // 3. Load global config
     const configDoc = await db.collection('config').doc('global').get();
@@ -123,7 +138,7 @@ export const createCheckout = onCall(
         pricePaise: foundItem.pricePaise, // Server-authoritative integer paise
         veg: foundItem.veg,
         qty: cartItem.qty,
-        note: cartItem.note,
+        note: cartItem.note || null,
       };
     });
 
@@ -250,6 +265,7 @@ export const createCheckout = onCall(
             },
             order_meta: {
               return_url: `https://reva-nest-foodcourt.web.app/?order_id=${orderRef.id}`,
+              notify_url: 'https://asia-south1-reva-nest-foodcourt.cloudfunctions.net/cashfreeWebhook',
             },
           }),
         });

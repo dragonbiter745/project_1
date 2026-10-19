@@ -10,7 +10,8 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "clean": "turbo run clean",
-    "seed": "pnpm --filter scripts seed"
+    "seed": "pnpm --filter scripts seed",
+    "qrs": "pnpm --filter scripts qrs"
   },
   "devDependencies": {
     "turbo": "^2.4.4",

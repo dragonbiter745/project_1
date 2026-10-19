@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { generateFoodCourtTables } from '@foodcourt/shared';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -106,18 +107,14 @@ async function runSeed() {
   }
   console.log('✔ Menus seeded from Appendix A');
 
-  // 5. Tables & QR codes
-  const tables = [
-    { id: 'tbl-1', code: 'T14', label: 'T-14', zone: 'Central Courtyard', active: true },
-    { id: 'tbl-2', code: 'T15', label: 'T-15', zone: 'Central Courtyard', active: true },
-    { id: 'tbl-3', code: 'T01', label: 'T-01', zone: 'Terrace Garden', active: true },
-    { id: 'tbl-4', code: 'T02', label: 'T-02', zone: 'Terrace Garden', active: true },
-  ];
-
+  // 5. Tables & QR codes (95 4-seaters + 60 6-seaters = 155 tables)
+  const tables = generateFoodCourtTables();
+  const batch = db.batch();
   for (const t of tables) {
-    await db.collection('tables').doc(t.id).set(t);
+    batch.set(db.collection('tables').doc(t.id), t);
   }
-  console.log('✔ Tables seeded');
+  await batch.commit();
+  console.log(`✔ ${tables.length} Tables seeded (95 4-seaters, 60 6-seaters)`);
 
   console.log('Seeding completed successfully!');
 }

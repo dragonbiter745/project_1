@@ -9,7 +9,7 @@ import {
   type SubOrder,
 } from '@foodcourt/shared';
 
-const db = admin.firestore();
+import { db } from '../db';
 
 export const vendorAction = onCall(
   {

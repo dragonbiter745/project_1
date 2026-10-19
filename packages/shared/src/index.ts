@@ -5,3 +5,4 @@ export * from './names';
 export * from './tokens';
 export * from './pricing';
 export * from './schemas/index';
+export * from './tables';

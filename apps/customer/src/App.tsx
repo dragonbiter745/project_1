@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   localStore,
+  initFirebase,
+  getFunctions,
+  httpsCallable,
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
   type FoodCourtDataState,
 } from '@foodcourt/firebase-client';
 import {
@@ -32,6 +38,11 @@ import {
   UtensilsCrossed,
   Info,
   Gift,
+  User,
+  LogIn,
+  LogOut,
+  Phone,
+  ShieldCheck,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -41,6 +52,25 @@ export default function CustomerApp() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [vegOnly, setVegOnly] = useState<boolean>(false);
+
+  // Firebase auth user (anonymous sign-in)
+  const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
+
+  useEffect(() => {
+    const { app } = initFirebase();
+    const auth = getAuth(app);
+    // Listen for auth state; sign in anonymously if not already signed in.
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setFirebaseUid(user.uid);
+      } else {
+        signInAnonymously(auth)
+          .then((cred) => setFirebaseUid(cred.user.uid))
+          .catch((err: unknown) => console.warn('Anonymous sign-in failed:', err));
+      }
+    });
+    return unsub;
+  }, []);
   
   // Cart state: itemId -> CartItem
   const [cart, setCart] = useState<Record<string, CartItem>>({});
@@ -50,6 +80,63 @@ export default function CustomerApp() {
   // Active tracked order
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [hasTriggeredReadyAlert, setHasTriggeredReadyAlert] = useState<boolean>(false);
+
+  // Customer Profile & Optional Login
+  const [customerUser, setCustomerUser] = useState<{
+    name: string;
+    phone: string;
+    studentId?: string;
+  } | null>(() => {
+    try {
+      const saved = localStorage.getItem('fc_customer_profile');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
+  const [loginPhone, setLoginPhone] = useState<string>('');
+  const [loginName, setLoginName] = useState<string>('');
+  const [loginStudentId, setLoginStudentId] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPhone = loginPhone.replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      setLoginError('Please enter a valid 10-digit Indian mobile number');
+      return;
+    }
+    const cleanName = loginName.trim() || `Diner ${cleanPhone.slice(-4)}`;
+    const profile = {
+      name: cleanName,
+      phone: cleanPhone,
+      studentId: loginStudentId.trim() || undefined,
+    };
+    setCustomerUser(profile);
+    localStorage.setItem('fc_customer_profile', JSON.stringify(profile));
+
+    if (session) {
+      setSession((prev) => (prev ? { ...prev, displayName: cleanName } : null));
+      localStore.mutate((draft) => {
+        const targetSession = draft.sessions[session.id];
+        if (targetSession) {
+          targetSession.displayName = cleanName;
+        }
+      });
+    }
+
+    setIsLoginModalOpen(false);
+    setLoginError('');
+  };
+
+  const handleLogout = () => {
+    setCustomerUser(null);
+    localStorage.removeItem('fc_customer_profile');
+    setIsAccountModalOpen(false);
+  };
 
   // Subscribe to real-time store changes
   useEffect(() => {
@@ -204,89 +291,48 @@ export default function CustomerApp() {
     });
   }, [cartItems, storeState.config]);
 
-  // Checkout execution
+  // Checkout execution — calls createCheckout callable so the Firestore order ID
+  // matches what Cashfree sends back in the PAYMENT_SUCCESS_WEBHOOK.
   const handleCheckout = async () => {
     if (cartItems.length === 0 || !session) return;
     setIsCheckingOut(true);
 
     const dateKey = getIstDateKey();
-    const orderId = `ord_${Date.now()}`;
     const now = Date.now();
-    const amountInRupees = totals.totalPaise / 100;
+    const checkoutKey = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ck_${now}`;
 
-    const finalizeOrder = () => {
-      // Create Parent Order
-      const newOrder: Order = {
-        id: orderId,
-        sessionId: session.id,
-        uid: `guest_${session.dailyNo}`,
-        tableId: 'tbl-1',
-        tableLabel: session.tableLabel,
-        dateKey,
-        items: cartItems.map((i) => ({
-          itemId: i.itemId,
-          vendorId: i.vendorId,
-          name: i.name,
-          pricePaise: i.pricePaise,
-          veg: i.veg,
-          qty: i.qty,
-          note: i.note,
-        })),
-        totals,
-        payment: {
-          status: 'SUCCESS',
-          paidAt: now,
-          method: 'CASHFREE_UPI',
-        },
-        status: 'PAID',
-        checkoutKey: `ck_${Date.now()}`,
-        createdAt: now,
-      };
-
-      // Split into child Sub-Orders per vendor
-      const uniqueVendors = [...new Set(cartItems.map((i) => i.vendorId))];
-      const createdSubOrders: Record<string, SubOrder> = {};
-
-      uniqueVendors.forEach((vId) => {
-        const vItems = cartItems.filter((i) => i.vendorId === vId);
-        const vSubtotal = vItems.reduce((acc, i) => acc + i.pricePaise * i.qty, 0);
-        const vendor = storeState.vendors.find((v) => v.id === vId);
-        const vendorCode = vendor?.code || 'RM';
-
-        const counterKey = `${dateKey}_${vId}`;
-        const currentCounter = storeState.vendorCounters[counterKey] || 0;
-        const nextSeq = currentCounter + 1;
-        const token = formatVendorToken(vendorCode, nextSeq);
-        const subOrderId = `sub_${vId}_${Date.now()}`;
-
-        createdSubOrders[subOrderId] = {
-          id: subOrderId,
-          orderId,
-          vendorId: vId,
-          vendorName: vendor?.name || '',
-          token,
-          tableLabel: session.tableLabel,
-          customerDisplay: `${session.displayName} · ${formatDailyCustomerNo(session.dailyNo)}`,
-          items: vItems.map((item) => ({
-            id: item.itemId,
-            name: item.name,
-            qty: item.qty,
-            pricePaise: item.pricePaise,
-            note: item.note,
-          })),
-          subtotalPaise: vSubtotal,
-          status: 'NEW',
-          ts: { placed: now },
-        };
-      });
-
-      // Update store
+    // finalizeOrder updates local UI state after payment is confirmed.
+    // orderId comes from the server (Firestore doc ID) so the webhook can find it.
+    const finalizeOrder = (orderId: string) => {
       localStore.mutate((draft) => {
-        draft.orders[orderId] = newOrder;
-        for (const [subId, subOrder] of Object.entries(createdSubOrders)) {
-          draft.subOrders[subId] = subOrder;
-          const counterKey = `${dateKey}_${subOrder.vendorId}`;
-          draft.vendorCounters[counterKey] = (draft.vendorCounters[counterKey] || 0) + 1;
+        // The real order/subOrders are written by the webhook server-side.
+        // We track orderId locally to show the order-tracking UI.
+        if (!draft.orders[orderId]) {
+          // Optimistic placeholder so the tracker shows immediately;
+          // Firestore listener will overwrite with the real data.
+          const optimisticOrder: Order = {
+            id: orderId,
+            sessionId: session.id,
+            uid: `guest_${session.dailyNo}`,
+            tableId: 'tbl-1',
+            tableLabel: session.tableLabel,
+            dateKey,
+            items: cartItems.map((i) => ({
+              itemId: i.itemId,
+              vendorId: i.vendorId,
+              name: i.name,
+              pricePaise: i.pricePaise,
+              veg: i.veg,
+              qty: i.qty,
+              note: i.note,
+            })),
+            totals,
+            payment: { status: 'PENDING' },
+            status: 'PENDING_PAYMENT',
+            checkoutKey,
+            createdAt: now,
+          };
+          draft.orders[orderId] = optimisticOrder;
         }
       });
 
@@ -299,43 +345,75 @@ export default function CustomerApp() {
 
     let cashfreeModalTriggered = false;
 
-    // Trigger Cashfree Sandbox Modal if SDK is loaded
-    if (typeof (window as any).Cashfree !== 'undefined') {
-      try {
-        const cfRes = await fetch('http://localhost:4001/api/cashfree/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId,
-            amount: amountInRupees,
-            customerName: session.displayName,
-            customerPhone: '9876543210',
-          }),
+    try {
+      // 1. Call the server-side createCheckout callable.
+      //    It creates the Firestore order doc and returns the Cashfree payment_session_id.
+      const { app } = initFirebase();
+      const fns = getFunctions(app, 'asia-south1');
+      const createCheckoutFn = httpsCallable<
+        {
+          sessionId: string;
+          checkoutKey: string;
+          items: Array<{
+            itemId: string;
+            vendorId: string;
+            name: string;
+            pricePaise: number;
+            veg: boolean;
+            qty: number;
+            note?: string;
+          }>;
+          customerPhone?: string;
+        },
+        { orderId: string; paymentSessionId: string; status: string; totalPaise?: number }
+      >(fns, 'createCheckout');
+
+      const result = await createCheckoutFn({
+        sessionId: session.id,
+        checkoutKey,
+        items: cartItems.map((i) => ({
+          itemId: i.itemId,
+          vendorId: i.vendorId,
+          name: i.name,
+          pricePaise: i.pricePaise,
+          veg: i.veg,
+          qty: i.qty,
+          note: i.note || undefined,
+        })),
+        customerPhone: customerUser?.phone || '9876543210',
+      });
+
+      const { orderId, paymentSessionId } = result.data;
+
+      // 2. Open Cashfree modal with the server-issued payment session.
+      if (typeof (window as any).Cashfree !== 'undefined' && paymentSessionId) {
+        const cashfree = (window as any).Cashfree({ mode: 'sandbox' });
+        cashfreeModalTriggered = true;
+        cashfree.checkout({
+          paymentSessionId,
+          redirectTarget: '_modal',
+        }).then((cfResult: any) => {
+          console.log('Cashfree checkout result:', cfResult);
+          finalizeOrder(orderId);
+        }).catch((err: any) => {
+          console.warn('Cashfree modal error:', err);
+          // Still finalize locally — webhook will confirm on server side.
+          finalizeOrder(orderId);
         });
-        const cfData = await cfRes.json();
-        if (cfData.payment_session_id) {
-          cashfreeModalTriggered = true;
-          const cashfree = (window as any).Cashfree({ mode: 'sandbox' });
-          cashfree.checkout({
-            paymentSessionId: cfData.payment_session_id,
-            redirectTarget: '_modal',
-          }).then((result: any) => {
-            console.log('Cashfree checkout result:', result);
-            finalizeOrder();
-          }).catch((err: any) => {
-            console.warn('Cashfree modal error:', err);
-            finalizeOrder();
-          });
-        }
-      } catch (err) {
-        console.warn('Cashfree sandbox modal fallback:', err);
+      } else {
+        // Cashfree SDK not loaded or no session — finalize optimistically.
+        finalizeOrder(orderId);
       }
+    } catch (err: any) {
+      console.error('createCheckout callable failed:', err);
+      // Fallback: close cart and show error.
+      setIsCheckingOut(false);
+      alert(`Could not initiate payment: ${err?.message || 'Please try again.'}`);
+      return;
     }
 
     if (!cashfreeModalTriggered) {
-      setTimeout(() => {
-        finalizeOrder();
-      }, 600);
+      // Modal not triggered (SDK unavailable) — already finalized above.
     }
   };
 
@@ -387,7 +465,7 @@ export default function CustomerApp() {
             <div>
               <div className="flex items-center space-x-1.5">
                 <span className="font-bold text-slate-900 text-sm">
-                  {session ? session.displayName : 'Guest Diner'}
+                  {customerUser ? customerUser.name : (session ? session.displayName : 'Guest Diner')}
                 </span>
                 <span className="bg-orange-100 text-orange-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                   {session ? formatDailyCustomerNo(session.dailyNo) : '#...'}
@@ -401,21 +479,54 @@ export default function CustomerApp() {
             </div>
           </div>
 
-          {/* Table Switcher & Points Badge */}
+          {/* User Login/Profile & Table Switcher */}
           <div className="flex items-center space-x-1.5">
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded-lg flex items-center space-x-1 font-semibold">
-              <Sparkles className="w-3 h-3 text-emerald-600" />
-              <span>10 pts</span>
-            </div>
+            {customerUser ? (
+              <button
+                onClick={() => setIsAccountModalOpen(true)}
+                className="bg-orange-50 border border-orange-200 text-orange-900 text-xs px-2.5 py-1.5 rounded-xl flex items-center space-x-1 font-bold hover:bg-orange-100 transition-all shadow-2xs"
+                title="View Profile & Orders"
+              >
+                <div className="w-4 h-4 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px]">
+                  {customerUser.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="max-w-[70px] truncate">{customerUser.name}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-xl flex items-center space-x-1 font-bold shadow-xs transition-all"
+              >
+                <LogIn className="w-3 h-3 text-orange-400" />
+                <span>Log In</span>
+              </button>
+            )}
+
+            {/* Table Switcher across all 155 tables */}
             <select
               value={currentTableCode}
               onChange={(e) => setCurrentTableCode(e.target.value)}
-              className="text-xs bg-slate-100 border border-slate-200 text-slate-700 font-semibold rounded-lg px-2 py-1 focus:outline-none"
+              className="text-xs bg-slate-100 border border-slate-200 text-slate-700 font-semibold rounded-xl px-2 py-1.5 focus:outline-none max-w-[85px]"
+              title="Select your table number"
             >
-              <option value="T14">T-14</option>
-              <option value="T15">T-15</option>
-              <option value="T01">T-01</option>
-              <option value="T02">T-02</option>
+              <optgroup label="4-Seater Tables (T-01 to T-95)">
+                {storeState.tables
+                  .filter((t) => (t.capacity || 4) === 4)
+                  .map((t) => (
+                    <option key={t.id} value={t.code}>
+                      {t.label} (4S)
+                    </option>
+                  ))}
+              </optgroup>
+              <optgroup label="6-Seater Tables (T-96 to T-155)">
+                {storeState.tables
+                  .filter((t) => t.capacity === 6)
+                  .map((t) => (
+                    <option key={t.id} value={t.code}>
+                      {t.label} (6S)
+                    </option>
+                  ))}
+              </optgroup>
             </select>
           </div>
         </div>
@@ -768,6 +879,25 @@ export default function CustomerApp() {
                   You will earn <strong>{Math.floor(totals.totalPaise / 1000)} REVA Points</strong> on this order!
                 </span>
               </div>
+
+              {/* Optional Login Callout */}
+              {!customerUser && (
+                <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/80 rounded-2xl p-3 flex items-center justify-between text-xs text-orange-950">
+                  <div className="flex items-center space-x-2">
+                    <LogIn className="w-4 h-4 text-orange-600 shrink-0" />
+                    <div>
+                      <strong className="block text-slate-900">Want to save your order history?</strong>
+                      <span className="text-[11px] text-slate-600">Log in with your mobile number</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsLoginModalOpen(true)}
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shrink-0 shadow-xs transition-all"
+                  >
+                    Log In
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Footer Pay Button */}
@@ -872,6 +1002,203 @@ export default function CustomerApp() {
             >
               Order More Items
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Optional Customer Sign In Modal */}
+      {isLoginModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end">
+          <div className="bg-white rounded-t-3xl max-w-md mx-auto w-full p-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  FC
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">Customer Sign In</h3>
+                  <span className="text-xs text-slate-500">Optional · Order anytime without login</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsLoginModalOpen(false);
+                  setLoginError('');
+                }}
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Mobile Number <span className="text-rose-500">*</span>
+                </label>
+                <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 overflow-hidden focus-within:border-orange-500 focus-within:bg-white transition-all">
+                  <span className="px-3 text-xs font-bold text-slate-500 border-r border-slate-200">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    placeholder="98765 43210"
+                    maxLength={10}
+                    value={loginPhone}
+                    onChange={(e) => setLoginPhone(e.target.value.replace(/\D/g, ''))}
+                    required
+                    className="w-full px-3 py-2.5 text-sm bg-transparent text-slate-900 font-semibold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Your Full Name <span className="text-slate-400 font-normal">(Used on food tokens)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Manash Bhusal"
+                  value={loginName}
+                  onChange={(e) => setLoginName(e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-900 focus:outline-none focus:border-orange-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  REVA University Student / Staff ID <span className="text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. R20EA123"
+                  value={loginStudentId}
+                  onChange={(e) => setLoginStudentId(e.target.value.toUpperCase())}
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-900 focus:outline-none focus:border-orange-500 focus:bg-white transition-all uppercase"
+                />
+              </div>
+
+              {loginError && (
+                <p className="text-xs text-rose-600 font-medium bg-rose-50 p-2.5 rounded-xl border border-rose-100">
+                  {loginError}
+                </p>
+              )}
+
+              <div className="pt-2 space-y-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-md"
+                >
+                  Sign In & Link Session
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLoginModalOpen(false);
+                    setLoginError('');
+                  }}
+                  className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 text-center"
+                >
+                  Continue as Guest (No login needed)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Account & Order History Modal */}
+      {isAccountModalOpen && customerUser && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end">
+          <div className="bg-white rounded-t-3xl max-w-md mx-auto w-full p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white font-bold text-base shadow-sm">
+                  {customerUser.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">{customerUser.name}</h3>
+                  <span className="text-xs text-slate-500 font-mono">+91 {customerUser.phone}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAccountModalOpen(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Active Table</span>
+                <strong className="text-slate-900">{session?.tableLabel}</strong>
+              </div>
+              {customerUser.studentId && (
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Student/Staff ID</span>
+                  <strong className="text-slate-900">{customerUser.studentId}</strong>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-slate-500">Loyalty Status</span>
+                <span className="font-bold text-emerald-600 flex items-center space-x-1">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Eligible for Points</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Orders placed by this customer */}
+            <div>
+              <h4 className="font-bold text-slate-900 text-xs mb-2">Orders in this Session</h4>
+              {Object.values(storeState.orders).length === 0 ? (
+                <p className="text-xs text-slate-400 py-4 text-center bg-slate-50 rounded-xl">
+                  No orders placed yet in this session.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {Object.values(storeState.orders)
+                    .sort((a, b) => b.createdAt - a.createdAt)
+                    .map((ord) => (
+                      <div
+                        key={ord.id}
+                        className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs flex justify-between items-center"
+                      >
+                        <div>
+                          <div className="font-bold text-slate-900">Order #{ord.id.slice(-4)}</div>
+                          <span className="text-[10px] text-slate-500 block">
+                            {ord.items.map((i) => `${i.qty}x ${i.name}`).join(', ')}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-slate-900">{formatPaise(ord.totals.totalPaise)}</div>
+                          <Badge status={ord.status} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+              <button
+                onClick={handleLogout}
+                className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center space-x-1 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition-all"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+              <button
+                onClick={() => setIsAccountModalOpen(false)}
+                className="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-all"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

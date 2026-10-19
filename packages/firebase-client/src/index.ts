@@ -109,3 +109,8 @@ export const getTypedCollections = (db: Firestore) => ({
 });
 
 export * from './localStore';
+
+// Re-export commonly needed Firebase helpers so consumer apps
+// don't need firebase as a direct dependency.
+export { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+export { getFunctions, httpsCallable } from 'firebase/functions';

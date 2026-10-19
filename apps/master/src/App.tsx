@@ -25,6 +25,7 @@ import {
   Clock,
   ExternalLink,
   ShieldAlert,
+  Users,
 } from 'lucide-react';
 
 export default function MasterAdminApp() {
@@ -32,6 +33,13 @@ export default function MasterAdminApp() {
   const [activeTab, setActiveTab] = useState<'live-ops' | 'vendors' | 'tables' | 'analytics' | 'config'>('live-ops');
   const [orderFilter, setOrderFilter] = useState<string>('ALL');
   const [searchOrder, setSearchOrder] = useState<string>('');
+
+  // Table management states
+  const [tableCapacityFilter, setTableCapacityFilter] = useState<'ALL' | '4' | '6'>('ALL');
+  const [tableZoneFilter, setTableZoneFilter] = useState<string>('ALL');
+  const [tableSearch, setTableSearch] = useState<string>('');
+  const [tablePage, setTablePage] = useState<number>(1);
+  const tablesPerPage = 24;
 
   useEffect(() => {
     const unsubscribe = localStore.subscribe((newState) => {
@@ -47,6 +55,47 @@ export default function MasterAdminApp() {
   const subOrdersList = useMemo(() => {
     return Object.values(storeState.subOrders).sort((a, b) => b.ts.placed - a.ts.placed);
   }, [storeState.subOrders]);
+
+  // Table Statistics
+  const fourSeaterTables = useMemo(
+    () => storeState.tables.filter((t) => (t.capacity || 4) === 4),
+    [storeState.tables]
+  );
+  const sixSeaterTables = useMemo(
+    () => storeState.tables.filter((t) => t.capacity === 6),
+    [storeState.tables]
+  );
+  const totalSeatingCapacity = (fourSeaterTables.length * 4) + (sixSeaterTables.length * 6);
+
+  const availableZones = useMemo(() => {
+    return Array.from(new Set(storeState.tables.map((t) => t.zone)));
+  }, [storeState.tables]);
+
+  const filteredTables = useMemo(() => {
+    return storeState.tables.filter((t) => {
+      const cap = t.capacity || 4;
+      if (tableCapacityFilter === '4' && cap !== 4) return false;
+      if (tableCapacityFilter === '6' && cap !== 6) return false;
+      if (tableZoneFilter !== 'ALL' && t.zone !== tableZoneFilter) return false;
+      if (tableSearch.trim()) {
+        const q = tableSearch.toLowerCase();
+        if (
+          !t.label.toLowerCase().includes(q) &&
+          !t.code.toLowerCase().includes(q) &&
+          !t.zone.toLowerCase().includes(q)
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [storeState.tables, tableCapacityFilter, tableZoneFilter, tableSearch]);
+
+  const totalPages = Math.ceil(filteredTables.length / tablesPerPage) || 1;
+  const paginatedTables = useMemo(() => {
+    const start = (tablePage - 1) * tablesPerPage;
+    return filteredTables.slice(start, start + tablesPerPage);
+  }, [filteredTables, tablePage, tablesPerPage]);
 
   // Analytics Metrics
   const totalRevenuePaise = ordersList
@@ -357,50 +406,227 @@ export default function MasterAdminApp() {
             </div>
           )}
 
-          {/* TAB 3: TABLES & QR */}
+          {/* TAB 3: TABLES & CAPACITY MANAGEMENT */}
           {activeTab === 'tables' && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="font-bold text-slate-900 text-base">Table QR Codes Management</h2>
-                  <p className="text-xs text-slate-500">
-                    Each table has a dedicated URL bound to customer sessions
-                  </p>
+            <div className="space-y-6">
+              {/* Seating Capacity Overview KPIs */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <div className="flex items-center justify-between text-slate-500 mb-2">
+                    <span className="text-xs font-semibold">Total Floor Tables</span>
+                    <QrCode className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <div className="text-3xl font-black text-slate-900">{storeState.tables.length}</div>
+                  <span className="text-xs font-semibold text-emerald-600 mt-1 inline-block">
+                    100% Active in Floor Map
+                  </span>
                 </div>
-                <button
-                  onClick={() => window.open('/docs/qr/table-qrs-sheet.html', '_blank')}
-                  className="bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-orange-700 flex items-center space-x-1.5"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Open Printable A4 Sheet</span>
-                </button>
+
+                <div className="bg-white p-5 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/40 to-white shadow-xs">
+                  <div className="flex items-center justify-between text-amber-700 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wide">4-Seater Tables</span>
+                    <Users className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div className="text-3xl font-black text-slate-900">{fourSeaterTables.length}</div>
+                  <span className="text-xs text-slate-600 mt-1 inline-block">
+                    <strong>{fourSeaterTables.length * 4}</strong> diners capacity (T-01 – T-95)
+                  </span>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/40 to-white shadow-xs">
+                  <div className="flex items-center justify-between text-indigo-700 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wide">6-Seater Tables</span>
+                    <Users className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div className="text-3xl font-black text-slate-900">{sixSeaterTables.length}</div>
+                  <span className="text-xs text-slate-600 mt-1 inline-block">
+                    <strong>{sixSeaterTables.length * 6}</strong> diners capacity (T-96 – T-155)
+                  </span>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/40 to-white shadow-xs">
+                  <div className="flex items-center justify-between text-emerald-700 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wide">Total Seating Capacity</span>
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="text-3xl font-black text-emerald-700">{totalSeatingCapacity}</div>
+                  <span className="text-xs text-slate-600 mt-1 inline-block">
+                    Diners across all food court zones
+                  </span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                {storeState.tables.map((t) => {
-                  const targetUrl = `http://localhost:5173/t/${t.code}`;
-                  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                    targetUrl
-                  )}`;
+              {/* Main Content Card */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <h2 className="font-bold text-slate-900 text-lg">Table QR Codes & Seating Grid</h2>
+                    <p className="text-xs text-slate-500">
+                      Manage 155 physical tables across REVA Nest Food Court with instant QR links
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => window.open('/table-qrs-sheet.html', '_blank')}
+                    className="bg-orange-600 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-orange-700 flex items-center space-x-1.5 shadow-sm transition-all"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Open Printable A4 Sheet (All 155)</span>
+                  </button>
+                </div>
 
-                  return (
-                    <div
-                      key={t.id}
-                      className="border border-slate-200 rounded-2xl p-4 text-center space-y-2 bg-slate-50"
+                {/* Filters & Search Toolbar */}
+                <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 flex-wrap">
+                  {/* Capacity Filter Pills */}
+                  <div className="flex items-center space-x-1 bg-white p-1 rounded-lg border border-slate-200 text-xs font-semibold">
+                    <button
+                      onClick={() => { setTableCapacityFilter('ALL'); setTablePage(1); }}
+                      className={`px-3 py-1.5 rounded-md transition-all ${
+                        tableCapacityFilter === 'ALL'
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
                     >
-                      <span className="text-[10px] uppercase font-bold text-orange-600 tracking-wider">
-                        {t.zone}
-                      </span>
-                      <h4 className="font-black text-slate-900 text-lg">{t.label}</h4>
-                      <img
-                        src={qrUrl}
-                        alt={t.label}
-                        className="w-32 h-32 mx-auto rounded-lg border border-slate-200 bg-white p-2 shadow-xs"
-                      />
-                      <p className="text-[11px] font-mono text-slate-500">Code: {t.code}</p>
-                    </div>
-                  );
-                })}
+                      All Tables ({storeState.tables.length})
+                    </button>
+                    <button
+                      onClick={() => { setTableCapacityFilter('4'); setTablePage(1); }}
+                      className={`px-3 py-1.5 rounded-md flex items-center space-x-1 transition-all ${
+                        tableCapacityFilter === '4'
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-amber-700'
+                      }`}
+                    >
+                      <span>4-Seater ({fourSeaterTables.length})</span>
+                    </button>
+                    <button
+                      onClick={() => { setTableCapacityFilter('6'); setTablePage(1); }}
+                      className={`px-3 py-1.5 rounded-md flex items-center space-x-1 transition-all ${
+                        tableCapacityFilter === '6'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-indigo-700'
+                      }`}
+                    >
+                      <span>6-Seater ({sixSeaterTables.length})</span>
+                    </button>
+                  </div>
+
+                  {/* Zone Filter */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-slate-500 font-medium">Zone:</span>
+                    <select
+                      value={tableZoneFilter}
+                      onChange={(e) => { setTableZoneFilter(e.target.value); setTablePage(1); }}
+                      className="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus:outline-none"
+                    >
+                      <option value="ALL">All Zones ({availableZones.length})</option>
+                      {availableZones.map((z) => (
+                        <option key={z} value={z}>
+                          {z}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Search Input */}
+                  <div className="relative min-w-[200px] flex-1 max-w-xs">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Search Table T-14, T95..."
+                      value={tableSearch}
+                      onChange={(e) => { setTableSearch(e.target.value); setTablePage(1); }}
+                      className="w-full text-xs pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Table Cards Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+                  {paginatedTables.map((t) => {
+                    const isFour = (t.capacity || 4) === 4;
+                    const hostUrl =
+                      typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                        ? 'http://localhost:5173'
+                        : 'https://reva-nest-foodcourt.web.app';
+                    const targetUrl = `${hostUrl}/t/${t.code}`;
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                      targetUrl
+                    )}`;
+
+                    return (
+                      <div
+                        key={t.id}
+                        className={`border rounded-2xl p-3 text-center space-y-2 bg-white transition-all hover:shadow-md ${
+                          isFour
+                            ? 'border-slate-200 hover:border-amber-300'
+                            : 'border-indigo-100 hover:border-indigo-300 bg-gradient-to-b from-indigo-50/20 to-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
+                              isFour
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-indigo-100 text-indigo-800'
+                            }`}
+                          >
+                            {isFour ? '4 Seater' : '6 Seater'}
+                          </span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" title="Active"></span>
+                        </div>
+
+                        <h4 className="font-black text-slate-900 text-lg tracking-tight">{t.label}</h4>
+
+                        <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100 inline-block">
+                          <img
+                            src={qrUrl}
+                            alt={t.label}
+                            className="w-24 h-24 mx-auto rounded-lg bg-white p-1 shadow-xs"
+                            loading="lazy"
+                          />
+                        </div>
+
+                        <p className="text-[10px] text-slate-500 truncate" title={t.zone}>
+                          {t.zone}
+                        </p>
+
+                        <a
+                          href={targetUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center space-x-1 text-[10px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-2 py-1 rounded-lg w-full justify-center transition-all"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Test Order</span>
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
+                  <span>
+                    Showing {paginatedTables.length} of {filteredTables.length} tables (Page {tablePage} of {totalPages})
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      disabled={tablePage <= 1}
+                      onClick={() => setTablePage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+                    >
+                      Previous
+                    </button>
+                    <span className="font-bold text-slate-800 px-2">{tablePage}</span>
+                    <button
+                      disabled={tablePage >= totalPages}
+                      onClick={() => setTablePage((p) => Math.min(totalPages, p + 1))}
+                      className="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

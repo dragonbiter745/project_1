@@ -2,11 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { StartSessionSchema, generateDisplayName, getIstDateKey } from '@foodcourt/shared';
 
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
+import { db } from '../db';
 
 export const startSession = onCall(
   {

@@ -1,5 +1,4 @@
 import { onRequest } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import {
   formatVendorToken,
@@ -7,7 +6,7 @@ import {
   type Vendor,
 } from '@foodcourt/shared';
 
-const db = admin.firestore();
+import { db } from '../db';
 
 function verifyCashfreeSignature(
   rawBody: string,

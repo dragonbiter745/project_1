@@ -4,15 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "ts-node src/sync-server.ts",
-    "seed": "ts-node src/seed.ts"
+    "seed": "ts-node src/seed.ts",
+    "qrs": "ts-node src/generate-qrs.ts"
   },
   "dependencies": {
-    "@foodcourt/shared": "workspace:*",
     "@foodcourt/firebase-client": "workspace:*",
-    "firebase-admin": "^13.1.0"
+    "@foodcourt/shared": "workspace:*",
+    "firebase-admin": "^13.1.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/node": "^20.17.19",
+    "@types/qrcode": "^1.5.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   }

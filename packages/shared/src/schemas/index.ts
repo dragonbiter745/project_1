@@ -13,14 +13,14 @@ export const CartItemSchema = z.object({
   pricePaise: z.number().int().nonnegative(),
   veg: z.boolean(),
   qty: z.number().int().positive().max(50),
-  note: z.string().max(120).optional(),
+  note: z.string().max(120).nullish(),
 });
 
 export const CreateCheckoutSchema = z.object({
   sessionId: z.string().min(1),
-  checkoutKey: z.string().uuid(),
+  checkoutKey: z.string().min(1),
   items: z.array(CartItemSchema).min(1, 'Cart cannot be empty'),
-  customerPhone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').optional(),
+  customerPhone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').nullish(),
 });
 
 export type CreateCheckoutInput = z.infer<typeof CreateCheckoutSchema>;

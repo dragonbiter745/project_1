@@ -99,6 +99,7 @@ export interface Table {
   code: string; // public token embedded in QR
   label: string; // e.g. "T-14"
   zone: string;
+  capacity?: number; // 4 or 6 seater
   active: boolean;
 }
 
