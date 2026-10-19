@@ -5,6 +5,10 @@ on:
     paths:
       - functions/**
       - pnpm-lock.yaml
+      - turbo.json
+      - tsconfig.base.json
+      - pnpm-workspace.yaml
+      - .npmrc
       - firebase.json
       - .github/actions/setup/**
       - .github/workflows/backend-functions.yml
@@ -13,6 +17,10 @@ on:
     paths:
       - functions/**
       - pnpm-lock.yaml
+      - turbo.json
+      - tsconfig.base.json
+      - pnpm-workspace.yaml
+      - .npmrc
       - firebase.json
       - .github/actions/setup/**
       - .github/workflows/backend-functions.yml

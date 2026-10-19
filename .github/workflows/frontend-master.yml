@@ -9,6 +9,10 @@ on:
       - packages/firebase-client/**
       - package.json
       - pnpm-lock.yaml
+      - turbo.json
+      - tsconfig.base.json
+      - pnpm-workspace.yaml
+      - .npmrc
       - firebase.json
       - .github/actions/setup/**
       - .github/workflows/_frontend.yml
@@ -22,6 +26,10 @@ on:
       - packages/firebase-client/**
       - package.json
       - pnpm-lock.yaml
+      - turbo.json
+      - tsconfig.base.json
+      - pnpm-workspace.yaml
+      - .npmrc
       - firebase.json
       - .github/actions/setup/**
       - .github/workflows/_frontend.yml

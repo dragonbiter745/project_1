@@ -1,5 +1,7 @@
 # FoodCourt — Multi-Vendor QR Order & Pay POS
 
+[![Frontend · Customer](https://github.com/dragonbiter745/project_1/actions/workflows/frontend-customer.yml/badge.svg?branch=main)](https://github.com/dragonbiter745/project_1/actions/workflows/frontend-customer.yml) [![Frontend · Vendor](https://github.com/dragonbiter745/project_1/actions/workflows/frontend-vendor.yml/badge.svg?branch=main)](https://github.com/dragonbiter745/project_1/actions/workflows/frontend-vendor.yml) [![Frontend · Master admin](https://github.com/dragonbiter745/project_1/actions/workflows/frontend-master.yml/badge.svg?branch=main)](https://github.com/dragonbiter745/project_1/actions/workflows/frontend-master.yml) [![Backend · Cloud Functions](https://github.com/dragonbiter745/project_1/actions/workflows/backend-functions.yml/badge.svg?branch=main)](https://github.com/dragonbiter745/project_1/actions/workflows/backend-functions.yml) [![Firebase · Rules & indexes](https://github.com/dragonbiter745/project_1/actions/workflows/firebase-rules.yml/badge.svg?branch=main)](https://github.com/dragonbiter745/project_1/actions/workflows/firebase-rules.yml)
+
 > **Startup Vision:** A multi-vendor food court mobile ordering platform inspired by Toast "Mobile Order & Pay". One QR code per table lets customers browse all court shops (Roll Me, Siddi Vinayaka Garden), build a unified multi-shop cart, pay once, and kitchen tickets are routed in real-time to each vendor's KDS tablet.
 
 ---
