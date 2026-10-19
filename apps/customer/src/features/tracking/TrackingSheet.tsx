@@ -249,7 +249,7 @@ function SubOrderCard({ sub, displayName, prepMin, now, onShowToken, onReport }:
       <ul className="mt-4 space-y-1 border-t border-ink/10 pt-3 text-sm text-ink-2">
         {sub.items.map((item, i) => (
           <li key={`${item.id}-${i}`} className="flex justify-between gap-3">
-            <span className="min-w-0">
+            <span className="min-w-0 [overflow-wrap:anywhere]">
               {item.qty} × {item.name}
               {item.note && <span className="block text-xs text-ink-3">Note: {item.note}</span>}
             </span>

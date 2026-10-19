@@ -203,7 +203,7 @@ function CartLine({ item, blocked, onAdd, onRemove, onNote }: CartLineProps) {
       <div className="flex items-start gap-3">
         <VegDot veg={item.veg} size="sm" className="mt-[3px] shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className={cx('text-base font-medium leading-snug', blocked ? 'text-ink-3' : 'text-ink')}>{item.name}</p>
+          <p className={cx('text-base font-medium leading-snug [overflow-wrap:anywhere]', blocked ? 'text-ink-3' : 'text-ink')}>{item.name}</p>
           {blocked ? (
             <p className="mt-0.5 text-sm font-medium text-danger">
               {blocked === 'paused' ? 'Shop paused. Remove to continue.' : 'Sold out. Remove to continue.'}

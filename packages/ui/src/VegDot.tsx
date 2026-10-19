@@ -15,6 +15,7 @@ export const VegDot: React.FC<VegDotProps> = ({ veg, size = 'md', className = ''
 
   return (
     <div
+      role="img"
       aria-label={veg ? 'Vegetarian' : 'Non-Vegetarian'}
       title={veg ? 'Vegetarian' : 'Non-Vegetarian'}
       className={`inline-flex items-center justify-center border-2 rounded-[3px] bg-white ${borderColor} ${boxDim} ${className}`}

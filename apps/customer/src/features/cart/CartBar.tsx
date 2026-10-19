@@ -38,7 +38,6 @@ export function CartBar() {
           ref={buttonRef}
           type="button"
           onClick={() => show('cart')}
-          aria-label={`View cart: ${pluralize(count, 'item')}, ${formatPaise(total)}`}
           className="pressable flex h-14 w-full items-center justify-between rounded-full bg-ink pl-5 pr-1.5 text-white shadow-float"
         >
           <span className="flex items-center gap-2 text-base font-semibold tabular-nums">

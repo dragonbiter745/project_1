@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { formatPaise, type MenuItem } from '@foodcourt/shared';
 import { VegDot } from '@foodcourt/ui';
@@ -20,13 +20,17 @@ export const ItemRow = memo(function ItemRow({ item, vendorId, soldOut, paused }
   const add = useCart((s) => s.add);
   const decrement = useCart((s) => s.decrement);
   const inCart = qty > 0;
+  // The stepper mounts on first add (then stays for the crossfade), keeping ~700 hidden
+  // nodes out of a full menu's DOM.
+  const [stepperMounted, setStepperMounted] = useState(inCart);
+  if (inCart && !stepperMounted) setStepperMounted(true);
 
   return (
     <li className="flex items-start gap-3 px-4 py-3.5">
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2.5">
           <VegDot veg={item.veg} size="sm" className="mt-[3px] shrink-0" />
-          <h3 className={cx('text-base font-medium leading-snug', soldOut ? 'text-ink-3' : 'text-ink')}>{item.name}</h3>
+          <h3 className={cx('text-base font-medium leading-snug [overflow-wrap:anywhere]', soldOut ? 'text-ink-3' : 'text-ink')}>{item.name}</h3>
         </div>
         {item.desc && <p className="mt-1 line-clamp-2 pl-6 text-sm text-ink-3">{item.desc}</p>}
         <p className={cx('mt-1.5 pl-6 text-base font-semibold tabular-nums', soldOut ? 'text-ink-3' : 'text-ink')}>
@@ -50,14 +54,16 @@ export const ItemRow = memo(function ItemRow({ item, vendorId, soldOut, paused }
               Add
             </Button>
           </div>
-          <div className="swap-layer absolute inset-0" data-active={inCart} inert={!inCart}>
-            <QtyStepper
-              qty={Math.max(qty, 1)}
-              itemName={item.name}
-              onIncrement={() => add(item, vendorId)}
-              onDecrement={() => decrement(item.id)}
-            />
-          </div>
+          {stepperMounted && (
+            <div className="swap-layer absolute inset-0" data-active={inCart} inert={!inCart}>
+              <QtyStepper
+                qty={Math.max(qty, 1)}
+                itemName={item.name}
+                onIncrement={() => add(item, vendorId)}
+                onDecrement={() => decrement(item.id)}
+              />
+            </div>
+          )}
         </div>
       )}
     </li>

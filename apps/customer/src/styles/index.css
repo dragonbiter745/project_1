@@ -235,6 +235,14 @@
   transform: scale(0.96);
   pointer-events: none;
 }
+/* A layer mounted already active (the stepper on first add) still fades in. */
+@starting-style {
+  .swap-layer[data-active='true'] {
+    opacity: 0;
+    filter: blur(2px);
+    transform: scale(0.96);
+  }
+}
 
 .progress-fill {
   transform-origin: left center;
