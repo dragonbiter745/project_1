@@ -1,12 +1,12 @@
 name: Frontend pipeline (reusable)
 
-# Shared by frontend-customer / frontend-vendor / frontend-master. Verify once, then
+# Shared by frontend-customer / frontend-vendor / frontend-master / frontend-landing. Verify once, then
 # deploy that exact build: a preview channel on PRs, the live site on main.
 on:
   workflow_call:
     inputs:
       app:
-        description: customer | vendor | master (also the Firebase Hosting target)
+        description: customer | vendor | master | landing (also the Firebase Hosting target)
         type: string
         required: true
       bundle-budget-kb:
@@ -51,6 +51,9 @@ jobs:
 
       - name: Typecheck and build
         run: pnpm turbo run build --filter="@foodcourt/$APP"
+
+      - name: Unit tests
+        run: pnpm turbo run test --filter="@foodcourt/$APP"
 
       - name: Bundle budget
         if: inputs.bundle-budget-kb > 0

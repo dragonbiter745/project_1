@@ -70,3 +70,10 @@
 - **Gestures:** tickets swipe right to advance (Accept, Ready, Collected) and left on a new order to open Reject. They are built on pointer events with `touch-action: pan-y`, so vertical scrolling stays native. A commit needs 38% of the card width or a quick flick (0.11 px/ms). The existing buttons and undo windows stay as the fallback. No gesture library was added.
 - **Haptics:** `navigator.vibrate` where supported (Android); it does nothing on iOS.
 - **Trade-off:** a swipe that starts on a ticket belongs to the ticket, so switching columns sideways only works from a column header, an empty column or the tab bar.
+
+## ADR 010: Landing page with a live 3D court (apps/landing)
+- **Decision:** a separate Vite app so the 3D stack (three, R3F, drei, postprocessing) never touches the customer bundle budget. Brand stays REVA Food Court. The 3D hero is a live demo; "Order now" sends diners to the customer app, so ordering logic is not duplicated.
+- **Simulation:** a pure TypeScript engine at a fixed 30 Hz, unit-tested in Node. Sub-order status changes go through `canTransitionSubOrder`. Money stays in integer paise and demo totals use `computeOrderTotals`.
+- **Rendering budget:** static pieces merge into one mesh per material, and people are one instanced mesh per body part, so draw calls stay well under 250. Textures are generated on canvases. Quality presets step automatically with `PerformanceMonitor`. The canvas stops rendering when scrolled away, and the sim keeps ticking for the dashboard section.
+- **Loading:** React, vendor and page code load first so the text paints immediately. The three and R3F chunks load with the lazily imported `World`.
+- **Not built:** the Walk (WASD) camera from the original brief. Orbit, Follow and Cinematic cover the demo.

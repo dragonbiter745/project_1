@@ -15,6 +15,9 @@
         ],
         "master": [
           "reva-nest-master"
+        ],
+        "landing": [
+          "reva-nest-landing"
         ]
       }
     }

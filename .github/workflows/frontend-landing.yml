@@ -1,0 +1,52 @@
+name: Frontend · Landing
+
+on:
+  pull_request:
+    paths:
+      - apps/landing/**
+      - packages/shared/**
+      - packages/ui/**
+      - package.json
+      - pnpm-lock.yaml
+      - turbo.json
+      - tsconfig.base.json
+      - pnpm-workspace.yaml
+      - .npmrc
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-landing.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/landing/**
+      - packages/shared/**
+      - packages/ui/**
+      - package.json
+      - pnpm-lock.yaml
+      - turbo.json
+      - tsconfig.base.json
+      - pnpm-workspace.yaml
+      - .npmrc
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-landing.yml
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-landing-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  landing:
+    uses: ./.github/workflows/_frontend.yml
+    with:
+      app: landing
+      live-url: https://reva-nest-landing.web.app
+    secrets: inherit
