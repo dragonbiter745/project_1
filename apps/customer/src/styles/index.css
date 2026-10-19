@@ -106,6 +106,16 @@
   }
 }
 
+.enter-down {
+  animation: enter-down 320ms var(--ease-out) both;
+}
+@keyframes enter-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
 .tick {
   animation: tick 200ms var(--ease-out);
 }
@@ -216,6 +226,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .enter-up,
+  .enter-down,
   .tick,
   .shimmer {
     animation: none;

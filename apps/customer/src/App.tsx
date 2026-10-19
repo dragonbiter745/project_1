@@ -9,6 +9,8 @@ import { MenuScreen } from './features/menu/MenuScreen';
 import { useTableSession } from './features/session/useTableSession';
 import { ActiveOrderBar } from './features/tracking/ActiveOrderBar';
 import { TrackingSheet } from './features/tracking/TrackingSheet';
+import { AppToaster } from './features/ui/AppToaster';
+import { OfflineBanner } from './features/ui/OfflineBanner';
 
 export default function App() {
   const state = useTableSession();
@@ -30,6 +32,8 @@ export default function App() {
       <TrackingSheet session={session} />
       <LoginSheet session={session} />
       <AccountSheet session={session} />
+      <OfflineBanner />
+      <AppToaster />
     </div>
   );
 }
