@@ -11,6 +11,7 @@ interface CartState {
   decrement: (itemId: string) => void;
   setNote: (itemId: string, note: string) => void;
   restore: (items: CartItem[]) => void;
+  addMany: (lines: CartItem[]) => void;
   clear: () => void;
   setActiveOrder: (orderId: string | null) => void;
 }
@@ -55,6 +56,15 @@ export const useCart = create<CartState>()(
         set((s) => ({
           items: { ...s.items, ...Object.fromEntries(restored.map((i) => [i.itemId, i])) },
         })),
+      addMany: (lines) =>
+        set((s) => {
+          const items = { ...s.items };
+          for (const line of lines) {
+            const existing = items[line.itemId];
+            items[line.itemId] = existing ? { ...existing, qty: existing.qty + line.qty } : line;
+          }
+          return { items };
+        }),
       clear: () => set({ items: {} }),
       setActiveOrder: (activeOrderId) => set({ activeOrderId }),
     }),

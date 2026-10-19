@@ -116,6 +116,25 @@
   }
 }
 
+.step-forward {
+  animation: step-forward 240ms var(--ease-out) both;
+}
+.step-back {
+  animation: step-back 240ms var(--ease-out) both;
+}
+@keyframes step-forward {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+@keyframes step-back {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
 .spotlight {
   animation: spotlight 260ms var(--ease-out) both;
 }
@@ -237,6 +256,8 @@
 @media (prefers-reduced-motion: reduce) {
   .enter-up,
   .enter-down,
+  .step-forward,
+  .step-back,
   .spotlight,
   .tick,
   .shimmer {

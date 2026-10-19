@@ -5,6 +5,7 @@ import { ensureAnonymousUser, getCallable } from '../../lib/firebase';
 import { localStore } from '../../lib/store';
 import { useProfile } from '../auth/profileStore';
 import { useCart } from '../cart/cartStore';
+import { useOrderHistory } from '../history/orderHistory';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 
@@ -108,6 +109,7 @@ export function useCheckout(session: TableSession) {
         };
         draft.orders[orderId] = optimistic;
       });
+      useOrderHistory.getState().record(orderId);
       const cart = useCart.getState();
       cart.clear();
       cart.setActiveOrder(orderId);
