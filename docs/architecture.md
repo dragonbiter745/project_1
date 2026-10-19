@@ -57,3 +57,9 @@
 - **Tables & QR:** QR codes are generated in the browser with `qrcode` (lazy 10 KB chunk); the old screen sent every table code to api.qrserver.com. Print uses an A4 print stylesheet, three codes per row.
 - **Insights:** today only, computed from tickets; no placeholder numbers (the old screen showed a hard-coded 8 min when there was no data).
 - **Settings:** payments and maintenance switches behind confirmation sheets. The customer app now honours maintenance (notice + Pay blocked). It does not yet honour `paymentsEnabled = false` (pay-at-counter needs a createCheckout change).
+
+## ADR 008: Visual upgrade for vendor and master (redesign-existing-projects audit)
+- **Problem:** both apps read as plain black-and-white: brand colour only on a few buttons, identical bordered white tiles, no depth, no charts, weak empty states.
+- **Kit additions:** `BrandMark` (saffron squircle logo), `Monogram` (shop code tile), `.ambient` saffron light, fixed `.grain` overlay, `.live-dot` for real live state, and a warm-tinted `shadow-card` token.
+- **Master:** branded sidebar with active indicator and a live "Right now" card; page header with description and live clock; bento KPIs (`KpiTile`, featured saffron tile with a sales sparkline); status filters with counts; table rows with shop monograms, table chips and age chips; shop cards with a tinted header, icon metrics and a stock bar; Insights charts (hourly orders bars with hover tooltips, sales-by-shop bars) built to the dataviz skill's mark specs, saffron validated against the light surface.
+- **Vendor:** shop monogram and live clock in the top bar; status-tinted columns with icon headers; tickets with a status edge, table chip, quantity badges and note callouts; branded shop picker and start-service card.

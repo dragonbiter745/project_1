@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Printer, Search } from 'lucide-react';
+import { Armchair, LayoutGrid, Printer, Search, Users, UsersRound } from 'lucide-react';
 import { Button, cx } from '@foodcourt/ui';
-import { Stat } from '../../components/Stat';
+import { KpiTile } from '../../components/KpiTile';
 import { jsonEqual, useLocal } from '../../lib/store';
 
 // QR codes are generated in the browser. The previous version sent every table code to a
@@ -58,11 +58,11 @@ export function TablesQr() {
 
   return (
     <>
-      <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4" data-print="hide">
-        <Stat label="Tables" value={String(tables.length)} />
-        <Stat label="Seats" value={String(seats)} />
-        <Stat label="4-seat tables" value={String(tables.filter((t) => (t.capacity ?? 4) === 4).length)} />
-        <Stat label="6-seat tables" value={String(tables.filter((t) => t.capacity === 6).length)} />
+      <dl className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" data-print="hide">
+        <KpiTile feature label="Tables" value={String(tables.length)} icon={LayoutGrid} tone="accent" hint={`${zones.length} zones across the food court`} />
+        <KpiTile label="Seats" value={String(seats)} icon={Users} tone="ready" />
+        <KpiTile icon={Armchair} tone="prep" label="4-seat tables" value={String(tables.filter((t) => (t.capacity ?? 4) === 4).length)} />
+        <KpiTile icon={UsersRound} tone="neutral" label="6-seat tables" value={String(tables.filter((t) => t.capacity === 6).length)} />
       </dl>
 
       <div className="mt-6 flex flex-wrap items-center gap-3" data-print="hide">
@@ -121,8 +121,8 @@ function TableCard({ label, code, zone, seats }: { label: string; code: string; 
   const url = `${CUSTOMER_URL}/t/${code}`;
   const qr = useQrCode(url);
   return (
-    <figure data-print="card" className="rounded-card bg-surface p-4 text-center ring-1 ring-inset ring-line">
-      <div className="mx-auto aspect-square w-full max-w-[200px] overflow-hidden rounded-field bg-surface-2">
+    <figure data-print="card" className="group rounded-sheet bg-surface p-4 text-center shadow-card ring-1 ring-inset ring-line/70 transition-transform duration-200 ease-out hover:-translate-y-0.5">
+      <div className="mx-auto aspect-square w-full max-w-[200px] overflow-hidden rounded-card bg-surface p-2 ring-1 ring-inset ring-accent-line">
         {qr ? <img src={qr} alt={`QR code for table ${label}`} className="h-full w-full" /> : <span className="shimmer block h-full w-full" />}
       </div>
       <figcaption className="mt-3">

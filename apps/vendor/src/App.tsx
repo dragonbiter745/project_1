@@ -64,7 +64,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-[100dvh] flex-col">
+    <div className="grain ambient flex h-[100dvh] flex-col">
       <TopBar
         vendor={vendor}
         sync={sync}

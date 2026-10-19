@@ -47,6 +47,7 @@ export default {
       },
       boxShadow: {
         float: 'var(--shadow-float)',
+        card: 'var(--shadow-card)',
         sheet: 'var(--shadow-sheet)',
         thumb: 'var(--shadow-thumb)',
       },

@@ -124,10 +124,14 @@ export function Board({ vendorId, alarmOn }: { vendorId: string; alarmOn: boolea
       </div>
     );
 
-  const spec: Array<{ key: ColumnKey; title: string; list: SubOrder[]; tone: string; empty: ReactNode }> = [
+  const spec: Array<{ key: ColumnKey; title: string; hint: string; icon: ReactNode; band: string; body: string; list: SubOrder[]; tone: string; empty: ReactNode }> = [
     {
       key: 'new',
       title: 'New',
+      hint: 'Accept or reject',
+      icon: <Inbox className="h-[18px] w-[18px]" strokeWidth={2} />,
+      band: 'bg-accent-tint text-accent-ink ring-accent-line',
+      body: 'bg-accent-tint/25',
       list: columns.new,
       tone: 'bg-accent-ink text-on-accent',
       empty: <Empty icon={<Inbox className="h-6 w-6" strokeWidth={1.5} />} text="No new orders" />,
@@ -135,6 +139,10 @@ export function Board({ vendorId, alarmOn }: { vendorId: string; alarmOn: boolea
     {
       key: 'cooking',
       title: 'Cooking',
+      hint: 'Mark ready when plated',
+      icon: <ChefHat className="h-[18px] w-[18px]" strokeWidth={2} />,
+      band: 'bg-prep-tint text-prep ring-prep/20',
+      body: 'bg-prep-tint/30',
       list: columns.cooking,
       tone: 'bg-prep text-on-accent',
       empty: <Empty icon={<ChefHat className="h-6 w-6" strokeWidth={1.5} />} text="Nothing on the stove" />,
@@ -142,6 +150,10 @@ export function Board({ vendorId, alarmOn }: { vendorId: string; alarmOn: boolea
     {
       key: 'ready',
       title: 'Ready',
+      hint: 'Hand over at the counter',
+      icon: <PackageCheck className="h-[18px] w-[18px]" strokeWidth={2} />,
+      band: 'bg-ready-tint text-ready ring-ready/20',
+      body: 'bg-ready-tint/30',
       list: columns.ready,
       tone: 'bg-ready text-on-accent',
       empty: <Empty icon={<PackageCheck className="h-6 w-6" strokeWidth={1.5} />} text="Nothing waiting at the counter" />,
@@ -170,15 +182,21 @@ export function Board({ vendorId, alarmOn }: { vendorId: string; alarmOn: boolea
         ))}
       </div>
 
-      <main className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-3">
+      <main className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-3 lg:p-5">
         {spec.map((col) => (
           <section
             key={col.key}
             aria-label={`${col.title} orders`}
-            className={cx('min-h-0 flex-col rounded-sheet bg-surface-2/60', tab === col.key ? 'flex' : 'hidden lg:flex')}
+            className={cx('min-h-0 flex-col overflow-hidden rounded-sheet ring-1 ring-inset ring-line/60', col.body, tab === col.key ? 'flex' : 'hidden lg:flex')}
           >
-            <header className="flex items-center justify-between px-4 pb-2 pt-4">
-              <h2 className="text-lg font-semibold tracking-tight text-ink">{col.title}</h2>
+            <header className="flex items-center justify-between gap-3 px-4 pb-3 pt-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className={cx('grid h-10 w-10 shrink-0 place-items-center rounded-[12px] ring-1 ring-inset', col.band)}>{col.icon}</span>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-semibold leading-tight tracking-tight text-ink">{col.title}</h2>
+                  <p className="truncate text-xs text-ink-3">{col.hint}</p>
+                </div>
+              </div>
               <Count n={col.list.length} tone={col.tone} />
             </header>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-3">{renderTickets(col.list, col.empty)}</div>
@@ -220,8 +238,8 @@ function Count({ n, tone }: { n: number; tone: string }) {
   return (
     <span
       className={cx(
-        'grid h-7 min-w-7 place-items-center rounded-full px-2 font-mono text-sm font-semibold tabular-nums',
-        n > 0 ? tone : 'bg-surface-2 text-ink-3'
+        'grid h-8 min-w-8 place-items-center rounded-full px-2.5 font-mono text-base font-semibold tabular-nums shadow-card',
+        n > 0 ? tone : 'bg-surface text-ink-3'
       )}
     >
       {n}
@@ -231,9 +249,10 @@ function Count({ n, tone }: { n: number; tone: string }) {
 
 function Empty({ icon, text }: { icon: ReactNode; text: string }) {
   return (
-    <div className="flex flex-col items-center px-4 py-16 text-center text-ink-3">
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-surface-2">{icon}</span>
-      <p className="mt-3 text-sm font-medium">{text}</p>
+    <div className="mx-1 mt-2 flex flex-col items-center rounded-card border border-dashed border-line-strong/80 px-4 py-14 text-center text-ink-3">
+      <span className="grid h-14 w-14 place-items-center rounded-[18px] bg-surface shadow-card ring-1 ring-inset ring-line/70">{icon}</span>
+      <p className="mt-4 text-sm font-medium text-ink-2">{text}</p>
+      <p className="mt-1 text-xs">New tickets appear here instantly.</p>
     </div>
   );
 }

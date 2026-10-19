@@ -38,6 +38,7 @@
 
   --shadow-float: 0 12px 32px -10px rgb(18 18 20 / 0.32), 0 2px 6px rgb(18 18 20 / 0.08);
   --shadow-sheet: 0 -10px 40px rgb(18 18 20 / 0.12);
+  --shadow-card: 0 1px 2px rgb(92 48 18 / 0.06), 0 6px 20px -6px rgb(92 48 18 / 0.12);
   --shadow-thumb: 0 1px 2px rgb(18 18 20 / 0.12), 0 2px 8px rgb(18 18 20 / 0.08);
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -92,4 +93,17 @@
   .switch-thumb {
     transition: none;
   }
+}
+
+/* Featured KPI: saffron light falling from the top-left corner onto the tile. */
+.kpi-feature {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(var(--accent) / 0.16), transparent 55%),
+    linear-gradient(160deg, rgb(var(--accent-tint)), rgb(var(--surface)) 65%);
+}
+
+/* Table header and row emphasis for the live board. */
+.table-head th {
+  position: sticky;
+  top: 0;
 }
