@@ -3,14 +3,15 @@ import { Activity, Clock3, IndianRupee, Users } from 'lucide-react';
 import { formatPaise } from '@foodcourt/shared';
 import { cx } from '@foodcourt/ui';
 import { TABLES } from '../../data/layout';
-import { useReveal } from '../../lib/hooks';
+import { useScrollProgress } from '../../lib/hooks';
 import { useUi } from '../../store/ui';
 import { formatClock, waitLabel } from '../format';
+import { RevealWords } from './ScrollFx';
 
 const HEAT: Record<string, string> = { free: 'bg-[#dcfce7]', reserved: 'bg-[#fde68a]', occupied: 'bg-[#fdba74]', dirty: 'bg-[#fca5a5]', cleaning: 'bg-[#bae6fd]' };
 
 export function Managers() {
-  const ref = useReveal<HTMLDivElement>();
+  const ref = useScrollProgress<HTMLElement>('through');
   const snap = useUi((s) => s.snapshot);
   const [hover, setHover] = useState<number | null>(null);
   const hours = snap ? snap.hourly.slice(8, 24) : [];
@@ -18,19 +19,23 @@ export function Managers() {
   const nowHour = snap ? Math.floor(snap.clockMinutes / 60) : 12;
 
   return (
-    <section id="managers" className="field-violet relative scroll-mt-20 overflow-hidden py-24 md:py-32">
-      <div ref={ref} className="mx-auto max-w-[1240px] px-5 md:px-10">
-        <div className="reveal grid gap-6 md:grid-cols-[1.1fr_1fr] md:items-end">
+    <section ref={ref} id="managers" className="field-violet relative scroll-mt-20 overflow-hidden py-16 md:py-24">
+      <div className="mx-auto max-w-[1240px] px-5 md:px-10">
+        <div className="grid gap-4 md:grid-cols-[1.1fr_1fr] md:items-end">
           <div>
             <p className="text-sm font-semibold text-[#7c3aed]">For the court</p>
-            <h2 className="mt-3 text-4xl font-semibold leading-[1.05] tracking-[-0.03em] text-ink md:text-6xl [text-wrap:balance]">Every shop, every table, one live screen.</h2>
+            <RevealWords text="Every shop, every table, one live screen." accent={['live']} className="mt-2 text-[34px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink md:text-6xl" />
           </div>
           <p className="max-w-[46ch] text-lg leading-relaxed text-ink-2">
             The numbers below are not a mock-up. They come from the court running in the 3D view above, updated four times a second.
           </p>
         </div>
 
-        <div className="reveal mt-12 rounded-[32px] bg-white/75 p-4 shadow-card ring-1 ring-inset ring-white md:p-6" style={{ ['--i' as string]: 1 }}>
+        {/* Lands flat as it scrolls into view. */}
+        <div
+          className="mt-10 origin-top rounded-[32px] bg-white/75 p-4 shadow-[0_40px_80px_-40px_rgba(76,29,149,0.45)] ring-1 ring-inset ring-white md:p-6"
+          style={{ transform: 'perspective(1600px) rotateX(calc((1 - min(1, var(--p) * 2.6)) * 24deg)) scale(calc(0.9 + min(1, var(--p) * 2.6) * 0.1))' }}
+        >
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <p className="flex items-center gap-2 text-sm font-semibold text-ink">
               <span className="live-dot h-2 w-2 rounded-full bg-ready" />

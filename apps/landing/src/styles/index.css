@@ -270,3 +270,34 @@
     animation: none;
   }
 }
+
+/* Word-by-word headline reveal. */
+.reveal-words.reveal {
+  opacity: 1;
+  transform: none;
+}
+.reveal-words .word {
+  transform: translateY(105%);
+  transition: transform 900ms var(--ease-out);
+  transition-delay: calc(var(--w, 0) * 55ms);
+}
+.reveal-words[data-in='true'] .word {
+  transform: none;
+}
+
+/* Outlined display type for the moving word band. */
+.text-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgb(var(--ink) / 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-words .word {
+    transform: none;
+    transition: none;
+  }
+}
+.marquee-reverse {
+  animation-direction: reverse;
+  animation-duration: 60s;
+}

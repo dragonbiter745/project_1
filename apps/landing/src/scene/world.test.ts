@@ -10,6 +10,7 @@ function declaredMaterials(): Set<string> {
   const src = readFileSync(fileURLToPath(new URL('./materials.ts', import.meta.url)), 'utf8');
   const keys = new Set([...src.matchAll(/m\.set\(\s*'([^']+)'/g)].map((m) => m[1]!));
   for (const s of SHOPS) keys.add(`lacquer:${s.id}`).add(`trim:${s.id}`);
+  for (const style of ['brick', 'stone', 'modern', 'hostel']) keys.add(`facade:${style}`);
   return keys;
 }
 

@@ -1,7 +1,8 @@
-import { ArrowRight, IndianRupee } from 'lucide-react';
+import { IndianRupee } from 'lucide-react';
 import { formatPaise } from '@foodcourt/shared';
 import { SHOP_BY_ID } from '../../data/shops';
-import { spotlight, useReveal } from '../../lib/hooks';
+import { spotlight, useScrollProgress } from '../../lib/hooks';
+import { RevealWords } from './ScrollFx';
 
 const TICKETS = [
   { token: 'DC-042', shop: 'dosa-corner', items: ['1 × Masala Dosa', '1 × Filter Coffee'] },
@@ -18,67 +19,67 @@ function priceOf(shopId: string, lines: string[]) {
 }
 
 export function Split() {
-  const ref = useReveal<HTMLDivElement>();
+  const ref = useScrollProgress<HTMLElement>('pin');
   const total = TICKETS.reduce((n, t) => n + priceOf(t.shop, t.items), 0);
   return (
-    <section className="relative overflow-hidden bg-bg py-24 md:py-32">
-      <div ref={ref} className="mx-auto max-w-[1240px] px-5 md:px-10">
-        <div className="reveal grid gap-6 md:grid-cols-[1.1fr_1fr] md:items-end">
-          <h2 className="text-4xl font-semibold leading-[1.05] tracking-[-0.03em] text-ink md:text-6xl [text-wrap:balance]">One payment in. A clean ticket for every kitchen out.</h2>
-          <p className="max-w-[46ch] text-lg leading-relaxed text-ink-2">
-            The court takes a single UPI payment and splits it to the paisa. Each shop sees only its own ticket, its own items and its own takings.
-          </p>
-        </div>
-
-        <div className="mt-14 grid items-center gap-6 lg:grid-cols-[320px_auto_1fr]">
-          <div className="reveal glass spot lift rounded-[28px] p-6" style={{ ['--i' as string]: 1 }} onPointerMove={spotlight}>
-            <p className="flex items-center gap-2 text-sm font-semibold text-ink-3">
-              <span className="grid h-8 w-8 place-items-center rounded-[10px] bg-accent-ink text-white">
-                <IndianRupee className="h-4 w-4" />
-              </span>
-              One UPI payment
+    <section ref={ref} aria-label="One payment, split per kitchen" className="relative bg-bg" style={{ height: '200vh', ['--k' as string]: 'clamp(0, calc(var(--p) * 1.7 - 0.15), 1)' }}>
+      <div className="sticky top-0 flex h-[100dvh] items-center overflow-hidden">
+        <div className="pointer-events-none absolute right-[-10%] top-[10%] h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,rgb(255_214_186/0.7),transparent_65%)]" />
+        <div className="relative mx-auto w-full max-w-[1240px] px-5 pt-14 md:px-10">
+          <div className="grid gap-4 md:grid-cols-[1.15fr_1fr] md:items-end">
+            <RevealWords text="One payment in. A clean ticket for every kitchen out." accent={['ticket']} className="text-[34px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink md:text-6xl" />
+            <p className="max-w-[44ch] text-base leading-relaxed text-ink-2 md:text-lg">
+              The court takes a single UPI payment and splits it to the paisa. Each shop sees only its own ticket, its own items and its own takings.
             </p>
-            <p className="mt-4 text-5xl font-semibold tabular-nums tracking-tight text-ink">{formatPaise(total)}</p>
-            <p className="mt-2 text-sm text-ink-3">Table T07 · 3 shops · paid 12:48 pm</p>
-            <div className="mt-5 h-2 overflow-hidden rounded-full bg-surface-2">
-              <div className="flex h-full">
+          </div>
+
+          <div className="mt-8 grid items-center gap-4 md:mt-12 lg:grid-cols-[320px_1fr] lg:gap-10">
+            <div className="glass-strong spot relative z-10 rounded-[28px] p-5 md:p-6" onPointerMove={spotlight}>
+              <p className="flex items-center gap-2 text-sm font-semibold text-ink-3">
+                <span className="grid h-8 w-8 place-items-center rounded-[10px] bg-accent-ink text-white">
+                  <IndianRupee className="h-4 w-4" />
+                </span>
+                One UPI payment · T07
+              </p>
+              <p className="mt-3 text-4xl font-semibold tabular-nums tracking-tight text-ink md:text-5xl">{formatPaise(total)}</p>
+              <div className="mt-4 flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface-2">
                 {TICKETS.map((t) => (
-                  <span key={t.token} style={{ width: `${(priceOf(t.shop, t.items) / total) * 100}%`, background: SHOP_BY_ID[t.shop]!.color }} />
+                  <span
+                    key={t.token}
+                    className="h-full origin-left rounded-full"
+                    style={{ width: `${(priceOf(t.shop, t.items) / total) * 100}%`, background: SHOP_BY_ID[t.shop]!.color, transform: 'scaleX(var(--k))' }}
+                  />
                 ))}
               </div>
+              <p className="mt-2 text-xs text-ink-3">Scroll to split it across three kitchens</p>
             </div>
-          </div>
 
-          <div className="reveal hidden justify-center lg:flex" style={{ ['--i' as string]: 2 }}>
-            <ArrowRight className="h-8 w-8 text-accent" strokeWidth={1.75} />
+            <ul className="grid grid-cols-3 gap-2.5 md:gap-4">
+              {TICKETS.map((t, i) => {
+                const shop = SHOP_BY_ID[t.shop]!;
+                return (
+                  <li
+                    key={t.token}
+                    className="rounded-[20px] bg-white p-3.5 shadow-card ring-1 ring-inset ring-line/60 md:rounded-[24px] md:p-5"
+                    style={{
+                      opacity: 'calc(0.15 + var(--k) * 0.85)',
+                      transform: `translate(calc((1 - var(--k)) * ${-120 - i * 110}px), calc((1 - var(--k)) * ${40 - i * 30}px)) rotate(calc((1 - var(--k)) * ${-12 + i * 9}deg)) scale(calc(0.75 + var(--k) * 0.25))`,
+                    }}
+                  >
+                    <span className="block h-1.5 w-10 rounded-full" style={{ background: shop.color }} />
+                    <p className="mt-3 truncate text-[11px] font-semibold text-ink-3 md:text-xs">{shop.name}</p>
+                    <p className="mt-1 font-mono text-lg font-semibold tracking-tight text-ink md:text-3xl">{t.token}</p>
+                    <ul className="mt-2 hidden space-y-1 text-sm text-ink-2 md:block">
+                      {t.items.map((l) => (
+                        <li key={l}>{l}</li>
+                      ))}
+                    </ul>
+                    <p className="mt-3 border-t border-line/70 pt-2 text-sm font-semibold tabular-nums text-ink">{formatPaise(priceOf(t.shop, t.items))}</p>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-
-          <ul className="grid gap-4 sm:grid-cols-3">
-            {TICKETS.map((t, i) => {
-              const shop = SHOP_BY_ID[t.shop]!;
-              const rgb = shop.color.match(/\w\w/g)!.map((h) => parseInt(h, 16)).join(' ');
-              return (
-                <li
-                  key={t.token}
-                  className="reveal glass spot lift rounded-[24px] p-5"
-                  style={{ ['--i' as string]: i + 3, ['--spot' as string]: rgb }}
-                  onPointerMove={spotlight}
-                >
-                  <p className="flex items-center gap-2 text-xs font-semibold text-ink-3">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: shop.color }} />
-                    {shop.name}
-                  </p>
-                  <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-ink">{t.token}</p>
-                  <ul className="mt-3 space-y-1 text-sm text-ink-2">
-                    {t.items.map((l) => (
-                      <li key={l}>{l}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-4 border-t border-line/70 pt-3 text-sm font-semibold tabular-nums text-ink">{formatPaise(priceOf(t.shop, t.items))}</p>
-                </li>
-              );
-            })}
-          </ul>
         </div>
       </div>
     </section>

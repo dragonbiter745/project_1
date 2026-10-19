@@ -5,7 +5,7 @@ import { spotlight } from '../../lib/hooks';
 export function ShopsMarquee() {
   const cards = [...SHOPS, ...SHOPS];
   return (
-    <section aria-label="The kitchens" className="relative overflow-hidden bg-bg pb-24 md:pb-32">
+    <section aria-label="The kitchens" className="relative overflow-hidden bg-bg pb-16 md:pb-24">
       <div className="mx-auto max-w-[1240px] px-5 md:px-10">
         <p className="text-sm font-semibold text-accent-ink">Eight kitchens, one hall</p>
       </div>
@@ -43,6 +43,15 @@ export function ShopsMarquee() {
               </li>
             );
           })}
+        </ul>
+        <ul aria-hidden className="marquee marquee-reverse gap-3 pb-2">
+          {[...SHOPS, ...SHOPS].flatMap((s) => s.menu.slice(1, 3).map((m) => ({ s, m }))).map(({ s, m }, i) => (
+            <li key={`${m.id}-${i}`} className="flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-thumb ring-1 ring-inset ring-line/60">
+              <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+              {m.name}
+              <span className="font-mono text-xs text-ink-3">{formatPaise(m.pricePaise)}</span>
+            </li>
+          ))}
         </ul>
       </div>
     </section>

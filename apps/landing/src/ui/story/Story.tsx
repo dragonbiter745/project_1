@@ -1,72 +1,117 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { BellRing, LayoutGrid, QrCode, ReceiptText, ShoppingBag } from 'lucide-react';
 import { cx } from '@foodcourt/ui';
-import { useReveal } from '../../lib/hooks';
+import { useScrollProgress } from '../../lib/hooks';
 import { Phone } from './Phone';
 
 const STEPS = [
-  { icon: QrCode, kicker: '01 · Scan', title: 'Sit anywhere, scan the table', body: 'Every table carries its own QR. Your table number rides along with the order, so nobody has to shout a name across the hall.' },
-  { icon: LayoutGrid, kicker: '02 · Browse', title: 'All eight kitchens in one menu', body: 'Dosa, biryani, momos and a mango shake, side by side, with live prices, prep times and what has sold out right now.' },
-  { icon: ShoppingBag, kicker: '03 · Pay once', title: 'One cart, one UPI payment', body: 'Mix dishes from as many shops as you like. You pay once; each kitchen gets exactly its own share of the order.' },
-  { icon: ReceiptText, kicker: '04 · Track', title: 'A token per shop, tracked live', body: 'Every kitchen gets its ticket instantly and you watch each one move: accepted, cooking, ready.' },
-  { icon: BellRing, kicker: '05 · Eat', title: 'Collect, or have it brought over', body: 'Your phone pings the moment a tray is ready. Grab it from the counter, or a runner carries it to your table.' },
+  {
+    icon: QrCode,
+    kicker: 'Scan',
+    title: 'Sit anywhere, scan the table.',
+    body: 'Every table carries its own QR. Your table number rides along with the order, so nobody shouts names across the hall.',
+    tint: 'rgb(255 228 210)',
+    chips: ['Table T07', 'No app to install', 'Opens in 1 second'],
+  },
+  {
+    icon: LayoutGrid,
+    kicker: 'Browse',
+    title: 'All eight kitchens in one menu.',
+    body: 'Dosa, biryani, momos and a mango shake side by side, with live prices, prep times and what just sold out.',
+    tint: 'rgb(254 240 199)',
+    chips: ['8 kitchens', '56 dishes', 'Live sold-out'],
+  },
+  {
+    icon: ShoppingBag,
+    kicker: 'Pay once',
+    title: 'One cart. One UPI payment.',
+    body: 'Mix dishes from as many shops as you like. You pay once, and each kitchen gets exactly its own share.',
+    tint: 'rgb(253 226 228)',
+    chips: ['3 shops', '1 payment', 'GST included'],
+  },
+  {
+    icon: ReceiptText,
+    kicker: 'Track',
+    title: 'A token for every shop, live.',
+    body: 'Each kitchen gets its ticket the same second. Watch every token move from accepted to cooking to ready.',
+    tint: 'rgb(237 233 254)',
+    chips: ['DC-042 cooking', 'WM-019 accepted', 'CC-107 ready'],
+  },
+  {
+    icon: BellRing,
+    kicker: 'Eat',
+    title: 'Collect it, or have it brought over.',
+    body: 'Your phone pings the moment a tray is ready. Grab it at the counter, or a runner carries it to your table.',
+    tint: 'rgb(209 250 229)',
+    chips: ['Ping on ready', 'Runner to T07', 'Zero queueing'],
+  },
 ];
 
 export function Story() {
   const [active, setActive] = useState(0);
-  const items = useRef<Array<HTMLLIElement | null>>([]);
-  const head = useReveal<HTMLDivElement>();
-
-  useEffect(() => {
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) if (e.isIntersecting) setActive(Number((e.target as HTMLElement).dataset.step));
-      },
-      { rootMargin: '-45% 0px -45% 0px' }
-    );
-    items.current.forEach((el) => el && io.observe(el));
-    return () => io.disconnect();
-  }, []);
+  const ref = useScrollProgress<HTMLElement>('pin', (p) => {
+    const i = Math.min(STEPS.length - 1, Math.floor(p * STEPS.length * 0.999));
+    setActive((cur) => (cur === i ? cur : i));
+  });
+  const step = STEPS[active]!;
 
   return (
-    <section id="story" className="field-saffron relative scroll-mt-20 overflow-hidden py-24 md:py-32">
-      <div className="dot-grid pointer-events-none absolute inset-0 opacity-40 [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
-      <div className="relative mx-auto max-w-[1240px] px-5 md:px-10">
-        <div ref={head} className="reveal max-w-[720px]">
-          <p className="text-sm font-semibold text-accent-ink">How it works</p>
-          <h2 className="mt-3 text-4xl font-semibold leading-[1.05] tracking-[-0.03em] text-ink md:text-6xl [text-wrap:balance]">From a QR on the table to food in front of you.</h2>
-        </div>
+    <section ref={ref} id="story" aria-label="How it works" className="relative scroll-mt-0" style={{ height: `${STEPS.length * 80 + 40}vh` }}>
+      <div className="sticky top-0 flex h-[100dvh] items-center overflow-hidden transition-[background-color] duration-700" style={{ backgroundColor: step.tint }}>
+        <div className="dot-grid pointer-events-none absolute inset-0 opacity-50" />
+        <div className="pointer-events-none absolute -left-40 top-1/4 h-[520px] w-[520px] rounded-full bg-white/50 blur-3xl" />
 
-        <div className="mt-16 grid gap-12 lg:grid-cols-[1fr_380px] lg:gap-20">
-          <ol className="space-y-[22vh] pb-[18vh] lg:pb-[30vh]">
-            {STEPS.map((s, i) => (
-              <li key={s.title} ref={(el) => void (items.current[i] = el)} data-step={i} className={cx('transition-opacity duration-500', active === i ? 'opacity-100' : 'lg:opacity-35')}>
-                <span
-                  className={cx(
-                    'grid h-14 w-14 place-items-center rounded-[18px] transition-[background-color,color,transform] duration-500',
-                    active === i ? 'scale-105 bg-accent-ink text-white shadow-float' : 'bg-white text-accent-ink shadow-card'
-                  )}
-                >
-                  <s.icon className="h-6 w-6" strokeWidth={2} />
-                </span>
-                <p className="mt-5 font-mono text-sm font-semibold text-accent-ink">{s.kicker}</p>
-                <h3 className="mt-1.5 text-3xl font-semibold tracking-tight text-ink md:text-4xl [text-wrap:balance]">{s.title}</h3>
-                <p className="mt-3 max-w-[48ch] text-lg leading-relaxed text-ink-2">{s.body}</p>
-                <div className="mt-8 lg:hidden">
-                  <Phone step={i} />
-                </div>
-              </li>
-            ))}
-          </ol>
-          <div className="hidden lg:block">
-            <div className="sticky top-[calc(50vh-310px)]">
-              <Phone step={active} />
-              <div className="mt-6 flex justify-center gap-2">
-                {STEPS.map((s, i) => (
-                  <span key={s.title} className={cx('h-1.5 rounded-full transition-all duration-500', active === i ? 'w-8 bg-accent-ink' : 'w-1.5 bg-ink/20')} />
-                ))}
-              </div>
+        <div className="relative mx-auto grid w-full max-w-[1240px] items-center gap-6 px-5 pt-16 md:px-10 lg:grid-cols-[1fr_auto] lg:gap-16">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-accent-ink">How it works</p>
+            <div key={active} className="enter-up">
+              <p className="mt-5 font-mono text-sm font-semibold text-ink-3">
+                0{active + 1} / 0{STEPS.length} · {step.kicker}
+              </p>
+              <h2 className="mt-2 max-w-[14ch] text-[40px] font-semibold leading-[1.02] tracking-[-0.035em] text-ink md:text-[68px]">{step.title}</h2>
+              <p className="mt-4 max-w-[44ch] text-base leading-relaxed text-ink-2 md:text-lg">{step.body}</p>
             </div>
+
+            <ol className="mt-8 hidden gap-2 sm:flex">
+              {STEPS.map((s, i) => (
+                <li key={s.kicker} className="flex-1">
+                  <span className={cx('flex items-center gap-2 text-xs font-semibold transition-colors', i <= active ? 'text-ink' : 'text-ink-3')}>
+                    <s.icon className="h-3.5 w-3.5" strokeWidth={2.25} />
+                    {s.kicker}
+                  </span>
+                  <span className="mt-2 block h-1 overflow-hidden rounded-full bg-ink/10">
+                    <span
+                      className="block h-full origin-left rounded-full bg-accent-ink"
+                      style={{ transform: `scaleX(clamp(0, calc(var(--p) * ${STEPS.length} - ${i}), 1))` }}
+                    />
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          {/* The box reserves the scaled phone's real footprint; transforms alone don't shrink layout. */}
+          <div className="relative mx-auto h-[322px] w-[166px] sm:h-[484px] sm:w-[250px] lg:h-[622px] lg:w-[322px]">
+          <div className="absolute left-1/2 top-0 w-[322px] origin-top -translate-x-1/2 scale-[0.52] sm:scale-[0.78] lg:scale-100">
+            <div style={{ transform: 'perspective(1600px) rotateY(calc((0.5 - var(--p)) * 18deg)) rotateX(calc((var(--p) - 0.5) * 6deg))' }}>
+              <Phone step={active} />
+            </div>
+            {step.chips.map((c, i) => (
+              <span
+                key={`${active}-${c}`}
+                className="glass-strong enter-up absolute hidden whitespace-nowrap sm:block rounded-full px-4 py-2 text-sm font-semibold text-ink"
+                style={{
+                  ['--i' as string]: i,
+                  left: i === 1 ? 'auto' : '-34%',
+                  right: i === 1 ? '-30%' : 'auto',
+                  top: `${18 + i * 26}%`,
+                  translate: `0 calc((var(--p) - 0.5) * ${(i + 1) * -60}px)`,
+                }}
+              >
+                {c}
+              </span>
+            ))}
+          </div>
           </div>
         </div>
       </div>

@@ -42,6 +42,28 @@ export const geo = {
       return g;
     }),
   torus: (r: number, t: number, seg = 24) => cached(`tor:${r}:${t}:${seg}`, () => new THREE.TorusGeometry(r, t, 8, seg)),
+  /**
+   * Box whose UVs repeat once per `bays` window bays (bayW wide, floorH tall), so a facade texture
+   * shows correctly sized windows on any building size. Top and bottom faces get the same scale.
+   */
+  facade: (w: number, h: number, d: number, bayW: number, floorH: number, bays = 4) =>
+    cached(`facade:${w}:${h}:${d}:${bayW}:${floorH}`, () => {
+      const g = new THREE.BoxGeometry(w, h, d);
+      const uv = g.attributes.uv as THREE.BufferAttribute;
+      const dims: Array<[number, number]> = [
+        [d, h],
+        [d, h],
+        [w, d],
+        [w, d],
+        [w, h],
+        [w, h],
+      ];
+      for (let i = 0; i < uv.count; i++) {
+        const [du, dv] = dims[Math.floor(i / 4)]!;
+        uv.setXY(i, (uv.getX(i) * du) / (bayW * bays), (uv.getY(i) * dv) / (floorH * bays));
+      }
+      return g;
+    }),
   ico: (r: number, d = 1) => cached(`ico:${r}:${d}`, () => new THREE.IcosahedronGeometry(r, d)),
   cone: (r: number, h: number, seg = 16) => cached(`cone:${r}:${h}:${seg}`, () => new THREE.ConeGeometry(r, h, seg)),
   /** Profile points are [radius, height] pairs from bottom to top. */

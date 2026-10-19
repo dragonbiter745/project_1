@@ -15,6 +15,8 @@ const REDUCED_MOTION = typeof window !== 'undefined' && window.matchMedia('(pref
 // The cinematic tour: wide establishing shots mixed with close looks at the counters.
 const TOUR: Shot[] = [
   { position: [21, 15, 21], target: [0, 0, -1] },
+  { position: [52, 30, 62], target: [0, 5, -14] },
+  { position: [6, 4, 44], target: [4, 5, 10] },
   { position: [6.5, 2.4, -2.5], target: [1.2, 1.6, -8.6] },
   { position: [-7.5, 3.2, 9.5], target: [-14, 1.4, 2] },
   { position: [14.2, 1.7, 7.5], target: [17.6, 1.2, 0] },
@@ -38,11 +40,11 @@ export function CameraRig() {
     c.setLookAt(...OVERVIEW.position, ...OVERVIEW.target, false);
     c.maxPolarAngle = Math.PI / 2 - 0.12;
     c.minDistance = 1.6;
-    c.maxDistance = 62;
+    c.maxDistance = 110;
     c.smoothTime = 0.55;
     c.draggingSmoothTime = 0.14;
     c.dollyToCursor = true;
-    c.setBoundary(new THREE.Box3(new THREE.Vector3(-30, 0.2, -26), new THREE.Vector3(42, 12, 32)));
+    c.setBoundary(new THREE.Box3(new THREE.Vector3(-75, 0.2, -65), new THREE.Vector3(85, 20, 65)));
   }, []);
 
   // Outside explore mode the page keeps the wheel and single-finger scroll.

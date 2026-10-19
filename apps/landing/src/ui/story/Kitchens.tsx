@@ -1,63 +1,105 @@
+import { useRef } from 'react';
 import { BellRing, Clock3, PackageX, PauseCircle, Smartphone, Undo2 } from 'lucide-react';
-import { spotlight, useReveal } from '../../lib/hooks';
+import { spotlight, useScrollProgress } from '../../lib/hooks';
+import { RevealWords } from './ScrollFx';
 
 const FEATURES = [
-  { icon: BellRing, title: 'Rings until accepted', body: 'A new ticket chimes every few seconds until someone taps Accept. No order sits unseen.' },
-  { icon: Clock3, title: 'Colour that escalates', body: 'Tickets warm up at 2, 5 and 10 minutes, so the oldest order is always the loudest.' },
-  { icon: PackageX, title: 'Sold out in one tap', body: 'Out of mutton? Toggle it and every diner’s menu updates before the next order.' },
-  { icon: PauseCircle, title: 'Pause when slammed', body: 'Stop new orders for a while; diners can still browse, and orders resume on their own.' },
-  { icon: Undo2, title: 'Mistakes undo', body: 'Marked ready by accident? There is a 30 second undo, and collection waits 10 seconds.' },
-  { icon: Smartphone, title: 'Any tablet, any phone', body: 'A three-column board on the counter tablet, a one-handed swipe board on a cook’s phone.' },
+  { icon: BellRing, title: 'Rings until accepted', body: 'A new ticket chimes every few seconds until someone taps Accept. No order sits unseen.', tone: '#e4570f' },
+  { icon: Clock3, title: 'Colour that escalates', body: 'Tickets warm up at 2, 5 and 10 minutes, so the oldest order is always the loudest.', tone: '#b45309' },
+  { icon: PackageX, title: 'Sold out in one tap', body: 'Out of mutton? Toggle it and every diner’s menu updates before the next order.', tone: '#dc2626' },
+  { icon: PauseCircle, title: 'Pause when slammed', body: 'Stop new orders for a while; diners can still browse, and orders resume on their own.', tone: '#7c3aed' },
+  { icon: Undo2, title: 'Mistakes undo', body: 'Marked ready by accident? There is a 30 second undo, and collection waits 10 seconds.', tone: '#0891b2' },
+  { icon: Smartphone, title: 'Any tablet, any phone', body: 'A three-column board on the counter tablet, a one-handed swipe board on a cook’s phone.', tone: '#15803d' },
+];
+
+const TICKETS = [
+  { token: 'DC-042', line: 'T07 · 1 × Masala Dosa', age: '1m', col: 0, tone: 'bg-surface-2 text-ink-2' },
+  { token: 'BH-118', line: 'T15 · 2 × Chicken Biryani', age: '6m', col: 1, tone: 'bg-prep text-white' },
+  { token: 'WM-021', line: 'Pickup · 1 × Veg Momos', age: '3m', col: 1, tone: 'bg-prep-tint text-prep' },
+  { token: 'PS-027', line: 'T22 · 3 × Margherita', age: '9m', col: 2, tone: 'bg-ready-tint text-ready' },
 ];
 
 export function Kitchens() {
-  const ref = useReveal<HTMLDivElement>();
+  const track = useRef<HTMLDivElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  const ref = useScrollProgress<HTMLElement>('pin', (p) => {
+    const t = track.current;
+    const v = viewport.current;
+    if (!t || !v) return;
+    const travel = Math.max(0, t.scrollWidth - v.clientWidth);
+    t.style.transform = `translate3d(${-p * travel}px, 0, 0)`;
+  });
+
   return (
-    <section id="kitchens" className="field-mint relative scroll-mt-20 overflow-hidden py-24 md:py-32">
-      <div ref={ref} className="mx-auto max-w-[1240px] px-5 md:px-10">
-        <div className="reveal max-w-[760px]">
-          <p className="text-sm font-semibold text-[#0f766e]">For kitchens</p>
-          <h2 className="mt-3 text-4xl font-semibold leading-[1.05] tracking-[-0.03em] text-ink md:text-6xl [text-wrap:balance]">A kitchen display cooks can read from across the line.</h2>
+    <section ref={ref} id="kitchens" aria-label="For kitchens" className="field-mint relative" style={{ height: '280vh' }}>
+      <div className="sticky top-0 flex h-[100dvh] flex-col justify-center overflow-hidden">
+        <div className="mx-auto w-full max-w-[1240px] px-5 pt-14 md:px-10">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-[#0f766e]">For kitchens</p>
+              <RevealWords text="A display cooks can read from across the line." accent={['across']} className="mt-2 max-w-[18ch] text-[34px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink md:text-6xl" />
+            </div>
+            <p className="hidden font-mono text-sm font-semibold text-ink-3 md:block">Keep scrolling →</p>
+          </div>
         </div>
 
-        <div className="reveal mt-12 overflow-hidden rounded-[32px] bg-white/70 p-4 shadow-card ring-1 ring-inset ring-white md:p-6" style={{ ['--i' as string]: 1 }}>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              ['New', 'bg-accent-tint text-accent-ink'],
-              ['Cooking', 'bg-prep-tint text-prep'],
-              ['Ready', 'bg-ready-tint text-ready'],
-            ].map(([title, tone]) => (
-              <p key={title} className={`rounded-[14px] px-4 py-2.5 text-sm font-semibold ${tone}`}>
-                {title}
-              </p>
-            ))}
-          </div>
-          <div className="relative mt-3 h-[210px] overflow-hidden">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="ticket-move absolute left-0 w-[calc((100%-24px)/3)]" style={{ top: i * 70, animationDelay: `${i * -3}s` }}>
-                <div className="flex items-center justify-between rounded-[18px] bg-white px-4 py-3 shadow-card ring-1 ring-inset ring-line/70">
-                  <div>
-                    <p className="font-mono text-lg font-semibold text-ink">{['DC-042', 'BH-118', 'PS-027'][i]}</p>
-                    <p className="text-xs text-ink-3">{['T07 · 1 × Masala Dosa', 'T15 · 2 × Chicken Biryani', 'Pickup · 3 × Margherita'][i]}</p>
-                  </div>
-                  <span className="rounded-full bg-prep-tint px-2.5 py-1 font-mono text-xs font-semibold text-prep">{[2, 6, 1][i]}m</span>
-                </div>
+        <div ref={viewport} className="mt-8 w-full md:mt-12">
+          <div ref={track} className="flex w-max gap-4 px-5 will-change-transform md:gap-5 md:px-[max(2.5rem,calc((100vw_-_1240px)/2_+_2.5rem))]">
+            {/* Live board mock */}
+            <article className="w-[min(86vw,640px)] shrink-0 rounded-[30px] bg-white/80 p-4 shadow-card ring-1 ring-inset ring-white md:p-5">
+              <div className="grid grid-cols-3 gap-2.5">
+                {[
+                  ['New', 'bg-accent-tint text-accent-ink'],
+                  ['Cooking', 'bg-prep-tint text-prep'],
+                  ['Ready', 'bg-ready-tint text-ready'],
+                ].map(([t, tone]) => (
+                  <p key={t} className={`rounded-[12px] px-3 py-2 text-xs font-semibold md:text-sm ${tone}`}>
+                    {t}
+                  </p>
+                ))}
               </div>
-            ))}
+              <div className="mt-2.5 grid min-h-[220px] grid-cols-3 gap-2.5">
+                {[0, 1, 2].map((col) => (
+                  <div key={col} className="space-y-2 rounded-[14px] bg-surface-2/60 p-1.5">
+                    {TICKETS.filter((t) => t.col === col).map((t, i) => (
+                      <div key={t.token} className="ticket-in rounded-[12px] bg-white p-2.5 shadow-card ring-1 ring-inset ring-line/70" style={{ animationDelay: `${i * 120}ms` }}>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-mono text-sm font-semibold text-ink md:text-base">{t.token}</span>
+                          <span className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold ${t.tone}`}>{t.age}</span>
+                        </div>
+                        <p className="mt-1 truncate text-[10px] text-ink-3 md:text-xs">{t.line}</p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            {FEATURES.map((f) => {
+              const rgb = f.tone.match(/\w\w/g)!.map((h) => parseInt(h, 16)).join(' ');
+              return (
+                <article
+                  key={f.title}
+                  className="glass spot lift flex w-[min(74vw,320px)] shrink-0 flex-col rounded-[28px] p-6"
+                  style={{ ['--spot' as string]: rgb }}
+                  onPointerMove={spotlight}
+                >
+                  <span className="grid h-12 w-12 place-items-center rounded-[15px] text-white shadow-card" style={{ background: f.tone }}>
+                    <f.icon className="h-6 w-6" strokeWidth={2} />
+                  </span>
+                  <h3 className="mt-auto pt-16 text-2xl font-semibold leading-tight tracking-tight text-ink">{f.title}</h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{f.body}</p>
+                </article>
+              );
+            })}
           </div>
         </div>
 
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f, i) => (
-            <li key={f.title} className="reveal glass spot lift rounded-[24px] p-6" style={{ ['--i' as string]: i + 2, ['--spot' as string]: '15 118 110' }} onPointerMove={spotlight}>
-              <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#ccfbf1] text-[#0f766e]">
-                <f.icon className="h-5 w-5" strokeWidth={2} />
-              </span>
-              <h3 className="mt-4 text-lg font-semibold tracking-tight text-ink">{f.title}</h3>
-              <p className="mt-1.5 text-[15px] leading-relaxed text-ink-2">{f.body}</p>
-            </li>
-          ))}
-        </ul>
+        <div className="mx-auto mt-8 w-full max-w-[1240px] px-5 md:px-10">
+          <div className="h-1 overflow-hidden rounded-full bg-ink/10">
+            <div className="h-full origin-left rounded-full bg-[#0f766e]" style={{ transform: 'scaleX(var(--p))' }} />
+          </div>
+        </div>
       </div>
     </section>
   );

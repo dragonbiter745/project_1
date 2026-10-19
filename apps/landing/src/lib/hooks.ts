@@ -76,3 +76,42 @@ export function useMediaQuery(query: string): boolean {
   }, [query]);
   return match;
 }
+
+/**
+ * Scroll progress for an element, written straight into the CSS variable --p (0..1) so
+ * scroll-linked transforms never re-render React.
+ * - 'pin':     0 when the element's top reaches the viewport top, 1 when its bottom reaches the viewport bottom
+ *              (use on a tall section whose child is position: sticky).
+ * - 'through': 0 when the element enters at the bottom, 1 when it leaves at the top.
+ */
+export function useScrollProgress<T extends HTMLElement>(mode: 'pin' | 'through', onProgress?: (p: number) => void): RefObject<T | null> {
+  const ref = useRef<T>(null);
+  const cb = useRef(onProgress);
+  cb.current = onProgress;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const raw = mode === 'pin' ? -r.top / Math.max(1, r.height - vh) : (vh - r.top) / (vh + r.height);
+      const p = Math.min(1, Math.max(0, raw));
+      el.style.setProperty('--p', p.toFixed(4));
+      cb.current?.(p);
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      cancelAnimationFrame(raf);
+    };
+  }, [mode]);
+  return ref;
+}

@@ -384,3 +384,160 @@ export function clearTextureCache() {
   for (const t of cache.values()) t.dispose();
   cache.clear();
 }
+
+// ─── Campus facades: 4 × 4 window bays per texture, with a matching night-glow map ──
+
+export type FacadeStyle = 'brick' | 'stone' | 'modern' | 'hostel';
+
+const FACADE_BAYS = 4;
+
+export function facadeMaps(style: FacadeStyle) {
+  const size = 512;
+  const bay = size / FACADE_BAYS;
+  const lit: boolean[] = [];
+  const map = canvasTexture(`facade-${style}`, size, (ctx, s, rng) => {
+    const wall = { brick: '#9a4a32', stone: '#d8c3a0', modern: '#d9dde1', hostel: '#efe4d2' }[style];
+    ctx.fillStyle = wall;
+    ctx.fillRect(0, 0, s, s);
+    if (style === 'brick') {
+      // Running-bond brick courses.
+      for (let y = 0; y < s; y += 8) {
+        ctx.fillStyle = 'rgba(60,25,15,0.35)';
+        ctx.fillRect(0, y, s, 1.4);
+        const off = (y / 8) % 2 ? 0 : 11;
+        for (let x = off; x < s; x += 22) ctx.fillRect(x, y, 1.4, 8);
+        for (let x = 0; x < s; x += 22) {
+          const v = rng.range(-14, 14);
+          ctx.fillStyle = v > 0 ? `rgba(255,200,170,${v / 140})` : `rgba(40,10,0,${-v / 140})`;
+          ctx.fillRect(x + off, y + 1.5, 20, 6.5);
+        }
+      }
+    } else if (style === 'stone') {
+      for (let y = 0; y < s; y += 32) {
+        ctx.fillStyle = 'rgba(90,70,40,0.25)';
+        ctx.fillRect(0, y, s, 2);
+        for (let x = (y / 32) % 2 ? 0 : 32; x < s; x += 64) ctx.fillRect(x, y, 2, 32);
+      }
+    }
+    noise(ctx, s, rng, 16, 1);
+    for (let r = 0; r < FACADE_BAYS; r++) {
+      for (let c = 0; c < FACADE_BAYS; c++) {
+        const x = c * bay;
+        const y = r * bay;
+        const isLit = rng.chance(style === 'hostel' ? 0.55 : 0.4);
+        lit.push(isLit);
+        if (style === 'modern') {
+          // Curtain wall: wide glass with slim mullions and a spandrel band.
+          ctx.fillStyle = '#5b7a8e';
+          ctx.fillRect(x + 6, y + 10, bay - 12, bay - 34);
+          const g = ctx.createLinearGradient(x, y, x + bay, y + bay);
+          g.addColorStop(0, 'rgba(255,255,255,0.35)');
+          g.addColorStop(0.5, 'rgba(255,255,255,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x + 6, y + 10, bay - 12, bay - 34);
+          ctx.fillStyle = '#2f3a42';
+          ctx.fillRect(x + bay / 2 - 1.5, y + 10, 3, bay - 34);
+          ctx.fillStyle = '#9aa3aa';
+          ctx.fillRect(x, y + bay - 24, bay, 18);
+        } else {
+          const ww = style === 'hostel' ? bay * 0.42 : bay * 0.5;
+          const wh = bay * 0.56;
+          const wx = x + (bay - ww) / 2;
+          const wy = y + bay * 0.18;
+          ctx.fillStyle = style === 'brick' ? '#efe7da' : '#f7f1e6';
+          ctx.fillRect(wx - 5, wy - 5, ww + 10, wh + 12);
+          ctx.fillStyle = '#425866';
+          ctx.fillRect(wx, wy, ww, wh);
+          ctx.fillStyle = 'rgba(255,255,255,0.22)';
+          ctx.fillRect(wx, wy, ww * 0.45, wh);
+          ctx.fillStyle = '#e9e2d4';
+          ctx.fillRect(wx + ww / 2 - 1.5, wy, 3, wh);
+          ctx.fillRect(wx, wy + wh * 0.35, ww, 3);
+          if (style === 'hostel') {
+            // Balcony rail and a splash of laundry colour.
+            ctx.fillStyle = '#6b6f73';
+            ctx.fillRect(x + 6, wy + wh + 4, bay - 12, 4);
+            if (rng.chance(0.4)) {
+              ctx.fillStyle = rng.pick(['#e4570f', '#2563eb', '#16a34a', '#db2777', '#facc15']);
+              ctx.fillRect(x + rng.range(10, bay - 30), wy + wh - 10, 18, 14);
+            }
+          }
+        }
+      }
+    }
+  });
+  const emissive = canvasTexture(`facade-${style}-e`, size, (ctx, s) => {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, s, s);
+    let i = 0;
+    for (let r = 0; r < FACADE_BAYS; r++) {
+      for (let c = 0; c < FACADE_BAYS; c++) {
+        const on = lit[i++];
+        if (!on) continue;
+        const x = c * bay;
+        const y = r * bay;
+        ctx.fillStyle = style === 'modern' ? '#cfe6ff' : '#ffd79a';
+        if (style === 'modern') ctx.fillRect(x + 6, y + 10, bay - 12, bay - 34);
+        else {
+          const ww = style === 'hostel' ? bay * 0.42 : bay * 0.5;
+          ctx.fillRect(x + (bay - ww) / 2, y + bay * 0.18, ww, bay * 0.56);
+        }
+      }
+    }
+  });
+  return { map, emissive, bays: FACADE_BAYS };
+}
+
+export function asphaltMap() {
+  return canvasTexture('asphalt', 512, (ctx, s, rng) => {
+    ctx.fillStyle = '#4a4c50';
+    ctx.fillRect(0, 0, s, s);
+    noise(ctx, s, rng, 26, 1);
+    // Dashed centre line (texture runs along u).
+    ctx.fillStyle = '#f2efe6';
+    for (let x = 0; x < s; x += 128) ctx.fillRect(x + 20, s / 2 - 4, 70, 8);
+    ctx.fillStyle = 'rgba(242,239,230,0.85)';
+    ctx.fillRect(0, 14, s, 6);
+    ctx.fillRect(0, s - 20, s, 6);
+  });
+}
+
+export function courtMap() {
+  return canvasTexture('court', 512, (ctx, s) => {
+    ctx.fillStyle = '#2f6f8f';
+    ctx.fillRect(0, 0, s, s);
+    ctx.fillStyle = '#c2532b';
+    ctx.fillRect(24, 24, s - 48, s - 48);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(24, 24, s - 48, s - 48);
+    ctx.beginPath();
+    ctx.moveTo(s / 2, 24);
+    ctx.lineTo(s / 2, s - 24);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(s / 2, s / 2, 50, 0, Math.PI * 2);
+    ctx.stroke();
+    for (const x of [24, s - 24]) {
+      ctx.beginPath();
+      ctx.arc(x, s / 2, 150, -Math.PI / 2, Math.PI / 2, x !== 24);
+      ctx.stroke();
+    }
+  });
+}
+
+/** Lettering for the campus gate arch. */
+export function gateSignMap() {
+  return canvasTexture('gate-sign', 1024, (ctx, s) => {
+    ctx.fillStyle = '#1c1d21';
+    ctx.fillRect(0, 0, s, s);
+    ctx.fillStyle = '#f5d9a8';
+    ctx.font = '800 150px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('REVA CAMPUS', s / 2, s / 2 - 40);
+    ctx.font = '600 64px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#e4570f';
+    ctx.fillText('Food Court  →', s / 2, s / 2 + 110);
+  });
+}

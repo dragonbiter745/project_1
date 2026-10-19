@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SHOPS } from '../data/shops';
-import { fabricMap, grassMap, pavingMap, plasterMaps, steelMaps, wallTileMap, woodMaps, doorMatMap, noticeMap } from './textures';
+import { asphaltMap, courtMap, doorMatMap, fabricMap, facadeMaps, gateSignMap, grassMap, noticeMap, pavingMap, plasterMaps, steelMaps, wallTileMap, woodMaps, type FacadeStyle } from './textures';
 
 export type MatKey = string;
 
@@ -85,6 +85,28 @@ function build(): Map<MatKey, THREE.Material> {
   m.set('kioskGlow', glow('kioskGlow', '#ffe3cf', 1.2, 2));
   m.set('streetGlow', glow('streetGlow', '#ffd8a0', 0.1, 6));
   m.set('exitGlow', glow('exitGlow', '#22c55e', 2, 3));
+
+  // Campus buildings: windows glow warm after dusk.
+  for (const style of ['brick', 'stone', 'modern', 'hostel'] as FacadeStyle[]) {
+    const f = facadeMaps(style);
+    NIGHT_GLOW.set(`facade:${style}`, { day: 0, night: 1.15 });
+    m.set(`facade:${style}`, std({ map: f.map, emissiveMap: f.emissive, emissive: '#ffffff', emissiveIntensity: 0, roughness: style === 'modern' ? 0.35 : 0.85, metalness: style === 'modern' ? 0.25 : 0 }));
+  }
+  m.set('asphalt', std({ map: asphaltMap(), roughness: 0.92 }));
+  m.set('court', std({ map: courtMap(), roughness: 0.8 }));
+  const sign = gateSignMap();
+  NIGHT_GLOW.set('gateSign', { day: 0.15, night: 1.2 });
+  m.set('gateSign', std({ map: sign, emissiveMap: sign, emissive: '#ffffff', emissiveIntensity: 0.15, roughness: 0.5 }));
+  m.set('roof', std({ color: '#8d8f92', roughness: 0.9 }));
+  m.set('patina', std({ color: '#5f9e8f', roughness: 0.45, metalness: 0.5 }));
+  m.set('trim', std({ color: '#f1ece2', roughness: 0.6 }));
+  m.set('terracottaRoof', std({ color: '#a4472c', roughness: 0.8 }));
+  m.set('hill', std({ color: '#6d8c5a', roughness: 1, flatShading: true }));
+  m.set('hillFar', std({ color: '#8fa6a0', roughness: 1, flatShading: true }));
+  m.set('scooterA', std({ color: '#dc2626', roughness: 0.35, metalness: 0.3 }));
+  m.set('scooterB', std({ color: '#1d4ed8', roughness: 0.35, metalness: 0.3 }));
+  m.set('scooterC', std({ color: '#f5f5f4', roughness: 0.35, metalness: 0.3 }));
+  m.set('flag', std({ color: '#e4570f', roughness: 0.8, side: THREE.DoubleSide }));
 
   for (const shop of SHOPS) {
     m.set(`lacquer:${shop.id}`, new THREE.MeshPhysicalMaterial({ color: shop.color, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.18 }));

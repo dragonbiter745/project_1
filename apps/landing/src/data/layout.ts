@@ -250,4 +250,6 @@ export const AREAS: CameraArea[] = [
   { id: 'seating', label: 'Seating hall', position: [-9, 6.5, 13], target: [4, 0.6, 2.5] },
   { id: 'trays', label: 'Tray return', position: [-5.5, 3.4, 6.5], target: [-9.4, 1, 11.4] },
   { id: 'courtyard', label: 'Courtyard', position: [30, 6, 6], target: [17, 1.5, 2] },
+  { id: 'campus', label: 'Campus', position: [46, 34, 58], target: [0, 4, -12] },
+  { id: 'gate', label: 'Main gate', position: [4, 3.2, 40], target: [4, 4, 14] },
 ];
