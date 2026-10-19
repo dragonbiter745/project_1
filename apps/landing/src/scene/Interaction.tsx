@@ -95,7 +95,7 @@ export function Interaction() {
       }
     }
     r.visible = Boolean(anchor);
-    l.visible = Boolean(selection) && Boolean(anchor);
+    l.visible = selection?.kind === 'person' && Boolean(anchor);
     if (anchor) {
       r.position.set(anchor.x, 0.03, anchor.z);
       r.scale.setScalar(radius * (1 + Math.sin(frame.t * 3.2) * 0.05));
@@ -148,8 +148,9 @@ export function Interaction() {
         <meshBasicMaterial color={[3.2, 1.45, 0.4]} toneMapped={false} transparent opacity={0.9} depthWrite={false} />
       </mesh>
       <group ref={label} visible={false}>
-        {selection && (
-          <Html center distanceFactor={14} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
+        {/* Only people get a floating label; shops and tables are named in the detail panel. */}
+        {selection?.kind === 'person' && (
+          <Html center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
             <div className="scene-label">{selectionLabel}</div>
           </Html>
         )}

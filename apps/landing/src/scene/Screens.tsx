@@ -27,28 +27,36 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 }
 
 function drawSign(ctx: CanvasRenderingContext2D, shop: ShopDef, w: number, h: number) {
+  // A dark backlit panel keeps the name readable on every fascia colour, without bloom haze.
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = 'rgba(0,0,0,0)';
-  ctx.fillRect(0, 0, w, h);
-  // Badge with the token code.
-  ctx.fillStyle = '#ffffff';
-  roundRect(ctx, 36, 22, 112, h - 44, 22);
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#1d1e22');
+  g.addColorStop(1, '#0f1012');
+  ctx.fillStyle = g;
+  roundRect(ctx, 6, 6, w - 12, h - 12, 30);
   ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  // Token-code badge in the shop colour.
   ctx.fillStyle = shop.color;
-  ctx.font = `800 52px ${FONT}`;
+  roundRect(ctx, 26, 22, 116, h - 44, 22);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 50px ${FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(shop.code, 92, h / 2 + 2);
+  ctx.fillText(shop.code, 84, h / 2 + 2);
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#fffaf2';
-  ctx.shadowColor = 'rgba(255,255,255,0.9)';
-  ctx.shadowBlur = 18;
-  ctx.font = `750 78px ${FONT}`;
-  ctx.fillText(shop.name, 176, h / 2 - 8);
-  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `750 70px ${FONT}`;
+  ctx.fillText(shop.name, 172, h / 2 - 14, w - 220);
+  ctx.fillStyle = 'rgba(255,255,255,0.68)';
   ctx.font = `500 28px ${FONT}`;
-  ctx.fillStyle = 'rgba(255,250,242,0.82)';
-  ctx.fillText(shop.tagline, 180, h / 2 + 44);
+  ctx.fillText(shop.tagline, 174, h / 2 + 40, w - 220);
+  // Accent underline in the shop colour.
+  ctx.fillStyle = shop.color;
+  ctx.fillRect(174, h - 22, 120, 5);
 }
 
 function drawMenu(ctx: CanvasRenderingContext2D, shop: ShopDef, soldOut: Set<string>, w: number, h: number) {
@@ -255,7 +263,7 @@ export function Screens() {
         <group key={b.shop.id} matrixAutoUpdate={false} matrix={b.matrix}>
           <mesh position={[0, 3.36, 0.006]}>
             <planeGeometry args={[5.4, 0.675]} />
-            <meshBasicMaterial map={b.sign.tex} transparent toneMapped={false} color={[1.8, 1.8, 1.8]} />
+            <meshBasicMaterial map={b.sign.tex} transparent toneMapped={false} />
           </mesh>
           <mesh position={[0, 2.45, -0.826]}>
             <planeGeometry args={[4.8, 0.87]} />
