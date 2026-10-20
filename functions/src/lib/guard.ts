@@ -2,7 +2,7 @@ import { HttpsError, type CallableRequest } from 'firebase-functions/v2/https';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { db } from '../db';
 
-export type Role = 'master' | 'vendorAdmin' | 'vendorStaff';
+export type Role = 'master' | 'finance' | 'vendorAdmin' | 'vendorStaff';
 
 export function requireUid(req: CallableRequest): string {
   const uid = req.auth?.uid;
@@ -12,7 +12,7 @@ export function requireUid(req: CallableRequest): string {
 
 export function roleOf(req: CallableRequest): { role: Role | null; vendorId: string | null } {
   const t = (req.auth?.token ?? {}) as Record<string, unknown>;
-  const role = t.role === 'master' || t.role === 'vendorAdmin' || t.role === 'vendorStaff' ? (t.role as Role) : null;
+  const role = t.role === 'master' || t.role === 'finance' || t.role === 'vendorAdmin' || t.role === 'vendorStaff' ? (t.role as Role) : null;
   return { role, vendorId: typeof t.vendorId === 'string' ? t.vendorId : null };
 }
 

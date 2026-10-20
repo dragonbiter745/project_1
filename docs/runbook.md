@@ -95,3 +95,12 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
   account, and a campus shares a handful of public IPs. A temporary 5,000/hour per-IP quota was
   scheduled for 7 days from 2026-10-20. Ask Firebase support for a permanent increase (they ask
   for two weeks' notice) or re-schedule the temporary quota before it lapses.
+
+### Finance console
+- URL: https://reva-nest-finance.web.app. Login `finance@revafoodcourt.staff` (role `finance`);
+  the master account also works. Create more finance logins with the role claim `{"role":"finance"}`.
+- **Paying shops:** transfer the money from the bank or UPI as usual, then press **Pay** on the
+  shop (Overview) or **Record a payout** (Payouts) and enter the amount and UTR. A wrong entry is
+  voided with a reason, never deleted.
+- **Commission:** click the rate under a shop's name on Overview. It applies to new orders only.
+- Every figure is in IST days. Exports are CSV with rupee amounts (two decimals).

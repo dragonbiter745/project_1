@@ -1,0 +1,111 @@
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, startAfter, where, type QueryConstraint, type QueryDocumentSnapshot } from 'firebase/firestore';
+import { istDayStartMs, type FinanceReport, type Order, type OrderStatus, type Payout, type SubOrder } from '@foodcourt/shared';
+import { getDb } from './db';
+import { getFunctionsClient, httpsCallable } from './functions';
+import { ActionError } from './ops';
+
+// Finance console data. Totals come from the financeReport function (aggregation queries);
+// the transaction list pages through orders directly, which the rules open to finance staff only.
+
+export type LedgerOrder = Order & { customerPhone?: string; displayName?: string };
+export type LedgerFilter = 'all' | 'paid' | 'pending' | 'failed' | 'refunded';
+
+const FILTER_STATUSES: Record<Exclude<LedgerFilter, 'all'>, OrderStatus[]> = {
+  paid: ['PAID', 'COMPLETED'],
+  pending: ['PENDING_PAYMENT'],
+  failed: ['FAILED', 'EXPIRED'],
+  refunded: ['PARTIALLY_REFUNDED'],
+};
+
+function message(err: unknown): string {
+  const e = err as { code?: string; message?: string };
+  if (e?.code === 'functions/unavailable' || (typeof navigator !== 'undefined' && !navigator.onLine)) return 'No connection. Check the network and try again.';
+  return e?.message?.replace(/^Firebase: /, '') || 'Something went wrong. Try again.';
+}
+
+async function guarded<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    throw new ActionError(message(err));
+  }
+}
+
+const action = <T>(data: Record<string, unknown>) => guarded(async () => (await httpsCallable<unknown, T>(getFunctionsClient(), 'financeAction')(data)).data);
+
+export const getFinanceReport = (from: string, to: string) =>
+  guarded(async () => (await httpsCallable<unknown, FinanceReport>(getFunctionsClient(), 'financeReport')({ from, to })).data);
+
+export interface PayoutInput {
+  requestKey: string;
+  vendorId: string;
+  amountPaise: number;
+  paidOn: string;
+  reference: string;
+  note?: string;
+}
+
+export const recordPayout = (input: PayoutInput) => action<{ payoutId: string; duplicate: boolean }>({ action: 'RECORD_PAYOUT', ...input });
+export const voidPayout = (payoutId: string, reason: string) => action<{ payoutId: string }>({ action: 'VOID_PAYOUT', payoutId, reason });
+export const setCommission = (vendorId: string, feePct: number, perOrderFeePaise: number) =>
+  action<{ vendorId: string }>({ action: 'SET_COMMISSION', vendorId, feePct, perOrderFeePaise });
+
+export interface LedgerPage {
+  rows: LedgerOrder[];
+  cursor: QueryDocumentSnapshot | null;
+}
+
+/** One page of orders placed between two IST days (inclusive), newest first. */
+export function listOrders(from: string, to: string, filter: LedgerFilter, after: QueryDocumentSnapshot | null = null, size = 50): Promise<LedgerPage> {
+  const constraints: QueryConstraint[] = [
+    where('createdAt', '>=', istDayStartMs(from)),
+    where('createdAt', '<', istDayStartMs(to) + 86_400_000),
+    orderBy('createdAt', 'desc'),
+    limit(size),
+  ];
+  if (filter !== 'all') constraints.unshift(where('status', 'in', FILTER_STATUSES[filter]));
+  if (after) constraints.push(startAfter(after));
+  return guarded(async () => {
+    const snap = await getDocs(query(collection(getDb(), 'orders'), ...constraints));
+    return { rows: snap.docs.map((d) => ({ ...(d.data() as LedgerOrder), id: d.id })), cursor: snap.size === size ? snap.docs[snap.size - 1]! : null };
+  });
+}
+
+/** Every order in the range for a CSV, fetched in pages and capped so one export can't run away. */
+export async function allOrders(from: string, to: string, filter: LedgerFilter, cap = 10_000): Promise<LedgerOrder[]> {
+  const out: LedgerOrder[] = [];
+  let cursor: QueryDocumentSnapshot | null = null;
+  do {
+    const page: LedgerPage = await listOrders(from, to, filter, cursor, 500);
+    out.push(...page.rows);
+    cursor = page.cursor;
+  } while (cursor && out.length < cap);
+  return out;
+}
+
+/** Finds orders by full order id or the diner's 10-digit mobile number. */
+export function searchOrders(term: string): Promise<LedgerOrder[]> {
+  const t = term.trim();
+  const phone = t.replace(/\D/g, '').slice(-10);
+  return guarded(async () => {
+    if (/^[6-9]\d{9}$/.test(phone) && !/^o[0-9a-f]{24}$/.test(t)) {
+      const snap = await getDocs(query(collection(getDb(), 'orders'), where('customerPhone', '==', phone), orderBy('createdAt', 'desc'), limit(50)));
+      return snap.docs.map((d) => ({ ...(d.data() as LedgerOrder), id: d.id }));
+    }
+    if (!/^[A-Za-z0-9_-]{6,64}$/.test(t)) return [];
+    const snap = await getDoc(doc(getDb(), 'orders', t));
+    return snap.exists() ? [{ ...(snap.data() as LedgerOrder), id: snap.id }] : [];
+  });
+}
+
+export const orderTickets = (orderId: string) =>
+  guarded(async () => {
+    const snap = await getDocs(query(collection(getDb(), 'subOrders'), where('orderId', '==', orderId)));
+    return snap.docs.map((d) => ({ ...(d.data() as SubOrder), id: d.id }));
+  });
+
+export const listPayouts = (max = 500) =>
+  guarded(async () => {
+    const snap = await getDocs(query(collection(getDb(), 'payouts'), orderBy('createdAt', 'desc'), limit(max)));
+    return snap.docs.map((d) => ({ ...(d.data() as Payout), id: d.id }));
+  });

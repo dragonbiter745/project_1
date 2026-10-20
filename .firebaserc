@@ -18,6 +18,9 @@
         ],
         "landing": [
           "reva-nest-landing"
+        ],
+        "finance": [
+          "reva-nest-finance"
         ]
       }
     }

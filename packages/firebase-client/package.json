@@ -18,6 +18,7 @@
     "./live": "./src/live.ts",
     "./ops": "./src/ops.ts",
     "./staff": "./src/staff.ts",
+    "./finance": "./src/finance.ts",
     "./db": "./src/db.ts"
   },
   "scripts": {

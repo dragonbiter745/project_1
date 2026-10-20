@@ -26,7 +26,7 @@ export type PaymentStatus =
   | 'USER_DROPPED'
   | 'REFUNDED';
 
-export type UserRole = 'master' | 'vendorAdmin' | 'vendorStaff' | 'customer';
+export type UserRole = 'master' | 'finance' | 'vendorAdmin' | 'vendorStaff' | 'customer';
 
 // Venue & Vendor
 export interface Venue {
@@ -207,6 +207,10 @@ export interface SubOrder {
     note?: string;
   }>;
   subtotalPaise: number;
+  /** How the diner paid: ONLINE money reaches the court, COUNTER money stays with the shop. */
+  paymentMode?: 'ONLINE' | 'COUNTER';
+  /** Court commission on this ticket, fixed at creation from the shop's rate. */
+  commissionPaise?: number;
   status: SubOrderStatus;
   ts: SubOrderTimeline;
   rejectReason?: string;

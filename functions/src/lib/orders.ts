@@ -1,5 +1,5 @@
 import { FieldValue, type DocumentReference, type DocumentSnapshot, type Transaction } from 'firebase-admin/firestore';
-import { deriveParentOrderStatus, formatVendorToken, type Order, type SubOrder, type Vendor } from '@foodcourt/shared';
+import { commissionFor, deriveParentOrderStatus, formatVendorToken, type Order, type SubOrder, type Vendor } from '@foodcourt/shared';
 import { db } from '../db';
 
 /** One ticket per shop per order; the id is deterministic so retries never duplicate tickets. */
@@ -34,7 +34,8 @@ export function writeTickets(
   orderId: string,
   order: Pick<Order, 'items' | 'dateKey' | 'uid' | 'sessionId' | 'tableId' | 'tableLabel'> & { displayName?: string },
   reads: TicketReads,
-  now: number
+  now: number,
+  paymentMode: 'ONLINE' | 'COUNTER'
 ): void {
   for (const vendorId of vendorIdsOf(order)) {
     if (reads.existing.get(vendorId)?.exists) continue;
@@ -43,6 +44,7 @@ export function writeTickets(
     const seq = ((counter.data()?.count as number | undefined) ?? 0) + 1;
     tx.set(counter.ref, { count: seq, updatedAt: now }, { merge: true });
     const items = order.items.filter((i) => i.vendorId === vendorId);
+    const subtotalPaise = items.reduce((n, i) => n + i.pricePaise * i.qty, 0);
     const ticket: Omit<SubOrder, 'id'> = {
       orderId,
       uid: order.uid,
@@ -55,7 +57,9 @@ export function writeTickets(
       tableLabel: order.tableLabel,
       customerDisplay: order.displayName ?? '',
       items: items.map((i) => ({ id: i.itemId, name: i.name, qty: i.qty, pricePaise: i.pricePaise, ...(i.note ? { note: i.note } : {}) })),
-      subtotalPaise: items.reduce((n, i) => n + i.pricePaise * i.qty, 0),
+      subtotalPaise,
+      paymentMode,
+      commissionPaise: commissionFor(subtotalPaise, vendor ?? {}),
       status: 'NEW',
       ts: { placed: now },
     };
@@ -87,7 +91,7 @@ export async function materializePaidOrder(orderId: string, payment: { amountPai
       'payment.method': payment.method ?? 'UPI',
       updatedAt: now,
     });
-    writeTickets(tx, orderId, order, reads, now);
+    writeTickets(tx, orderId, order, reads, now, 'ONLINE');
     return 'created';
   });
 }

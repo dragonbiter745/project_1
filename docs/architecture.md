@@ -89,3 +89,19 @@
   NAT); Cashfree keys in Secret Manager; signed webhooks with amount checks; deterministic order
   and ticket ids for idempotency; a one-minute sweeper and a refund trigger.
 - **Testing:** 25 emulator tests (callables, webhook replay, sweeper, refunds, rules) run in CI.
+
+## ADR 012: Finance console (apps/finance)
+- **Context:** the court collects every online payment in one Cashfree account and owes each shop
+  its share. Finance staff need one place, for all shops, to see collections and refunds, what
+  each shop is owed, and to record the transfers they make.
+- **Decisions:** a separate app and site (`reva-nest-finance`) with its own `finance` role claim;
+  the court manager can open it too. Each ticket stores `paymentMode` and `commissionPaise` when
+  it is created, so a rate change only affects later orders. Totals come from the
+  `financeReport` callable using Firestore aggregation queries (count/sum, one read per 1,000
+  tickets), never by downloading tickets. Payouts are written only by `financeAction`
+  (idempotent via a per-form request key), never deleted, only voided with a reason; every
+  finance write adds an `auditLogs` entry.
+- **Money rules:** shop share = online sales of non-failed tickets − commission on online and
+  counter tickets (the shop already holds counter cash). Balance due = all-time share − payouts.
+- **Not built (kept simple on purpose):** Cashfree settlement and fee reconciliation, GST
+  returns, expense tracking, double-entry journals. Gateway fees appear on Cashfree settlements.

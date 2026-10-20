@@ -101,7 +101,7 @@ export const createCheckout = onCall(
         if (fresh.exists) return;
         const reads = await readForTickets(tx, orderId, base);
         tx.set(orderRef, { ...base, status: 'PAID', payment: { status: 'PENDING', mode: 'COUNTER' } });
-        writeTickets(tx, orderId, base, reads, now);
+        writeTickets(tx, orderId, base, reads, now, 'COUNTER');
       });
       return { orderId, status: 'PAID', paymentSessionId: null, cashfreeMode: null, totalPaise: totals.totalPaise };
     }

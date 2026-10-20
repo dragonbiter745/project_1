@@ -70,6 +70,21 @@ describe('firestore.rules', () => {
     await assertFails(updateDoc(doc(staff(), 'vendors/v-rm'), { defaultPrepMin: 999 }));
   });
 
+  it('lets finance read money across shops but write nothing', async () => {
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'payouts/p1'), { vendorId: 'v-rm', amountPaise: 500, status: 'RECORDED' }));
+    const fin = env.authenticatedContext('fin', { role: 'finance' }).firestore();
+    await assertSucceeds(getDoc(doc(fin, 'orders/o1')));
+    await assertSucceeds(getDoc(doc(fin, 'subOrders/o1__v-rm')));
+    await assertSucceeds(getDoc(doc(fin, 'payouts/p1')));
+    await assertSucceeds(getDoc(doc(master(), 'payouts/p1')));
+    await assertFails(getDoc(doc(staff(), 'payouts/p1')));
+    await assertFails(getDoc(doc(diner(), 'payouts/p1')));
+    await assertFails(setDoc(doc(fin, 'payouts/p2'), { vendorId: 'v-rm', amountPaise: 1 }));
+    await assertFails(updateDoc(doc(master(), 'payouts/p1'), { amountPaise: 1 }));
+    await assertFails(updateDoc(doc(fin, 'vendors/v-rm'), { feePct: 0 }));
+    await assertFails(getDoc(doc(fin, 'tables/tbl-14')));
+  });
+
   it('keeps menus and global config master-only', async () => {
     await assertFails(setDoc(doc(staff(), 'menus/v-rm'), { categories: [] }));
     await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), 'config/global')));

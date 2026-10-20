@@ -1,0 +1,54 @@
+name: Frontend · Finance console
+
+on:
+  pull_request:
+    paths:
+      - apps/finance/**
+      - packages/shared/**
+      - packages/ui/**
+      - packages/firebase-client/**
+      - package.json
+      - pnpm-lock.yaml
+      - turbo.json
+      - tsconfig.base.json
+      - pnpm-workspace.yaml
+      - .npmrc
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-finance.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/finance/**
+      - packages/shared/**
+      - packages/ui/**
+      - packages/firebase-client/**
+      - package.json
+      - pnpm-lock.yaml
+      - turbo.json
+      - tsconfig.base.json
+      - pnpm-workspace.yaml
+      - .npmrc
+      - firebase.json
+      - .github/actions/setup/**
+      - .github/workflows/_frontend.yml
+      - .github/workflows/frontend-finance.yml
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-finance-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  finance:
+    uses: ./.github/workflows/_frontend.yml
+    with:
+      app: finance
+      live-url: https://reva-nest-finance.web.app
+    secrets: inherit

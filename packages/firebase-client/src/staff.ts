@@ -1,7 +1,7 @@
 import { onIdTokenChanged, signInWithEmailAndPassword, signOut as fbSignOut, type User } from 'firebase/auth';
 import { getAuthClient } from './auth';
 
-export type StaffRole = 'master' | 'vendorAdmin' | 'vendorStaff';
+export type StaffRole = 'master' | 'finance' | 'vendorAdmin' | 'vendorStaff';
 
 export interface StaffUser {
   uid: string;
@@ -19,7 +19,7 @@ export function watchStaff(cb: (user: StaffUser | null) => void): () => void {
     cb({
       uid: user.uid,
       email: user.email,
-      role: role === 'master' || role === 'vendorAdmin' || role === 'vendorStaff' ? role : null,
+      role: role === 'master' || role === 'finance' || role === 'vendorAdmin' || role === 'vendorStaff' ? role : null,
       vendorId: typeof token.claims.vendorId === 'string' ? token.claims.vendorId : null,
     });
   });

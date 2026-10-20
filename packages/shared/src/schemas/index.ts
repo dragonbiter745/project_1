@@ -75,3 +75,35 @@ export const AdminActionSchema = z.discriminatedUnion('action', [
 export type AdminActionInput = z.infer<typeof AdminActionSchema>;
 
 export type ReportIssueInput = z.infer<typeof ReportIssueSchema>;
+
+const DATE_KEY = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use a YYYY-MM-DD date');
+
+export const FinanceReportSchema = z
+  .object({ from: DATE_KEY, to: DATE_KEY })
+  .refine((r) => r.from <= r.to, 'The start date must be before the end date')
+  .refine((r) => Date.parse(r.to) - Date.parse(r.from) <= 400 * 86_400_000, 'Pick a range of about a year or less');
+
+export const FinanceActionSchema = z.discriminatedUnion('action', [
+  // Records money sent to a shop; requestKey makes a double submit land once.
+  z.object({
+    action: z.literal('RECORD_PAYOUT'),
+    requestKey: z.string().min(8).max(80),
+    vendorId: z.string().min(1).max(100),
+    amountPaise: z.number().int().min(100, 'Enter at least ₹1').max(1_000_000_000, 'That amount is too large'),
+    paidOn: DATE_KEY,
+    reference: z.string().trim().min(3, 'Enter the UTR or UPI reference').max(60),
+    note: z.string().trim().max(200).optional(),
+  }),
+  // Payouts are never deleted: a mistaken one is voided with a reason and stays in the history.
+  z.object({ action: z.literal('VOID_PAYOUT'), payoutId: z.string().min(1).max(100), reason: z.string().trim().min(3, 'Say why').max(200) }),
+  // Applies to tickets created from now on.
+  z.object({
+    action: z.literal('SET_COMMISSION'),
+    vendorId: z.string().min(1).max(100),
+    feePct: z.number().min(0).max(50).multipleOf(0.01),
+    perOrderFeePaise: z.number().int().min(0).max(10_000),
+  }),
+]);
+
+export type FinanceReportInput = z.infer<typeof FinanceReportSchema>;
+export type FinanceActionInput = z.infer<typeof FinanceActionSchema>;
