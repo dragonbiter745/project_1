@@ -151,6 +151,19 @@
   transform: translate3d(0, 0, 0);
   transition-duration: 380ms;
 }
+/* A bar pinned to the top hides upward instead, and fades so no edge peeks in. */
+.float-bar-top {
+  transform: translate3d(0, calc(-100% - 24px), 0);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 260ms var(--ease-drawer), opacity 200ms ease, visibility 0s linear 260ms;
+}
+.float-bar-top[data-visible='true'] {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  visibility: visible;
+  transition: transform 380ms var(--ease-drawer), opacity 200ms ease, visibility 0s;
+}
 
 /* Two-layer crossfade (Add button <-> stepper). Blur hides the overlap. */
 .swap-layer {

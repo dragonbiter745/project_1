@@ -38,7 +38,7 @@ export function ActionToast() {
   );
   return (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-spotlight flex justify-center px-4">
-      <div data-visible={text !== null} className="float-bar pointer-events-auto">
+      <div data-visible={text !== null} className="float-bar-top pointer-events-auto">
         <p role="alert" className="flex items-center gap-3 rounded-full bg-danger py-2 pl-4 pr-2 text-sm font-semibold text-white shadow-float">
           <AlertTriangle className="h-4 w-4 shrink-0" strokeWidth={2.25} />
           {text}
