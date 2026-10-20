@@ -8,3 +8,4 @@ export * from './schemas/index';
 export * from './tables';
 export * from './kitchenStats';
 export * from './finance';
+export * from './founders';

@@ -1,20 +1,25 @@
 import { useState, type ComponentType } from 'react';
-import { Landmark, LayoutDashboard, ReceiptText } from 'lucide-react';
+import { BookOpen, Landmark, LayoutDashboard, ReceiptText, Users } from 'lucide-react';
 import { cx } from '@foodcourt/ui';
 import { RangePicker } from '../components/RangePicker';
 import { compareLabel, presetRange, rangeLabel, type Range } from '../lib/range';
 import { useReport } from '../lib/useReport';
+import { useBooks } from '../books/useBooks';
+import { RevenueExpenses } from '../books/RevenueExpenses';
+import { Founders } from '../books/Founders';
 import type { PageProps } from '../types';
 import { Overview } from './Overview';
 import { Payouts } from './Payouts';
 import { Transactions } from './Transactions';
 
-type Tab = 'overview' | 'transactions' | 'payouts';
+type Tab = PageProps['go'] extends (t: infer T) => void ? T : never;
 
 const TABS: Array<{ key: Tab; label: string; icon: typeof LayoutDashboard; component: ComponentType<PageProps> }> = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard, component: Overview },
   { key: 'transactions', label: 'Payments', icon: ReceiptText, component: Transactions },
   { key: 'payouts', label: 'Payouts to shops', icon: Landmark, component: Payouts },
+  { key: 'books', label: 'Revenue & expenses', icon: BookOpen, component: RevenueExpenses },
+  { key: 'founders', label: 'Founders', icon: Users, component: Founders },
 ];
 
 /** The court's own money: commission income, what every shop is owed, payouts and the payment ledger. */
@@ -22,6 +27,7 @@ export function CourtFinance() {
   const [tab, setTab] = useState<Tab>('overview');
   const [range, setRange] = useState<Range>(() => presetRange('today'));
   const report = useReport(range);
+  const books = useBooks(tab === 'books' || tab === 'founders');
   const Page = TABS.find((t) => t.key === tab)!.component;
 
   return (
@@ -51,7 +57,7 @@ export function CourtFinance() {
         {rangeLabel(range)} · all shops · compared {compareLabel(range).replace(/^vs /, 'with ')}
       </p>
       <div key={tab} className="enter-up mt-5">
-        <Page range={range} report={report} />
+        <Page range={range} report={report} books={books} go={setTab} />
       </div>
     </>
   );

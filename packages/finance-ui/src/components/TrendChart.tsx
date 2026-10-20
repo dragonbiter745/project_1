@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Granularity } from '@foodcourt/shared';
-import { bucketLabel, bucketTitle } from '../lib/format';
+import { bucketLabel, bucketTitle, type ChartGrain } from '../lib/format';
 
 interface TrendChartProps {
   points: Array<{ key: string; value: number }>;
-  granularity: Granularity;
+  granularity: ChartGrain;
   /** Full value for the tooltip and the table view, e.g. ₹1,240.50 or "12 orders". */
   format: (v: number) => string;
   /** Short value for the axis, e.g. ₹1.2k. */

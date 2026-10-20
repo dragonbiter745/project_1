@@ -110,3 +110,11 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
 - Periods: Today, Yesterday, Last 7 days, Last 30 days or any from–to dates. Every headline figure
   shows its change against the previous period of the same length.
 - Figures are in IST days. Exports are CSV with rupee amounts (two decimals).
+
+### Founder books (no spreadsheet)
+- Master console → Finance → **Revenue & expenses**: press **Add expense** whenever money is
+  spent (amount, what for, category, who paid). Revenue fills in by itself from orders.
+- Finance → **Founders**: **Add investment** when a founder puts money in, **Record withdrawal**
+  when one takes money out, **Edit shares** for the profit split. **Print or save PDF** gives the
+  partner share report for the chosen period.
+- Mistakes are voided with a reason, never deleted. Export any table as CSV if you need it.

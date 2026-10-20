@@ -111,3 +111,17 @@
   four aggregation queries; charts are hand-drawn SVG in the saffron accent (palette validated).
 - **Not built (kept simple on purpose):** Cashfree settlement and fee reconciliation, GST
   returns, expense tracking, double-entry journals. Gateway fees appear on Cashfree settlements.
+
+## ADR 013: Founder books replace the expense spreadsheet
+- **Context:** three founders (Dibya, Manash, Sahil Shingh) tracked spending in a spreadsheet.
+  The goal is no spreadsheet at all: the master console is the books.
+- **Decisions:** master → Finance gets **Revenue & expenses** and **Founders** tabs. Revenue is the
+  court's commission, computed from orders (no entry needed). Expenses, founder investments and
+  withdrawals are `founderLedger` entries written only by `financeAction` (master, idempotent,
+  never deleted, voided with a reason, audit-logged). Partners and shares live in
+  `founders/partners` (basis points, must total 100%; defaults to the three founders).
+  `computeFounderBooks` and `splitByShare` (largest remainder, exact to the paisa) in
+  `packages/shared` produce the monthly report, each founder's balance (put in + expenses paid
+  personally + profit share − withdrawn), the over-drawn check and the printable partner share
+  report. `founderReport` returns lifetime and per-month court income via aggregation queries.
+- **Not built:** spreadsheet sync or import (deliberately), GST filing, double-entry journals.

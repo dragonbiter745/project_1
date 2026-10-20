@@ -1,5 +1,17 @@
 import { collection, doc, getDoc, getDocs, limit, orderBy, query, startAfter, where, type QueryConstraint, type QueryDocumentSnapshot } from 'firebase/firestore';
-import { istDayStartMs, type FinanceReport, type Order, type OrderStatus, type Payout, type ShopReport, type SubOrder } from '@foodcourt/shared';
+import {
+  DEFAULT_PARTNERS,
+  istDayStartMs,
+  type FinanceReport,
+  type FounderEntry,
+  type FounderIncome,
+  type Order,
+  type OrderStatus,
+  type Partner,
+  type Payout,
+  type ShopReport,
+  type SubOrder,
+} from '@foodcourt/shared';
 import { getDb } from './db';
 import { getFunctionsClient, httpsCallable } from './functions';
 import { ActionError } from './ops';
@@ -153,3 +165,22 @@ export const listShopPayouts = (vendorId: string, max = 200) =>
     const snap = await getDocs(query(collection(getDb(), 'payouts'), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'), limit(max)));
     return snap.docs.map((d) => ({ ...(d.data() as Payout), id: d.id }));
   });
+
+// ─── Founder books (master only) ─────────────────────────────────────────────
+
+export type EntryInput = Pick<FounderEntry, 'kind' | 'amountPaise' | 'date' | 'partnerId' | 'category' | 'paidBy' | 'note' | 'reference'>;
+
+export const getFounderIncome = () => guarded(async () => (await httpsCallable<unknown, FounderIncome>(getFunctionsClient(), 'founderReport')({})).data);
+
+export const getPartners = () =>
+  guarded(async () => ((await getDoc(doc(getDb(), 'founders', 'partners'))).data()?.partners as Partner[] | undefined) ?? DEFAULT_PARTNERS);
+
+export const listFounderEntries = (max = 5000) =>
+  guarded(async () => {
+    const snap = await getDocs(query(collection(getDb(), 'founderLedger'), orderBy('date', 'desc'), limit(max)));
+    return snap.docs.map((d) => ({ ...(d.data() as FounderEntry), id: d.id }));
+  });
+
+export const recordEntry = (requestKey: string, entry: EntryInput) => action<{ entryId: string; duplicate: boolean }>({ action: 'RECORD_ENTRY', requestKey, ...entry });
+export const voidEntry = (entryId: string, reason: string) => action<{ entryId: string }>({ action: 'VOID_ENTRY', entryId, reason });
+export const setPartners = (partners: Partner[]) => action<{ ok: true }>({ action: 'SET_PARTNERS', partners });

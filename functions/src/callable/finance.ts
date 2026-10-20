@@ -4,6 +4,7 @@ import { AggregateField, type Query } from 'firebase-admin/firestore';
 import {
   FinanceActionSchema,
   FinanceReportSchema,
+  DEFAULT_PARTNERS,
   REFUNDABLE_STATUSES,
   addDays,
   getIstDateKey,
@@ -11,7 +12,10 @@ import {
   istDayStartMs,
   previousRange,
   type FinanceReport,
+  type FounderEntry,
+  type FounderIncome,
   type Granularity,
+  type Partner,
   type Payout,
   type PeriodTotals,
   type SeriesPoint,
@@ -25,6 +29,37 @@ import { limitShared, requireUid, roleOf } from '../lib/guard';
 
 const FAILED = [...REFUNDABLE_STATUSES];
 const ALL_TIME: Window = { from: '2000-01-01', to: '9999-12-31' };
+
+async function partnersOf(): Promise<Partner[]> {
+  const snap = await db.collection('founders').doc('partners').get();
+  return (snap.data()?.partners as Partner[] | undefined) ?? DEFAULT_PARTNERS;
+}
+
+type EntryInput = Pick<FounderEntry, 'kind' | 'amountPaise' | 'date' | 'partnerId' | 'category' | 'paidBy' | 'note' | 'reference'>;
+
+function entryProblem(e: EntryInput, partnerIds: Set<string>): string | null {
+  if (e.date > getIstDateKey()) return 'The date cannot be in the future.';
+  if (e.kind === 'EXPENSE') {
+    if (!e.category) return 'Pick what the money was spent on.';
+    if (e.paidBy && e.paidBy !== 'court' && !partnerIds.has(e.paidBy)) return 'Pick who paid.';
+    return null;
+  }
+  return e.partnerId && partnerIds.has(e.partnerId) ? null : 'Pick the partner.';
+}
+
+function buildEntry(e: EntryInput, now: number, by: string): Omit<FounderEntry, 'id'> {
+  return {
+    kind: e.kind,
+    amountPaise: e.amountPaise,
+    date: e.date,
+    ...(e.kind === 'EXPENSE' ? { category: e.category!, paidBy: e.paidBy ?? 'court' } : { partnerId: e.partnerId! }),
+    ...(e.note ? { note: e.note } : {}),
+    ...(e.reference ? { reference: e.reference } : {}),
+    status: 'RECORDED',
+    createdAt: now,
+    createdBy: by,
+  };
+}
 
 /** Court income and payouts: the court manager only. */
 function requireCourt(req: CallableRequest): string {
@@ -302,9 +337,68 @@ export const financeAction = onCall({ region: REGION, maxInstances: 10, timeoutS
     return { payoutId: input.payoutId, status: 'VOID' };
   }
 
+  if (input.action === 'SET_PARTNERS') {
+    await db.collection('founders').doc('partners').set({ partners: input.partners, updatedAt: now, updatedBy: by });
+    await audit({ action: 'SET_PARTNERS', partners: input.partners });
+    return { ok: true };
+  }
+
+  if (input.action === 'RECORD_ENTRY') {
+    const problem = entryProblem(input, new Set((await partnersOf()).map((p) => p.id)));
+    if (problem) throw new HttpsError('invalid-argument', problem);
+    // Same person + same form submission → same entry id, so a double tap records it once.
+    const id = 'f' + crypto.createHash('sha256').update(`${uid}:${input.requestKey}`).digest('hex').slice(0, 20);
+    const entry = buildEntry(input, now, by);
+    try {
+      await db.collection('founderLedger').doc(id).create(entry);
+    } catch (err) {
+      if ((err as { code?: number }).code === 6) return { entryId: id, duplicate: true }; // ALREADY_EXISTS
+      throw err;
+    }
+    await audit({ action: 'RECORD_ENTRY', entryId: id, kind: input.kind, amountPaise: input.amountPaise });
+    return { entryId: id, duplicate: false };
+  }
+
+  if (input.action === 'VOID_ENTRY') {
+    const ref = db.collection('founderLedger').doc(input.entryId);
+    const result = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new HttpsError('not-found', 'No such entry.');
+      if ((snap.data() as FounderEntry).status === 'VOID') return 'already';
+      tx.update(ref, { status: 'VOID', voidedAt: now, voidedBy: by, voidReason: input.reason });
+      return 'voided';
+    });
+    if (result === 'voided') await audit({ action: 'VOID_ENTRY', entryId: input.entryId, reason: input.reason });
+    return { entryId: input.entryId, status: 'VOID' };
+  }
+
   const ref = db.collection('vendors').doc(input.vendorId);
   if (!(await ref.get()).exists) throw new HttpsError('not-found', 'No such shop.');
   await ref.update({ feePct: input.feePct, perOrderFeePaise: input.perOrderFeePaise, updatedAt: now });
   await audit({ action: 'SET_COMMISSION', vendorId: input.vendorId, feePct: input.feePct, perOrderFeePaise: input.perOrderFeePaise });
   return { vendorId: input.vendorId };
+});
+
+/** Court income for the founder books: since the start, and per calendar month for the last year. */
+export async function buildFounderIncome(months = 12, today = getIstDateKey()): Promise<FounderIncome> {
+  const starts = Array.from({ length: months }, (_, i) => {
+    const d = new Date(`${today.slice(0, 7)}-01T00:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() - (months - 1 - i));
+    return d.toISOString().slice(0, 10);
+  });
+  const [lifetime, ...perMonth] = await Promise.all([
+    periodTotals(null, ALL_TIME),
+    ...starts.map((from) => {
+      const end = new Date(`${from}T00:00:00Z`);
+      end.setUTCMonth(end.getUTCMonth() + 1);
+      return periodTotals(null, { from, to: addDays(end.toISOString().slice(0, 10), -1) });
+    }),
+  ]);
+  return { lifetimeIncomePaise: lifetime.commissionPaise, months: starts.map((from, i) => ({ month: from.slice(0, 7), incomePaise: perMonth[i]!.commissionPaise })) };
+}
+
+export const founderReport = onCall({ region: REGION, maxInstances: 5, timeoutSeconds: 60 }, async (req) => {
+  const uid = requireCourt(req);
+  await limitShared(`founder-report:${uid}`, 20, 60);
+  return buildFounderIncome();
 });

@@ -83,6 +83,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Founder books (capital, expenses, drawings, profit shares): the court manager only.
+    match /founders/{docId} {
+      allow read: if isMaster();
+      allow write: if false;
+    }
+    match /founderLedger/{entryId} {
+      allow read: if isMaster();
+      allow write: if false;
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid) || isMaster();
       allow write: if false;

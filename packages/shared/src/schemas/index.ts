@@ -83,6 +83,17 @@ export const FinanceReportSchema = z
   .refine((r) => r.from <= r.to, 'The start date must be before the end date')
   .refine((r) => Date.parse(r.to) - Date.parse(r.from) <= 400 * 86_400_000, 'Pick a range of about a year or less');
 
+const ENTRY_FIELDS = {
+  kind: z.enum(['CAPITAL', 'DRAWING', 'EXPENSE']),
+  amountPaise: z.number().int().min(100, 'Enter at least ₹1').max(1_000_000_000, 'That amount is too large'),
+  date: DATE_KEY,
+  partnerId: z.string().max(30).optional(),
+  category: z.enum(['hardware', 'software', 'printing', 'marketing', 'staff', 'rent', 'fees', 'legal', 'travel', 'other']).optional(),
+  paidBy: z.string().max(30).optional(),
+  note: z.string().trim().max(200).optional(),
+  reference: z.string().trim().max(60).optional(),
+};
+
 export const FinanceActionSchema = z.discriminatedUnion('action', [
   // Records money sent to a shop; requestKey makes a double submit land once.
   z.object({
@@ -96,6 +107,18 @@ export const FinanceActionSchema = z.discriminatedUnion('action', [
   }),
   // Payouts are never deleted: a mistaken one is voided with a reason and stays in the history.
   z.object({ action: z.literal('VOID_PAYOUT'), payoutId: z.string().min(1).max(100), reason: z.string().trim().min(3, 'Say why').max(200) }),
+  // Founder books (master console → Finance → Founders).
+  z.object({
+    action: z.literal('SET_PARTNERS'),
+    partners: z
+      .array(z.object({ id: z.string().regex(/^[a-z0-9-]{2,30}$/), name: z.string().trim().min(2, 'Enter each name').max(60), shareBps: z.number().int().min(0).max(10_000) }))
+      .min(1)
+      .max(10)
+      .refine((ps) => ps.reduce((n, p) => n + p.shareBps, 0) === 10_000, 'Shares must add up to 100%')
+      .refine((ps) => new Set(ps.map((p) => p.id)).size === ps.length, 'Each partner needs a different id'),
+  }),
+  z.object({ action: z.literal('RECORD_ENTRY'), requestKey: z.string().min(8).max(80), ...ENTRY_FIELDS }),
+  z.object({ action: z.literal('VOID_ENTRY'), entryId: z.string().min(1).max(100), reason: z.string().trim().min(3, 'Say why').max(200) }),
   // Applies to tickets created from now on.
   z.object({
     action: z.literal('SET_COMMISSION'),

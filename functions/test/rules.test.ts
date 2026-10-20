@@ -92,6 +92,15 @@ describe('firestore.rules', () => {
     await assertFails(getDoc(doc(env.authenticatedContext('old', { role: 'finance' }).firestore(), 'orders/o1')));
   });
 
+  it('keeps the founder books to the court manager', async () => {
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'founderLedger/f1'), { kind: 'CAPITAL', amountPaise: 100, status: 'RECORDED' }));
+    await assertSucceeds(getDoc(doc(master(), 'founderLedger/f1')));
+    await assertFails(getDoc(doc(staff(), 'founderLedger/f1')));
+    await assertFails(getDoc(doc(env.authenticatedContext('fin-rm', { role: 'vendorFinance', vendorId: 'v-rm' }).firestore(), 'founderLedger/f1')));
+    await assertFails(getDoc(doc(diner(), 'founders/partners')));
+    await assertFails(setDoc(doc(master(), 'founderLedger/f2'), { kind: 'DRAWING', amountPaise: 1 }));
+  });
+
   it('keeps menus and global config master-only', async () => {
     await assertFails(setDoc(doc(staff(), 'menus/v-rm'), { categories: [] }));
     await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), 'config/global')));

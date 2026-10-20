@@ -11,4 +11,4 @@ export { adminAction } from './callable/adminAction';
 export { cashfreeWebhook } from './webhook/cashfreeWebhook';
 export { sweeper } from './scheduled/sweeper';
 export { onTicketFailed } from './triggers/refunds';
-export { financeReport, financeAction, shopReport } from './callable/finance';
+export { financeReport, financeAction, founderReport, shopReport } from './callable/finance';

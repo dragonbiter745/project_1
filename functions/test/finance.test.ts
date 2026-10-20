@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { addDays, getIstDateKey } from '@foodcourt/shared';
+import { DEFAULT_PARTNERS, addDays, computeFounderBooks, getIstDateKey, splitByShare, type FounderEntry } from '@foodcourt/shared';
 import { db } from '../src/db';
 import { startSession } from '../src/callable/startSession';
 import { createCheckout } from '../src/callable/createCheckout';
-import { buildFinanceReport, financeAction, financeReport, shopReport } from '../src/callable/finance';
+import { buildFinanceReport, financeAction, financeReport, founderReport, shopReport } from '../src/callable/finance';
 import { materializePaidOrder } from '../src/lib/orders';
 import { call, fakeCashfree, resetDb, seed, sessionFor, uniqueUid } from './helpers';
 
@@ -125,5 +125,59 @@ describe('finance', () => {
     ).rejects.toMatchObject({ code: 'invalid-argument' });
     await expect(call(financeAction, { action: 'SET_COMMISSION', vendorId: 'v-rm', feePct: 80, perOrderFeePaise: 0 }, uniqueUid(), finance)).rejects.toMatchObject({ code: 'invalid-argument' });
     await expect(call(financeAction, { action: 'VOID_PAYOUT', payoutId: 'nope', reason: 'test' }, uniqueUid(), { role: 'vendorAdmin', vendorId: 'v-rm' })).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+});
+
+describe('founder books', () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seed({ paymentsEnabled: true });
+    await db.doc('vendors/v-rm').update({ feePct: 10, perOrderFeePaise: 0 });
+  });
+
+  it('splits profit by share to the exact paisa, losses included', () => {
+    expect(splitByShare(100, DEFAULT_PARTNERS)).toEqual({ dibya: 34, manash: 33, sahil: 33 });
+    expect(Object.values(splitByShare(1_000_001, DEFAULT_PARTNERS)).reduce((n, v) => n + v, 0)).toBe(1_000_001);
+    expect(Object.values(splitByShare(-500, DEFAULT_PARTNERS)).reduce((n, v) => n + v, 0)).toBe(-500);
+  });
+
+  it('works out each partner\'s balance and flags anyone who drew too much', () => {
+    const e = (kind: FounderEntry['kind'], amountPaise: number, extra: Partial<FounderEntry>): FounderEntry => ({ id: String(Math.random()), kind, amountPaise, date: '2026-10-20', status: 'RECORDED', createdAt: 1, createdBy: 't', ...extra });
+    const entries = [
+      e('CAPITAL', 300000, { partnerId: 'dibya' }),
+      e('EXPENSE', 60000, { category: 'printing', paidBy: 'manash' }),
+      e('EXPENSE', 30000, { category: 'software', paidBy: 'court' }),
+      e('DRAWING', 100000, { partnerId: 'sahil' }),
+      e('DRAWING', 999999, { partnerId: 'dibya', status: 'VOID' }),
+    ];
+    const b = computeFounderBooks(entries, DEFAULT_PARTNERS, 150000);
+    expect(b).toMatchObject({ incomePaise: 150000, expensesPaise: 90000, netProfitPaise: 60000, drawingsPaise: 100000, retainedPaise: -40000, balanced: false });
+    const [dibya, manash, sahil] = b.partners;
+    expect(dibya).toMatchObject({ capitalPaise: 300000, profitSharePaise: 20004, balancePaise: 320004 });
+    expect(manash).toMatchObject({ expensesPaidPaise: 60000, profitSharePaise: 19998, balancePaise: 79998 });
+    expect(sahil).toMatchObject({ drawingsPaise: 100000, balancePaise: -80002 });
+  });
+
+  it('records entries once, checks them, voids mistakes and reports court income', async () => {
+    await paidOnline([line('rm-1', 'v-rm')], 12000);
+    const boss = uniqueUid('boss');
+    const expense = { action: 'RECORD_ENTRY', requestKey: 'entry-0001', kind: 'EXPENSE', amountPaise: 50000, date: today, category: 'printing', paidBy: 'dibya' };
+    const first = await call(financeAction, expense, boss, finance);
+    expect(await call(financeAction, expense, boss, finance)).toEqual({ entryId: first.entryId, duplicate: true });
+    await expect(call(financeAction, { ...expense, requestKey: 'entry-0002', category: undefined }, boss, finance)).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(call(financeAction, { action: 'RECORD_ENTRY', requestKey: 'entry-0003', kind: 'CAPITAL', amountPaise: 1000, date: today, partnerId: 'nobody' }, boss, finance)).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(call(financeAction, expense, uniqueUid(), rmFinance)).rejects.toMatchObject({ code: 'permission-denied' });
+    await call(financeAction, { action: 'VOID_ENTRY', entryId: first.entryId, reason: 'Duplicate bill' }, boss, finance);
+    expect((await db.doc(`founderLedger/${first.entryId}`).get()).data()).toMatchObject({ status: 'VOID', voidReason: 'Duplicate bill' });
+
+    await expect(call(financeAction, { action: 'SET_PARTNERS', partners: [{ id: 'dibya', name: 'Dibya', shareBps: 6000 }] }, boss, finance)).rejects.toMatchObject({ code: 'invalid-argument' });
+    await call(financeAction, { action: 'SET_PARTNERS', partners: [{ id: 'dibya', name: 'Dibya', shareBps: 5000 }, { id: 'manash', name: 'Manash', shareBps: 5000 }] }, boss, finance);
+    expect((await db.doc('founders/partners').get()).data()!.partners).toHaveLength(2);
+
+    const income = await call(founderReport, {}, boss, finance);
+    expect(income.lifetimeIncomePaise).toBe(1200);
+    expect(income.months).toHaveLength(12);
+    expect(income.months.at(-1)).toEqual({ month: today.slice(0, 7), incomePaise: 1200 });
+    await expect(call(founderReport, {}, uniqueUid(), rmFinance)).rejects.toMatchObject({ code: 'permission-denied' });
   });
 });
