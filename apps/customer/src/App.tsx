@@ -7,7 +7,9 @@ import { CartBar } from './features/cart/CartBar';
 import { CartSheet } from './features/cart/CartSheet';
 import { CouponSheet } from './features/coupons/CouponSheet';
 import { MenuScreen } from './features/menu/MenuScreen';
-import { useActiveOrderSync, useCatalog, useHistorySync, useProfileSync, useReturnFromPayment } from './features/session/useLiveData';
+import { useAuth } from './lib/authStore';
+import { startPush } from './features/notifications/push';
+import { useActiveOrderSync, useCatalog, useHistorySync, useInboxSync, useProfileSync, useReturnFromPayment } from './features/session/useLiveData';
 import { useTableSession, type TableSession } from './features/session/useTableSession';
 import { ActiveOrderBar } from './features/tracking/ActiveOrderBar';
 import { TrackingSheet } from './features/tracking/TrackingSheet';
@@ -36,11 +38,23 @@ export default function App() {
   useActiveOrderSync();
   useHistorySync();
   useProfileSync();
+  useInboxSync();
   useReturnFromPayment();
+  const uid = useAuth((s) => s.user?.uid ?? null);
 
   useEffect(() => {
     warmAuthWhenIdle();
+    // A tap on an offer notification lands on /?inbox=…: open the account at the inbox.
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('inbox')) {
+      useUi.getState().showHub('inbox');
+      params.delete('inbox');
+      const rest = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}`);
+    }
   }, []);
+
+  useEffect(() => startPush(uid), [uid]);
 
   if (state.status === 'unknown-table') return <UnknownTable code={state.code} />;
   if (state.status === 'error') return <SessionError retry={state.retry} />;

@@ -134,6 +134,29 @@ describe('firestore.rules', () => {
     await assertFails(getDoc(doc(master(), 'couponHolds/SECRET50_alice')));
   });
 
+  it("lets a diner read and mark only their own inbox, and keeps tokens and campaigns server-side", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'inbox/c1_alice'), { uid: 'alice', campaignId: 'c1', title: 'Hi', body: 'Offer', createdAt: 1 });
+      await setDoc(doc(db, 'pushTokens/t1'), { uid: 'alice', token: 'secret' });
+      await setDoc(doc(db, 'campaigns/c1'), { title: 'Hi', status: 'SENT' });
+      await setDoc(doc(db, 'announcements/a1'), { title: 'Gas check', audience: ['ALL'], createdAt: 1 });
+    });
+    await assertSucceeds(getDoc(doc(diner(), 'inbox/c1_alice')));
+    await assertSucceeds(getDocs(query(collection(diner(), 'inbox'), where('uid', '==', 'alice'))));
+    await assertFails(getDoc(doc(diner('bob'), 'inbox/c1_alice')));
+    await assertSucceeds(updateDoc(doc(diner(), 'inbox/c1_alice'), { readAt: 5 }));
+    await assertFails(updateDoc(doc(diner(), 'inbox/c1_alice'), { title: 'Free food' }));
+    await assertFails(updateDoc(doc(diner('bob'), 'inbox/c1_alice'), { readAt: 6 }));
+    await assertFails(setDoc(doc(diner(), 'inbox/c2_alice'), { uid: 'alice', title: 'Fake' }));
+    await assertFails(getDoc(doc(diner(), 'pushTokens/t1')));
+    await assertFails(getDoc(doc(master(), 'pushTokens/t1')));
+    await assertFails(getDoc(doc(diner(), 'campaigns/c1')));
+    await assertSucceeds(getDoc(doc(master(), 'campaigns/c1')));
+    await assertSucceeds(getDoc(doc(staff(), 'announcements/a1')));
+    await assertFails(getDoc(doc(diner(), 'announcements/a1')));
+  });
+
   it('keeps menus and global config master-only', async () => {
     await assertFails(setDoc(doc(staff(), 'menus/v-rm'), { categories: [] }));
     await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), 'config/global')));

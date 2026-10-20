@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react';
-import { BellRing, Download, Heart, ShieldCheck, TicketPercent, Trash2, Wallet } from 'lucide-react';
+import { BellRing, Download, Heart, Inbox, ShieldCheck, TicketPercent, Trash2, Wallet } from 'lucide-react';
 import { formatPaise, type MenuItem, type SubOrder } from '@foodcourt/shared';
 import { Button, Sheet } from '@foodcourt/ui';
 import { useAuth } from '../../lib/authStore';
@@ -10,8 +10,9 @@ import { accountCall, rememberDetails, signOutToGuest, type AccountProfile } fro
 import { CouponTicket, applyPreview, couponTerms, useScopeText } from '../coupons/CouponSheet';
 import { previewCoupon, walletCoupons, type WalletCoupon } from '../coupons/couponStore';
 import { ItemRow } from '../menu/ItemRow';
+import { disablePush, enablePush, usePushState, type PushState } from '../notifications/push';
 import { useUi } from '../ui/uiStore';
-import { useHub, useMyOrders, useMyProfile, useVendorNames } from './data';
+import { useHub, useInbox, useMyOrders, useMyProfile, useVendorNames } from './data';
 import { Empty, Group, Pill, Switch, dayFormat, isPaid, shortOrderNo, timeFormat } from './hubParts';
 
 const fieldClass =
@@ -32,6 +33,89 @@ function SignInFirst({ text }: { text: string }) {
         </Button>
       }
     />
+  );
+}
+
+// ─── Inbox ───────────────────────────────────────────────────────────────────
+
+const agoFormat = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
+function ago(ms: number): string {
+  const min = Math.floor((Date.now() - ms) / 60_000);
+  if (min < 1) return 'Just now';
+  if (min < 60) return `${min} min ago`;
+  if (min < 24 * 60) return `${Math.floor(min / 60)} h ago`;
+  return agoFormat.format(ms);
+}
+
+export function InboxScreen() {
+  const { closeHub, push } = useHub();
+  const messages = useInbox();
+  const [using, setUsing] = useState<string | null>(null);
+  const unreadKey = messages.filter((m) => !m.readAt).map((m) => m.id).join(',');
+
+  // Opening the inbox reads what is in it; the dot in the account badge clears.
+  useEffect(() => {
+    if (!unreadKey) return;
+    const t = setTimeout(() => {
+      void live()
+        .then((l) => l.markInboxRead(unreadKey.split(',')))
+        .catch(() => undefined);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [unreadKey]);
+
+  const redeem = async (code: string) => {
+    setUsing(code);
+    try {
+      applyPreview(await previewCoupon(code));
+      closeHub();
+      useUi.getState().show('cart');
+    } catch (err) {
+      notifyError("Couldn't use that coupon", { description: (err as Error).message?.replace(/^Firebase: /, '') });
+    } finally {
+      setUsing(null);
+    }
+  };
+
+  if (messages.length === 0) {
+    return (
+      <Empty
+        icon={Inbox}
+        title="Nothing here yet"
+        text="Offers and news from the court arrive here. Turn on offers to get them on your phone too."
+        action={
+          <Button variant="outline" onClick={() => push({ name: 'notifications' })}>
+            Notification settings
+          </Button>
+        }
+      />
+    );
+  }
+  return (
+    <ul className="space-y-2.5">
+      {messages.map((m, i) => (
+        <li key={m.id} className="enter-up rounded-card bg-surface p-4 ring-1 ring-inset ring-line/70" style={{ ['--i' as string]: Math.min(i, 6) }}>
+          <div className="flex items-start gap-3">
+            <span className={cx('mt-1.5 h-2 w-2 shrink-0 rounded-full', m.readAt ? 'bg-transparent' : 'bg-accent')} aria-label={m.readAt ? undefined : 'New'} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="text-base font-semibold text-ink">{m.title}</p>
+                <span className="shrink-0 text-xs text-ink-3">{ago(m.createdAt)}</span>
+              </div>
+              <p className="mt-1 whitespace-pre-line text-sm text-ink-2">{m.body}</p>
+              {m.couponCode && (
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-field bg-accent-tint px-3 py-2 ring-1 ring-inset ring-accent-line">
+                  <span className="font-mono text-sm font-semibold tracking-wide text-accent-ink">{m.couponCode}</span>
+                  <Button size="sm" variant="accent" loading={using === m.couponCode} onClick={() => void redeem(m.couponCode!)}>
+                    Use coupon
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -292,10 +376,20 @@ export function NotificationsScreen() {
     }
   };
 
-  if (!member) return <SignInFirst text="Choose what we tell you about: your orders, and offers as they launch." />;
+  if (!member) {
+    return (
+      <>
+        <ThisPhone />
+        <div className="mt-6">
+          <SignInFirst text="Sign in to choose what else we tell you about, like offers as they launch." />
+        </div>
+      </>
+    );
+  }
   return (
     <>
-      <Group>
+      <ThisPhone />
+      <Group title="What to tell you" className="mt-6">
         <Switch
           label="Order updates"
           description="When a shop accepts your order and when it's ready."
@@ -316,6 +410,56 @@ export function NotificationsScreen() {
         You can change these any time. We never share your details with the shops or anyone else.
       </p>
     </>
+  );
+}
+
+const PHONE_STATE: Record<PushState, { title: string; text: string }> = {
+  on: { title: 'On for this phone', text: 'You get alerts even when the app is closed.' },
+  off: { title: 'Off for this phone', text: 'Turn on to get a buzz when your food is ready.' },
+  blocked: { title: 'Blocked in your browser', text: 'Allow notifications for this site in your browser settings, then come back.' },
+  install: { title: 'iPhone needs one step', text: 'Tap Share, then Add to Home Screen. Open REVA Food from there to turn on alerts.' },
+  unsupported: { title: 'Not available in this browser', text: 'Try Chrome on Android, or a laptop browser. Your order screen still buzzes while it is open.' },
+  unavailable: { title: 'Coming soon', text: 'Phone alerts are being set up. Messages still arrive in your inbox.' },
+};
+
+function ThisPhone() {
+  const state = usePushState();
+  const [pending, setPending] = useState(false);
+  const copy = PHONE_STATE[state];
+
+  const toggle = async () => {
+    setPending(true);
+    try {
+      if (state === 'on') await disablePush();
+      else {
+        const next = await enablePush();
+        if (next === 'blocked') notifyError('Notifications are blocked', { description: 'Allow them for this site in your browser settings.' });
+      }
+    } catch (err) {
+      console.error('Push setup failed', err);
+      notifyError("Couldn't change notifications", { description: 'Try again in a moment.' });
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <Group title="This phone">
+      <div className="flex items-center gap-3 px-4 py-3.5">
+        <span className={cx('grid h-9 w-9 shrink-0 place-items-center rounded-full', state === 'on' ? 'bg-ready-tint text-ready' : 'bg-surface-2 text-ink-2')}>
+          <BellRing className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-medium text-ink">{copy.title}</p>
+          <p className="text-sm text-ink-3">{copy.text}</p>
+        </div>
+        {(state === 'on' || state === 'off') && (
+          <Button size="sm" variant={state === 'on' ? 'ghost' : 'tint'} loading={pending} onClick={() => void toggle()}>
+            {state === 'on' ? 'Turn off' : 'Turn on'}
+          </Button>
+        )}
+      </div>
+    </Group>
   );
 }
 

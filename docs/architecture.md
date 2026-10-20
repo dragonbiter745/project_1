@@ -125,3 +125,56 @@
   personally + profit share − withdrawn), the over-drawn check and the printable partner share
   report. `founderReport` returns lifetime and per-month court income via aggregation queries.
 - **Not built:** spreadsheet sync or import (deliberately), GST filing, double-entry journals.
+
+## ADR 014: Real customer accounts and the account hub
+- **Context:** customer "sign in" only kept a name and number on the phone. The founders want
+  login optional but worth it, and a full account area like Zomato or Zepto.
+- **Decisions:** Google sign-in only (free); phone OTP dropped because SMS costs money. Guests are
+  anonymous Firebase users; signing in upgrades the same uid with `linkWithPopup`, so the cart,
+  table session and today's orders stay put. A returning diner on a new phone signs into their
+  existing account; the client sends the old anonymous user's ID token and `accountAction SYNC`
+  verifies it and moves that guest's sessions, orders, tickets, points and customer summary across
+  (`mergeGuest`, idempotent; PRD §7.4). `accountAction` also handles profile (the name on tokens),
+  preferences (veg only, order updates, offers consent), favourites and account deletion (profile
+  deleted; kept orders lose name and number). The account hub is its own lazy chunk: orders with
+  filters, order detail, printable receipt, favourites, coupons, payments and refunds, points,
+  notifications, profile, help, privacy (download or delete). Sign-in prompts promise no amounts,
+  only that coupons are coming. Cards are never stored by us: Cashfree and UPI apps keep them.
+
+## ADR 015: Customer analytics in master
+- **Decisions:** one server-written summary per diner (`customers/{uid}`: distinct visit days,
+  orders, spend, per-shop and per-category totals) and one record per diner per day
+  (`visits/{uid}_{date}`: first visit, ordered). Both are written inside the same transactions
+  that open sessions and confirm orders, so they cannot drift, and each diner has their own
+  documents, so busy hours never contend on a shared counter. `customerInsights` (master) uses
+  aggregation queries for KPIs and visitors per day or week. Order items now carry `categoryId`.
+  Master → Customers lists segments with paged queries (never a whole-collection listener).
+
+## ADR 016: Coupons are paid by the court
+- **Decisions:** a coupon never changes a shop's ticket: shops are paid their full menu price and
+  commission is worked out on it; the court absorbs the discount, so court income in Finance and
+  founder revenue are commission less coupons (`couponCostPaise` on each order). Coupons apply to
+  online payment only (at the counter the shop holds the cash). Scope is the whole court, chosen
+  shops or chosen menu categories; rules cover percent with cap or flat, minimum order, signed-in
+  only, first order only, per-diner and total limits, start and end. One shared `evaluateCoupon`
+  drives both the cart preview and the server, which always re-checks from scratch. A hold
+  (`couponHolds`) stops one coupon being used in two payment windows at once; the use is counted
+  when payment succeeds and handed back if every shop's part fails. Secret codes stay secret:
+  diners see coupons only through `dinerCoupons` (rate-limited), never by reading the collection.
+- **Known limit:** the total-uses limit is checked at checkout, so two diners paying at the same
+  moment can take it one over. Acceptable at food-court volume.
+
+## ADR 017: Notifications without email (for now)
+- **Decisions:** web push through Firebase Cloud Messaging (free). A plain service worker
+  (`/sw.js`) shows data-only pushes and opens the right screen; FCM loads lazily. Diners are asked
+  after ordering, the moment they most want it. Order-ready and refund pushes go to anyone who
+  allowed them (guests too) unless they turned order updates off. Court messages (`campaignAction`,
+  master) go to signed-in diners' in-app inbox; phone alerts only to those who opted in to offers.
+  Audiences: everyone signed in, regulars, new, lapsed, ordered from a shop, ordered a category,
+  chosen diners, or kitchens (an announcement on the kitchen display). Sends are idempotent per
+  form submission and per campaign (SCHEDULED → SENDING claim); scheduled sends go out from a
+  5-minute sweeper. iPhone push needs Add to Home Screen, so the app ships a manifest and icons,
+  and a home-screen launch returns to the last table scanned. Email is paused by decision; when it
+  comes, it reuses the same audiences with Brevo through the Trigger Email extension.
+- **Setup needed:** a Web Push key pair in the Firebase console (`VITE_FIREBASE_VAPID_KEY`).
+  Without it, push stays off and messages still reach the inbox.

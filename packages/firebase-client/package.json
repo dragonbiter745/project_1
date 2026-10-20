@@ -21,6 +21,8 @@
     "./finance": "./src/finance.ts",
     "./customers": "./src/customers.ts",
     "./coupons": "./src/coupons.ts",
+    "./messaging": "./src/messaging.ts",
+    "./messages": "./src/messages.ts",
     "./db": "./src/db.ts"
   },
   "scripts": {

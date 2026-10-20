@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BellRing, CircleHelp, Gift, Heart, LockKeyhole, LogOut, Radio, ReceiptText, TicketPercent, UserRound, Wallet } from 'lucide-react';
+import { BellRing, CircleHelp, Gift, Heart, Inbox, LockKeyhole, LogOut, Radio, ReceiptText, TicketPercent, UserRound, Wallet } from 'lucide-react';
 import { formatPaise, type CustomerRecord } from '@foodcourt/shared';
 import { Button, lockScroll, unlockScroll } from '@foodcourt/ui';
 import { useAuth } from '../../lib/authStore';
@@ -11,15 +11,16 @@ import { useProfile } from '../auth/profileStore';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 import { Avatar } from './Avatar';
-import { HubContext, track, useHub, useMyOrders, useMyProfile, useVendorNames, type Hub, type Route } from './data';
+import { HubContext, track, useHub, useInbox, useMyOrders, useMyProfile, useVendorNames, type Hub, type Route } from './data';
 import { Group, Panel, Row, isLive, isPaid, monthFormat, shortOrderNo } from './hubParts';
-import { CouponsScreen, FavouritesScreen, HelpScreen, NotificationsScreen, PaymentsScreen, PointsScreen, PrivacyScreen, ProfileScreen } from './MoreScreens';
+import { CouponsScreen, FavouritesScreen, HelpScreen, InboxScreen, NotificationsScreen, PaymentsScreen, PointsScreen, PrivacyScreen, ProfileScreen } from './MoreScreens';
 import { OrderDetailScreen, OrdersScreen, ReceiptScreen } from './OrdersScreens';
 
 const EXIT_MS = 300;
 
 const TITLES: Record<Route['name'], string> = {
   home: 'Account',
+  inbox: 'Inbox',
   orders: 'Your orders',
   order: 'Order details',
   receipt: 'Receipt',
@@ -37,6 +38,8 @@ function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case 'home':
       return <Home />;
+    case 'inbox':
+      return <InboxScreen />;
     case 'orders':
       return <OrdersScreen />;
     case 'order':
@@ -79,7 +82,12 @@ export default function AccountHub({ session }: { session: TableSession }) {
 
   useEffect(() => {
     if (open) {
-      setStack([{ key: nextKey.current++, route: { name: 'home' }, open: true }]);
+      const start = useUi.getState().hubStart;
+      setStack([
+        { key: nextKey.current++, route: { name: 'home' }, open: true },
+        ...(start === 'inbox' ? [{ key: nextKey.current++, route: { name: 'inbox' } as Route, open: true }] : []),
+      ]);
+      useUi.setState({ hubStart: null });
       lockScroll();
       return () => unlockScroll();
     }
@@ -127,6 +135,8 @@ function Home() {
   const loyalty = useLocal((s) => s.config.flags.loyaltyEnabled);
   const showLogin = useUi((s) => s.showLogin);
   const [signingOut, setSigningOut] = useState(false);
+  const inbox = useInbox();
+  const unread = inbox.filter((m) => !m.readAt).length;
 
   // The server's summary counts every order ever; the loaded orders are the fallback.
   const [summary, setSummary] = useState<CustomerRecord | null>(null);
@@ -210,6 +220,18 @@ function Home() {
           </span>
           <Radio className="h-5 w-5 shrink-0" strokeWidth={1.75} />
         </button>
+      )}
+
+      {member && (
+        <Group className="mt-6">
+          <Row
+            icon={Inbox}
+            label="Inbox"
+            detail={inbox.length === 0 ? 'Offers and news from the court' : inbox[0]!.title}
+            badge={unread > 0 ? <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent-ink px-1.5 text-xs font-semibold tabular-nums text-on-accent">{unread}</span> : undefined}
+            onClick={() => push({ name: 'inbox' })}
+          />
+        </Group>
       )}
 
       <Group title="Food" className="mt-6">

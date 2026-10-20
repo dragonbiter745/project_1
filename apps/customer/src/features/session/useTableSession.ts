@@ -62,6 +62,8 @@ export function useTableSession(): TableSessionState {
         const session: TableSession = { id: data.sessionId, tableId: data.tableId, tableLabel: data.tableLabel, displayName: data.displayName, dailyNo: data.dailyNo };
         try {
           sessionStorage.setItem(cacheKey(token), JSON.stringify(session));
+          // A home-screen launch or a notification tap reopens this table.
+          localStorage.setItem('fc_last_table', token);
         } catch {
           // storage blocked: the session simply is not cached
         }
@@ -72,6 +74,7 @@ export function useTableSession(): TableSessionState {
         if (err?.code === 'functions/not-found' || err?.code === 'functions/invalid-argument') {
           try {
             sessionStorage.removeItem(cacheKey(token));
+            if (localStorage.getItem('fc_last_table') === token) localStorage.removeItem('fc_last_table');
           } catch {
             // ignore
           }

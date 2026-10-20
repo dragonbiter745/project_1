@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Order, UserProfile } from '@foodcourt/shared';
+import type { InboxMessage, Order, UserProfile } from '@foodcourt/shared';
 import { useAuth } from '../../lib/authStore';
 import { jsonEqual, liveStore, useLocal } from '../../lib/store';
 import { notify, notifyError } from '../../lib/toast';
@@ -11,6 +11,7 @@ import { useUi } from '../ui/uiStore';
 
 export type Route =
   | { name: 'home' }
+  | { name: 'inbox' }
   | { name: 'orders' }
   | { name: 'order'; id: string }
   | { name: 'receipt'; id: string }
@@ -45,6 +46,12 @@ export function useMyOrders(): Order[] {
       .filter((o) => (o.uid === uid || ids.has(o.id)) && !HIDDEN.has(o.status))
       .sort((a, b) => b.createdAt - a.createdAt);
   }, jsonEqual);
+}
+
+/** The diner's messages from the court, newest first. */
+export function useInbox(): InboxMessage[] {
+  const uid = useAuth((s) => s.user?.uid);
+  return useLocal((s) => Object.values(s.inbox).filter((m) => m.uid === uid).sort((a, b) => b.createdAt - a.createdAt), jsonEqual);
 }
 
 /** The signed-in diner's profile document, once it has loaded. */

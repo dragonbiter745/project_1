@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { LogOut, ShieldAlert } from 'lucide-react';
 import { ActionToast, Button, PauseSheet, StaffLogin, run, useNow, useWakeLock } from '@foodcourt/ui';
 import { connectVendor } from '@foodcourt/firebase-client/live';
+import { AnnouncementBar } from './features/board/AnnouncementBar';
 import { loadCatalog } from '@foodcourt/firebase-client/rest';
 import { staffSignIn, staffSignOut, watchStaff, type StaffUser } from '@foodcourt/firebase-client/staff';
 import { pauseOrders, resumeOrders } from '@foodcourt/firebase-client/ops';
@@ -136,6 +137,7 @@ function Kitchen({ staff }: { staff: StaffUser }) {
         onSwitchShop={switchShop}
         exitLabel={isMaster ? 'Switch shop' : 'Sign out'}
       />
+      {!isMaster && <AnnouncementBar vendorId={vendor.id} />}
       <Board
         vendorId={vendor.id}
         alarmOn={started && alarmOn}

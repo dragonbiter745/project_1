@@ -202,6 +202,7 @@ function IdentityRow({ session, ref }: { session: TableSession; ref: React.Ref<H
   const showLogin = useUi((s) => s.showLogin);
   const member = Boolean(user?.member);
   const name = (member ? profile?.name || user?.name : null) ?? session.displayName;
+  const unread = useLocal((s) => Object.values(s.inbox).filter((m) => m.uid === user?.uid && !m.readAt).length);
   return (
     <div ref={ref} className="flex h-16 items-center justify-between gap-3 pl-4 pr-2 pt-1">
       <div className="min-w-0">
@@ -223,7 +224,12 @@ function IdentityRow({ session, ref }: { session: TableSession; ref: React.Ref<H
           className="pressable grid h-11 w-11 shrink-0 place-items-center"
         >
           {member ? (
-            <Avatar name={name} photoURL={user?.photoURL} size={36} />
+            <span className="relative">
+              <Avatar name={name} photoURL={user?.photoURL} size={36} />
+              {unread > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-accent ring-2 ring-bg" aria-label={`${unread} new ${unread === 1 ? 'message' : 'messages'}`} />
+              )}
+            </span>
           ) : (
             <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-ink-2">
               <UserRound className="h-[18px] w-[18px]" strokeWidth={1.75} />

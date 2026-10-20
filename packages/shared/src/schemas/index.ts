@@ -200,3 +200,40 @@ export const CouponActionSchema = z.discriminatedUnion('action', [
 ]);
 
 export const PreviewCouponSchema = z.object({ code: CODE });
+
+// ─── Messages ────────────────────────────────────────────────────────────────
+
+const MSG_ID = z.string().min(1).max(128);
+
+export const CampaignAudienceSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('MEMBERS') }),
+  z.object({ kind: z.literal('REGULARS') }),
+  z.object({ kind: z.literal('NEW') }),
+  z.object({ kind: z.literal('LAPSED') }),
+  z.object({ kind: z.literal('SHOP'), vendorId: MSG_ID }),
+  z.object({ kind: z.literal('CATEGORY'), vendorId: MSG_ID, categoryId: MSG_ID }),
+  z.object({ kind: z.literal('PEOPLE'), uids: z.array(MSG_ID).min(1, 'Pick at least one diner').max(500) }),
+  z.object({ kind: z.literal('KITCHENS'), vendorIds: z.array(MSG_ID).min(1, 'Pick at least one kitchen').max(50) }),
+]);
+
+export const CampaignActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('ESTIMATE'), audience: CampaignAudienceSchema }),
+  z.object({
+    action: z.literal('SEND'),
+    requestKey: z.string().min(8).max(80),
+    title: z.string().trim().min(3, 'Add a title').max(60, 'Keep the title under 60 characters'),
+    body: z.string().trim().min(3, 'Write the message').max(240, 'Keep the message under 240 characters'),
+    audience: CampaignAudienceSchema,
+    couponCode: z.string().trim().max(24).optional(),
+    /** Omitted: send now. */
+    sendAt: z.number().int().positive().optional(),
+  }),
+  z.object({ action: z.literal('CANCEL'), campaignId: MSG_ID }),
+]);
+
+export type CampaignActionInput = z.infer<typeof CampaignActionSchema>;
+
+export const PushActionSchema = z.object({
+  action: z.enum(['REGISTER', 'UNREGISTER']),
+  token: z.string().min(20).max(4096),
+});

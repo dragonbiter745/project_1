@@ -11,3 +11,4 @@ export * from './finance';
 export * from './founders';
 export * from './customers';
 export * from './coupons';
+export * from './messages';

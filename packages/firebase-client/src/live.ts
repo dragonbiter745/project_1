@@ -1,5 +1,5 @@
-import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, type DocumentData, type Query, type Unsubscribe } from 'firebase/firestore';
-import { getIstDateKey, type CustomerRecord, type GlobalConfig, type Order, type SubOrder, type Table, type UserProfile, type Vendor, type VendorAvailability, type VendorMenu } from '@foodcourt/shared';
+import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, updateDoc, where, type DocumentData, type Query, type Unsubscribe } from 'firebase/firestore';
+import { getIstDateKey, type Announcement, type CustomerRecord, type GlobalConfig, type InboxMessage, type Order, type SubOrder, type Table, type UserProfile, type Vendor, type VendorAvailability, type VendorMenu } from '@foodcourt/shared';
 import { getDb } from './db';
 import { liveStore, type LiveStore } from './liveStore';
 
@@ -168,6 +168,33 @@ export async function fetchOrdersBefore(uid: string, beforeMs: number, pageSize 
     for (const r of snap.docs) d.orders[r.id] = withId<Order>(r);
   });
   return snap.size;
+}
+
+/** Announcements from the court manager to this kitchen (or to every kitchen), newest first. */
+export function watchAnnouncements(vendorId: string, onChange: (rows: Announcement[]) => void): Unsubscribe {
+  const since = Date.now() - 3 * 86_400_000;
+  const q = query(collection(getDb(), 'announcements'), where('audience', 'array-contains-any', ['ALL', vendorId]), orderBy('createdAt', 'desc'), limit(5));
+  return onSnapshot(
+    q,
+    (snap) => onChange(snap.docs.map((d) => withId<Announcement>(d)).filter((a) => a.createdAt >= since && a.expiresAt > Date.now())),
+    (err) => console.warn('Announcements unavailable', err)
+  );
+}
+
+/** A diner's latest messages from the court. */
+export function watchInbox(uid: string, store: LiveStore = liveStore): Unsubscribe {
+  return watchQuery<InboxMessage>(store, query(collection(getDb(), 'inbox'), where('uid', '==', uid), orderBy('createdAt', 'desc'), limit(30)), (rows, removed) => {
+    const d = store.getState();
+    for (const id of removed) delete d.inbox[id];
+    for (const r of rows) d.inbox[r.id] = r;
+  }, 'inbox');
+}
+
+/** The rules let a diner change only readAt on their own messages. */
+export async function markInboxRead(ids: string[]): Promise<void> {
+  const db = getDb();
+  const at = Date.now();
+  await Promise.all(ids.map((id) => updateDoc(doc(db, 'inbox', id), { readAt: at })));
 }
 
 /** A diner's own visit and spend summary (kept by the server), for their account page. */

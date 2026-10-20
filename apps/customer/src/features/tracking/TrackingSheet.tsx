@@ -4,6 +4,7 @@ import { formatPaise, type Order, type SubOrder } from '@foodcourt/shared';
 import { cx, prefersReducedMotion } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
 import { SignInNudge } from '../auth/SignInNudge';
+import { PushPrompt } from '../notifications/PushPrompt';
 import { useCart } from '../cart/cartStore';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
@@ -92,6 +93,7 @@ export function TrackingSheet({ session }: { session: TableSession }) {
                 }
               />
             ))}
+            {!finished && <PushPrompt />}
             <SignInNudge place="tracking" />
           </div>
         )}

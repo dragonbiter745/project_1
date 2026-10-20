@@ -122,6 +122,26 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Messages. Tokens and campaigns are server-only; a diner reads their own inbox and may only mark
+    // a message read; kitchens read announcements meant for them.
+    match /pushTokens/{id} {
+      allow read, write: if false;
+    }
+    match /campaigns/{id} {
+      allow read: if isMaster();
+      allow write: if false;
+    }
+    match /inbox/{id} {
+      allow read: if isOwner(resource.data.uid) || isMaster();
+      allow update: if isOwner(resource.data.uid) && onlyChanges(['readAt']) && request.resource.data.readAt is int;
+      allow create, delete: if false;
+    }
+    match /announcements/{id} {
+      allow read: if isMaster()
+        || (signedIn() && (request.auth.token.role == 'vendorAdmin' || request.auth.token.role == 'vendorStaff'));
+      allow write: if false;
+    }
+
     match /pointsLedger/{id} {
       allow read: if isOwner(resource.data.uid) || isMaster();
       allow write: if false;

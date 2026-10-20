@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { CalendarClock, Crown, RefreshCw, Search, ShieldCheck, UserRoundX, Users, X } from 'lucide-react';
+import { CalendarClock, Crown, Megaphone, RefreshCw, Search, ShieldCheck, UserRoundX, Users, X } from 'lucide-react';
+import { MESSAGE_TO_KEY } from '../messages/Messages';
 import {
   customerTags,
   formatPaise,
@@ -540,6 +541,24 @@ export function CustomerDrawer({ customer: c, names, onClose }: { customer: Cust
             <Tags c={shown} />
             <p className="mt-1 text-sm tabular-nums text-ink-2">{shown.phone ? `+91 ${shown.phone.slice(0, 5)} ${shown.phone.slice(5)}` : 'No mobile number'}</p>
             {shown.email && <p className="truncate text-sm text-ink-3">{shown.email}</p>}
+            {shown.member && (
+              <Button
+                size="sm"
+                variant="tint"
+                className="mt-3"
+                icon={<Megaphone className="h-4 w-4" />}
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem(MESSAGE_TO_KEY, JSON.stringify({ uid: shown.uid, name: nameOf(shown) }));
+                  } catch {
+                    // storage blocked: the composer opens without them
+                  }
+                  window.location.hash = '/messages';
+                }}
+              >
+                Send a message
+              </Button>
+            )}
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-2 hover:bg-surface-2">
             <X className="h-[18px] w-[18px]" />

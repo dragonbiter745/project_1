@@ -37,6 +37,12 @@ function useLiveListener(key: string | null, start: (uid: string, live: typeof i
   }, [key, uid]);
 }
 
+/** A signed-in diner's messages from the court (a small, capped listener). */
+export function useInboxSync() {
+  const member = useAuth(selectMember);
+  useLiveListener(member ? 'inbox' : null, (uid, live) => live.watchInbox(uid));
+}
+
 /** A signed-in diner's own profile, live: favourites on the menu, preferences, the name on tokens. */
 export function useProfileSync() {
   const member = useAuth(selectMember);

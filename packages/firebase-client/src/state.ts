@@ -1,4 +1,4 @@
-import type { GlobalConfig, Order, PointsLedgerEntry, Session, SubOrder, Table, UserProfile, Vendor, VendorAvailability, VendorMenu, Venue } from '@foodcourt/shared';
+import type { GlobalConfig, InboxMessage, Order, PointsLedgerEntry, Session, SubOrder, Table, UserProfile, Vendor, VendorAvailability, VendorMenu, Venue } from '@foodcourt/shared';
 
 /** The shape every app reads, whether filled by Firestore (production) or the local demo store. */
 export interface FoodCourtDataState {
@@ -15,6 +15,8 @@ export interface FoodCourtDataState {
   config: GlobalConfig;
   dailyCounter: Record<string, number>;
   vendorCounters: Record<string, number>;
+  /** A signed-in diner's messages from the court. */
+  inbox: Record<string, InboxMessage>;
 }
 
 export const DEFAULT_CONFIG: GlobalConfig = {
@@ -41,5 +43,6 @@ export function emptyState(): FoodCourtDataState {
     config: structuredClone(DEFAULT_CONFIG),
     dailyCounter: {},
     vendorCounters: {},
+    inbox: {},
   };
 }
