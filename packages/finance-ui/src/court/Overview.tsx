@@ -49,7 +49,19 @@ export function Overview({ range, report: { report, loading, error, reload } }: 
     <div className={cx('transition-opacity duration-200', loading && 'opacity-60')} aria-busy={loading}>
       {error && <LoadError text={error} onRetry={reload} compact />}
       <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiTile feature label="Court income" value={money(r.commissionPaise)} icon={Percent} tone="accent" hint={<Delta now={r.commissionPaise} before={r.previous.commissionPaise} label={cmp} />} />
+        <KpiTile
+          feature
+          label="Court income"
+          value={money(r.commissionPaise - (r.couponsPaise ?? 0))}
+          icon={Percent}
+          tone="accent"
+          hint={
+            <>
+              <Delta now={r.commissionPaise - (r.couponsPaise ?? 0)} before={r.previous.commissionPaise - (r.previous.couponsPaise ?? 0)} label={cmp} />
+              {(r.couponsPaise ?? 0) > 0 && <span className="mt-1 block">Commission {money(r.commissionPaise)} less coupons {money(r.couponsPaise)}</span>}
+            </>
+          }
+        />
         <KpiTile label="Collected online" value={money(r.collectedPaise)} icon={IndianRupee} tone="ready" hint={<Delta now={r.collectedPaise} before={r.previous.collectedPaise} label={cmp} />} />
         <KpiTile label="Paid orders" value={r.paidOrders.toLocaleString('en-IN')} icon={ShoppingBag} tone="prep" hint={<Delta now={r.paidOrders} before={r.previous.paidOrders} label={cmp} />} />
         <KpiTile label="Refunded to diners" value={money(r.refundsPaise)} icon={RotateCcw} tone="neutral" hint={<Delta now={r.refundsPaise} before={r.previous.refundsPaise} label={cmp} goodWhenDown />} />

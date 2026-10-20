@@ -147,7 +147,17 @@ export interface OrderTotals {
   subtotalPaise: number;
   taxPaise: number;
   platformFeePaise: number;
+  /** Coupon discount, paid by the court; already taken off totalPaise. */
+  discountPaise?: number;
   totalPaise: number;
+}
+
+export interface OrderCoupon {
+  code: string;
+  title: string;
+  discountPaise: number;
+  /** The use was handed back because every shop's part was refunded. */
+  released?: boolean;
 }
 
 export interface Order {
@@ -175,6 +185,7 @@ export interface Order {
   updatedAt?: number;
   /** Unpaid online orders expire at this time. */
   expiresAt?: number;
+  coupon?: OrderCoupon;
 }
 
 export interface SubOrderTimeline {

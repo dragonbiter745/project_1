@@ -1,9 +1,10 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { BarChart3, LogOut, QrCode, Radio, Settings2, ShieldAlert, Store, Users, Wallet } from 'lucide-react';
+import { BarChart3, LogOut, QrCode, Radio, Settings2, ShieldAlert, Store, TicketPercent, Users, Wallet } from 'lucide-react';
 import { CourtFinance } from '@foodcourt/finance-ui';
 import { ActionToast, BrandMark, Button, StaffLogin, cx, useNow } from '@foodcourt/ui';
 import { connectMaster } from '@foodcourt/firebase-client/live';
 import { staffSignIn, staffSignOut, watchStaff, type StaffUser } from '@foodcourt/firebase-client/staff';
+import { Coupons } from './features/coupons/Coupons';
 import { Customers } from './features/customers/Customers';
 import { Insights } from './features/insights/Insights';
 import { LiveOrders } from './features/live/LiveOrders';
@@ -12,7 +13,7 @@ import { Shops } from './features/shops/Shops';
 import { TablesQr } from './features/tables/TablesQr';
 import { jsonEqual, useLocal } from './lib/store';
 
-type Page = 'live' | 'shops' | 'tables' | 'insights' | 'customers' | 'finance' | 'settings';
+type Page = 'live' | 'shops' | 'tables' | 'insights' | 'customers' | 'coupons' | 'finance' | 'settings';
 
 const PAGES: Array<{ key: Page; label: string; blurb: string; icon: typeof Radio; component: ComponentType }> = [
   { key: 'live', label: 'Live orders', blurb: 'Every ticket in every kitchen, as it happens.', icon: Radio, component: LiveOrders },
@@ -20,6 +21,7 @@ const PAGES: Array<{ key: Page; label: string; blurb: string; icon: typeof Radio
   { key: 'tables', label: 'Tables and QR', blurb: 'Print and replace the codes on every table.', icon: QrCode, component: TablesQr },
   { key: 'insights', label: 'Insights', blurb: "Today's orders, sales and kitchen speed.", icon: BarChart3, component: Insights },
   { key: 'customers', label: 'Customers', blurb: 'Who comes, how often, and what they order.', icon: Users, component: Customers },
+  { key: 'coupons', label: 'Coupons', blurb: 'Discount codes for the court, chosen shops or categories.', icon: TicketPercent, component: Coupons },
   { key: 'finance', label: 'Finance', blurb: 'Commission income, shop balances and payouts.', icon: Wallet, component: CourtFinance },
   { key: 'settings', label: 'Settings', blurb: 'Switches that affect every shop at once.', icon: Settings2, component: Settings },
 ];

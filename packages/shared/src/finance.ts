@@ -119,6 +119,8 @@ export interface FinanceReport {
   paidOrders: number;
   refundsPaise: number;
   netPaise: number;
+  /** Coupon discounts the court paid for (shops still get full price); comes off court income. */
+  couponsPaise: number;
   averageOrderPaise: number;
   counterOrders: number;
   counterSalesPaise: number;
@@ -129,5 +131,5 @@ export interface FinanceReport {
   shops: ShopFinance[];
   granularity: Granularity;
   series: SeriesPoint[];
-  previous: PeriodTotals & { from: string; to: string; collectedPaise: number; paidOrders: number };
+  previous: PeriodTotals & { from: string; to: string; collectedPaise: number; paidOrders: number; couponsPaise: number };
 }

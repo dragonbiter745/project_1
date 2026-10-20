@@ -10,3 +10,4 @@ export * from './kitchenStats';
 export * from './finance';
 export * from './founders';
 export * from './customers';
+export * from './coupons';

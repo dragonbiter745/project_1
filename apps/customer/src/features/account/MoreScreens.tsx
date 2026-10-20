@@ -7,6 +7,8 @@ import { cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
 import { notify, notifyError } from '../../lib/toast';
 import { accountCall, rememberDetails, signOutToGuest, type AccountProfile } from '../auth/account';
+import { CouponTicket, applyPreview, couponTerms, useScopeText } from '../coupons/CouponSheet';
+import { previewCoupon, walletCoupons, type WalletCoupon } from '../coupons/couponStore';
 import { ItemRow } from '../menu/ItemRow';
 import { useUi } from '../ui/uiStore';
 import { useHub, useMyOrders, useMyProfile, useVendorNames } from './data';
@@ -92,20 +94,70 @@ export function FavouritesScreen() {
 // ─── Coupons ─────────────────────────────────────────────────────────────────
 
 export function CouponsScreen() {
-  const { push } = useHub();
+  const { push, closeHub } = useHub();
   const member = useAuth((s) => Boolean(s.user?.member));
+  const [wallet, setWallet] = useState<WalletCoupon[] | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
+  const scopeText = useScopeText();
+
+  useEffect(() => {
+    if (!member) return;
+    walletCoupons()
+      .then(setWallet)
+      .catch(() => setWallet([]));
+  }, [member]);
+
+  const use = async (code: string) => {
+    setPending(code);
+    try {
+      applyPreview(await previewCoupon(code));
+      closeHub();
+      useUi.getState().show('cart');
+    } catch (err) {
+      notifyError("Couldn't use that coupon", { description: (err as Error).message?.replace(/^Firebase: /, '') });
+    } finally {
+      setPending(null);
+    }
+  };
+
   if (!member) return <SignInFirst text="Signed-in diners get coupons and offers as they launch." />;
+  if (wallet === null) return <div className="shimmer h-28 rounded-card" aria-busy="true" />;
+  if (wallet.length === 0) {
+    return (
+      <Empty
+        icon={TicketPercent}
+        title="No coupons yet"
+        text="Coupons you get will show up here. Turn on offers to hear about them first."
+        action={
+          <Button variant="outline" onClick={() => push({ name: 'notifications' })}>
+            Notification settings
+          </Button>
+        }
+      />
+    );
+  }
   return (
-    <Empty
-      icon={TicketPercent}
-      title="No coupons yet"
-      text="Coupons you get will show up here. Turn on offers to hear about them first."
-      action={
-        <Button variant="outline" onClick={() => push({ name: 'notifications' })}>
-          Notification settings
-        </Button>
-      }
-    />
+    <>
+      <ul className="space-y-2.5">
+        {wallet.map((w) => (
+          <li key={w.coupon.code}>
+            <CouponTicket
+              coupon={w.coupon}
+              terms={couponTerms(w.coupon, scopeText)}
+              reason={w.reason}
+              action={
+                w.usable && (
+                  <Button size="sm" variant="accent" loading={pending === w.coupon.code} onClick={() => void use(w.coupon.code)}>
+                    Use now
+                  </Button>
+                )
+              }
+            />
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 px-1 text-sm text-ink-3">Have a code from somewhere else? Enter it in your cart under “Apply a coupon”.</p>
+    </>
   );
 }
 

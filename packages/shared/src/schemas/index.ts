@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { QR_TOKEN_PATTERN } from '../tables';
+import { COUPON_CODE, normaliseCode } from '../coupons';
 
 
 export const StartSessionSchema = z.object({
@@ -24,6 +25,8 @@ export const CreateCheckoutSchema = z.object({
   items: z.array(CartItemSchema).min(1, 'Cart cannot be empty').max(40, 'That is too many dishes for one order'),
   // Required by the payment gateway for online payments; the server enforces it when payments are on.
   customerPhone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').nullish(),
+  // Re-checked from scratch on the server; the phone only says which code the diner entered.
+  couponCode: z.string().trim().max(24).nullish(),
 });
 
 export type CreateCheckoutInput = z.infer<typeof CreateCheckoutSchema>;
@@ -154,3 +157,46 @@ export const FinanceActionSchema = z.discriminatedUnion('action', [
 
 export type FinanceReportInput = z.infer<typeof FinanceReportSchema>;
 export type FinanceActionInput = z.infer<typeof FinanceActionSchema>;
+
+// ─── Coupons (master edits; diners preview) ─────────────────────────────────
+
+const COUPON_ID = z.string().min(1).max(100);
+const CODE = z
+  .string()
+  .transform(normaliseCode)
+  .pipe(z.string().regex(COUPON_CODE, 'Use 3 to 20 letters, numbers or dashes'));
+
+export const CouponInputSchema = z
+  .object({
+    code: CODE,
+    title: z.string().trim().min(3, 'Give it a short title').max(60),
+    description: z.string().trim().max(200).optional(),
+    kind: z.enum(['PERCENT', 'FLAT']),
+    percentBps: z.number().int().min(100, 'At least 1%').max(10_000).optional(),
+    flatPaise: z.number().int().min(100, 'At least ₹1').max(1_000_000).optional(),
+    maxDiscountPaise: z.number().int().min(100).max(1_000_000).nullable().optional(),
+    minOrderPaise: z.number().int().min(0).max(10_000_000),
+    scope: z.discriminatedUnion('kind', [
+      z.object({ kind: z.literal('ALL') }),
+      z.object({ kind: z.literal('VENDORS'), vendorIds: z.array(COUPON_ID).min(1, 'Pick at least one shop').max(30) }),
+      z.object({ kind: z.literal('CATEGORIES'), categories: z.array(z.object({ vendorId: COUPON_ID, categoryId: COUPON_ID })).min(1, 'Pick at least one category').max(100) }),
+    ]),
+    audience: z.enum(['EVERYONE', 'MEMBERS']),
+    firstOrderOnly: z.boolean(),
+    showInWallet: z.boolean(),
+    startsAt: z.number().int().min(0),
+    endsAt: z.number().int().nullable(),
+    totalLimit: z.number().int().min(1).max(1_000_000).nullable(),
+    perCustomerLimit: z.number().int().min(1).max(100),
+  })
+  .refine((c) => (c.kind === 'PERCENT' ? c.percentBps !== undefined : c.flatPaise !== undefined), 'Enter how much the coupon takes off')
+  .refine((c) => c.endsAt === null || c.endsAt > c.startsAt, 'The end must be after the start');
+
+export type CouponInput = z.infer<typeof CouponInputSchema>;
+
+export const CouponActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('SAVE'), coupon: CouponInputSchema, create: z.boolean() }),
+  z.object({ action: z.literal('SET_ACTIVE'), code: CODE, active: z.boolean() }),
+]);
+
+export const PreviewCouponSchema = z.object({ code: CODE });

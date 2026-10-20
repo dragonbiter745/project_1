@@ -10,6 +10,7 @@ export { reportIssue } from './callable/reportIssue';
 export { adminAction } from './callable/adminAction';
 export { accountAction } from './callable/account';
 export { customerInsights } from './callable/customers';
+export { couponAdmin, dinerCoupons } from './callable/coupons';
 export { cashfreeWebhook } from './webhook/cashfreeWebhook';
 export { sweeper } from './scheduled/sweeper';
 export { onTicketFailed } from './triggers/refunds';

@@ -108,6 +108,20 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Coupons: terms and usage counters, changed only by couponAdmin and payments. Diners see coupons
+    // through the dinerCoupons function, so a code that is not in the wallet stays secret.
+    match /coupons/{code} {
+      allow read: if isMaster();
+      allow write: if false;
+    }
+    match /couponUses/{id} {
+      allow read: if isMaster();
+      allow write: if false;
+    }
+    match /couponHolds/{id} {
+      allow read, write: if false;
+    }
+
     match /pointsLedger/{id} {
       allow read: if isOwner(resource.data.uid) || isMaster();
       allow write: if false;

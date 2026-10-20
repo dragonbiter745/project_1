@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { notify } from '../../lib/toast';
-import { Gift, NotebookPen, ShoppingBag } from 'lucide-react';
-import { calculatePointsEarned, computeOrderTotals, formatPaise, type CartItem } from '@foodcourt/shared';
+import { ChevronRight, Gift, NotebookPen, ShoppingBag, TicketPercent, X } from 'lucide-react';
+import { calculatePointsEarned, computeOrderTotals, formatPaise, withDiscount, type CartItem } from '@foodcourt/shared';
+import { couponLines, previewSaving, useCoupon } from '../coupons/couponStore';
 import { Button, QtyStepper, Sheet, VegDot } from '@foodcourt/ui';
 import { cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
@@ -18,6 +19,7 @@ type Blocked = 'sold-out' | 'paused';
 export function CartSheet({ session }: { session: TableSession }) {
   const open = useUi((s) => s.open.cart);
   const hide = useUi((s) => s.hide);
+  const show = useUi((s) => s.show);
   const items = useCart((s) => s.items);
   const add = useCart((s) => s.add);
   const decrement = useCart((s) => s.decrement);
@@ -33,6 +35,16 @@ export function CartSheet({ session }: { session: TableSession }) {
 
   const list = useMemo(() => Object.values(items), [items]);
   const totals = useMemo(() => computeOrderTotals({ items: list, config }), [list, config]);
+  // Coupons are paid by the court and only work online; the server re-checks this one at checkout.
+  const coupon = useCoupon((s) => s.preview);
+  const clearCoupon = useCoupon((s) => s.clear);
+  const menus = useLocal((s) => s.menus);
+  const saving = useMemo(
+    () => (coupon && config.flags.paymentsEnabled ? previewSaving(coupon, couponLines(list, menus), totals.totalPaise) : null),
+    [coupon, config.flags.paymentsEnabled, list, menus, totals.totalPaise]
+  );
+  const discountPaise = saving?.ok ? saving.discountPaise : 0;
+  const payable = withDiscount(totals, discountPaise);
   const points = calculatePointsEarned(totals.subtotalPaise, config.pointsPerRupee);
   const groups = vendors
     .map((vendor) => ({ vendor, items: list.filter((i) => i.vendorId === vendor.id) }))
@@ -90,9 +102,10 @@ export function CartSheet({ session }: { session: TableSession }) {
               block
               loading={pending}
               disabled={payBlocker !== null}
-              onClick={() => checkout(list, totals)}
+              onClick={() => checkout(list, payable, discountPaise > 0 ? coupon?.coupon.code : undefined)}
             >
-              Pay {formatPaise(totals.totalPaise)}
+              Pay {formatPaise(payable.totalPaise)}
+              {discountPaise > 0 && <span className="ml-1 text-sm font-medium line-through opacity-60">{formatPaise(totals.totalPaise)}</span>}
             </Button>
           </div>
         ) : undefined
@@ -140,6 +153,16 @@ export function CartSheet({ session }: { session: TableSession }) {
             Clear cart
           </Button>
 
+          {config.flags.paymentsEnabled && (
+            <CouponRow
+              code={coupon?.coupon.code ?? null}
+              discountPaise={discountPaise}
+              reason={saving && !saving.ok ? saving.reason : null}
+              onOpen={() => show('coupons')}
+              onRemove={clearCoupon}
+            />
+          )}
+
           <dl className="mt-4 space-y-2.5 rounded-card bg-bg p-4 text-sm">
             <div className="flex justify-between text-ink-2">
               <dt>Item total</dt>
@@ -155,9 +178,15 @@ export function CartSheet({ session }: { session: TableSession }) {
                 <dd className="tabular-nums">{formatPaise(totals.platformFeePaise)}</dd>
               </div>
             )}
+            {discountPaise > 0 && (
+              <div className="flex justify-between font-medium text-ready">
+                <dt>Coupon {coupon?.coupon.code}</dt>
+                <dd className="tabular-nums">− {formatPaise(discountPaise)}</dd>
+              </div>
+            )}
             <div className="flex justify-between border-t border-line pt-3 text-base font-semibold text-ink">
               <dt>To pay</dt>
-              <dd className="tabular-nums">{formatPaise(totals.totalPaise)}</dd>
+              <dd className="tabular-nums">{formatPaise(payable.totalPaise)}</dd>
             </div>
           </dl>
 
@@ -171,6 +200,37 @@ export function CartSheet({ session }: { session: TableSession }) {
         </>
       )}
     </Sheet>
+  );
+}
+
+function CouponRow({ code, discountPaise, reason, onOpen, onRemove }: { code: string | null; discountPaise: number; reason: string | null; onOpen: () => void; onRemove: () => void }) {
+  if (!code) {
+    return (
+      <button type="button" onClick={onOpen} className="hover-surface mt-4 flex w-full items-center gap-3 rounded-card px-4 py-3.5 text-left ring-1 ring-inset ring-line transition-colors">
+        <TicketPercent className="h-5 w-5 shrink-0 text-accent-ink" strokeWidth={1.75} />
+        <span className="flex-1 text-base font-medium text-ink">Apply a coupon</span>
+        <ChevronRight className="h-4 w-4 text-ink-3" />
+      </button>
+    );
+  }
+  return (
+    <div
+      className={cx(
+        'mt-4 flex items-center gap-3 rounded-card px-4 py-3 ring-1 ring-inset',
+        discountPaise > 0 ? 'bg-ready-tint ring-ready/25' : 'bg-surface ring-line'
+      )}
+    >
+      <TicketPercent className={cx('h-5 w-5 shrink-0', discountPaise > 0 ? 'text-ready' : 'text-ink-3')} strokeWidth={1.75} />
+      <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
+        <span className="block font-mono text-sm font-semibold tracking-wide text-ink">{code}</span>
+        <span className={cx('block text-sm', discountPaise > 0 ? 'font-medium text-ready' : 'text-danger')} aria-live="polite">
+          {discountPaise > 0 ? `You save ${formatPaise(discountPaise)}` : reason}
+        </span>
+      </button>
+      <button type="button" onClick={onRemove} aria-label={`Remove coupon ${code}`} className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-3 hover:text-ink">
+        <X className="h-4 w-4" strokeWidth={2} />
+      </button>
+    </div>
   );
 }
 

@@ -118,6 +118,22 @@ describe('firestore.rules', () => {
     await assertFails(getDoc(doc(diner(), 'visits/alice_2026-10-20')));
   });
 
+  it('keeps coupon terms and usage away from diners and kitchens', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'coupons/SECRET50'), { code: 'SECRET50', showInWallet: false, active: true });
+      await setDoc(doc(ctx.firestore(), 'couponUses/SECRET50_alice'), { count: 1 });
+      await setDoc(doc(ctx.firestore(), 'couponHolds/SECRET50_alice'), { orderId: 'o1' });
+    });
+    await assertSucceeds(getDoc(doc(master(), 'coupons/SECRET50')));
+    await assertFails(getDoc(doc(diner(), 'coupons/SECRET50')));
+    await assertFails(getDocs(collection(diner(), 'coupons')));
+    await assertFails(getDoc(doc(staff(), 'coupons/SECRET50')));
+    await assertFails(setDoc(doc(master(), 'coupons/FREE'), { code: 'FREE', flatPaise: 100000 }));
+    await assertFails(updateDoc(doc(master(), 'coupons/SECRET50'), { usedCount: 0 }));
+    await assertFails(getDoc(doc(diner(), 'couponUses/SECRET50_alice')));
+    await assertFails(getDoc(doc(master(), 'couponHolds/SECRET50_alice')));
+  });
+
   it('keeps menus and global config master-only', async () => {
     await assertFails(setDoc(doc(staff(), 'menus/v-rm'), { categories: [] }));
     await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), 'config/global')));

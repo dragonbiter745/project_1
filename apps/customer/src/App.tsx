@@ -5,6 +5,7 @@ import { DetailsSheet } from './features/auth/DetailsSheet';
 import { LoginSheet } from './features/auth/LoginSheet';
 import { CartBar } from './features/cart/CartBar';
 import { CartSheet } from './features/cart/CartSheet';
+import { CouponSheet } from './features/coupons/CouponSheet';
 import { MenuScreen } from './features/menu/MenuScreen';
 import { useActiveOrderSync, useCatalog, useHistorySync, useProfileSync, useReturnFromPayment } from './features/session/useLiveData';
 import { useTableSession, type TableSession } from './features/session/useTableSession';
@@ -55,6 +56,7 @@ export default function App() {
       <TrackingSheet session={session} />
       <LoginSheet session={session} />
       <DetailsSheet session={session} />
+      <CouponSheet />
       <LazyAccountHub session={session} />
       <OfflineBanner />
       <AppToaster />

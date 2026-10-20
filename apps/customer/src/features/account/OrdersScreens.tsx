@@ -275,6 +275,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
         <BillRow label="Item total" value={formatPaise(order.totals.subtotalPaise)} />
         <BillRow label="GST" value={order.totals.taxPaise > 0 ? `${formatPaise(order.totals.taxPaise)} included` : 'Included'} muted />
         {order.totals.platformFeePaise > 0 && <BillRow label="Platform fee" value={formatPaise(order.totals.platformFeePaise)} />}
+        {order.coupon && <CouponLine code={order.coupon.code} paise={order.coupon.discountPaise} />}
         <div className="flex justify-between border-t border-line pt-3 text-base font-semibold text-ink">
           <dt>{online ? 'Paid' : 'Paid at the counter'}</dt>
           <dd className="tabular-nums">{formatPaise(order.totals.totalPaise)}</dd>
@@ -298,6 +299,15 @@ export function OrderDetailScreen({ id }: { id: string }) {
 
       <ReportProblemSheet target={report} onClose={() => setReport(null)} />
     </>
+  );
+}
+
+function CouponLine({ code, paise }: { code: string; paise: number }) {
+  return (
+    <div className="flex justify-between gap-3 font-medium text-ready">
+      <dt>Coupon {code}</dt>
+      <dd className="tabular-nums">− {formatPaise(paise)}</dd>
+    </div>
   );
 }
 
@@ -372,6 +382,7 @@ export function ReceiptScreen({ id }: { id: string }) {
           <BillRow label="Item total" value={formatPaise(order.totals.subtotalPaise)} />
           <BillRow label={`GST (${gstPct}%) included`} value={formatPaise(order.totals.taxPaise)} muted />
           {order.totals.platformFeePaise > 0 && <BillRow label="Platform fee" value={formatPaise(order.totals.platformFeePaise)} />}
+          {order.coupon && <CouponLine code={order.coupon.code} paise={order.coupon.discountPaise} />}
           <div className="flex justify-between pt-1 text-base font-semibold text-ink">
             <dt>Total</dt>
             <dd className="tabular-nums">{formatPaise(order.totals.totalPaise)}</dd>

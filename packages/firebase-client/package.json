@@ -20,6 +20,7 @@
     "./staff": "./src/staff.ts",
     "./finance": "./src/finance.ts",
     "./customers": "./src/customers.ts",
+    "./coupons": "./src/coupons.ts",
     "./db": "./src/db.ts"
   },
   "scripts": {

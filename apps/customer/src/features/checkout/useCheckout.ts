@@ -5,6 +5,7 @@ import { ensureAnonymousUser, getCallable } from '../../lib/firebase';
 import { liveStore } from '../../lib/store';
 import { useProfile } from '../auth/profileStore';
 import { useCart } from '../cart/cartStore';
+import { useCoupon } from '../coupons/couponStore';
 import { useOrderHistory } from '../history/orderHistory';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
@@ -59,6 +60,7 @@ interface CheckoutRequest {
     note?: string;
   }>;
   customerPhone?: string;
+  couponCode?: string;
 }
 
 interface CheckoutResponse {
@@ -78,7 +80,7 @@ interface CashfreeResult {
 export function useCheckout(session: TableSession) {
   const [pending, setPending] = useState(false);
 
-  const checkout = async (items: CartItem[], totals: OrderTotals) => {
+  const checkout = async (items: CartItem[], totals: OrderTotals, couponCode?: string) => {
     if (items.length === 0 || pending) return;
     const paymentsOn = liveStore.getState().config.flags.paymentsEnabled;
     const phone = useProfile.getState().profile?.phone;
@@ -114,6 +116,7 @@ export function useCheckout(session: TableSession) {
         draft.orders[orderId] = placeholder;
       });
       useOrderHistory.getState().record(orderId);
+      if (couponCode) useCoupon.getState().clear();
       const cart = useCart.getState();
       cart.clear();
       cart.setActiveOrder(orderId);
@@ -129,6 +132,7 @@ export function useCheckout(session: TableSession) {
         checkoutKey,
         items: items.map((i) => ({ itemId: i.itemId, vendorId: i.vendorId, name: i.name, pricePaise: i.pricePaise, veg: i.veg, qty: i.qty, note: i.note || undefined })),
         ...(phone ? { customerPhone: phone } : {}),
+        ...(couponCode ? { couponCode } : {}),
       });
 
       // Pay at the counter: already confirmed and sent to the kitchens.
@@ -155,9 +159,23 @@ export function useCheckout(session: TableSession) {
       const e = err as { code?: string; message?: string };
       const offline = !navigator.onLine || e?.code === 'functions/unavailable';
       const known = e?.code === 'functions/failed-precondition' || e?.code === 'functions/invalid-argument' || e?.code === 'functions/not-found' || e?.code === 'functions/resource-exhausted';
+      // The coupon no longer applies (used up, expired, already used): offer to pay without it.
+      if (couponCode && /coupon/i.test(e?.message ?? '')) {
+        notifyError("The coupon didn't go through", {
+          description: e.message,
+          action: {
+            label: 'Pay without it',
+            onClick: () => {
+              useCoupon.getState().clear();
+              void checkout(items, { ...totals, totalPaise: totals.totalPaise + (totals.discountPaise ?? 0), discountPaise: undefined });
+            },
+          },
+        });
+        return;
+      }
       notifyError("Couldn't place the order", {
         description: known ? e.message : offline ? 'Check your connection. Your cart is saved.' : 'Nothing was charged. Your cart is saved.',
-        action: known ? undefined : { label: 'Try again', onClick: () => void checkout(items, totals) },
+        action: known ? undefined : { label: 'Try again', onClick: () => void checkout(items, totals, couponCode) },
       });
     } finally {
       setPending(false);

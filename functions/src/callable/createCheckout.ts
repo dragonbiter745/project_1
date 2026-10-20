@@ -5,6 +5,7 @@ import {
   CreateCheckoutSchema,
   computeOrderTotals,
   getIstDateKey,
+  withDiscount,
   type GlobalConfig,
   type Order,
   type Vendor,
@@ -15,7 +16,9 @@ import { CASHFREE_SECRETS, CUSTOMER_URL, PAYMENT_WINDOW_MS, REGION } from '../co
 import { db } from '../db';
 import { CashfreeError, createOrder, isProduction } from '../lib/cashfree';
 import { clientIp, limitLocal, limitShared, requireUid } from '../lib/guard';
+import { discountForCheckout, holdCoupon, releaseHold } from '../lib/coupons';
 import { writeCustomerOrder } from '../lib/customers';
+import { signInProvider } from './account';
 import { readForTickets, writeTickets } from '../lib/orders';
 
 const FALLBACK_CONFIG: GlobalConfig = {
@@ -41,7 +44,7 @@ export const createCheckout = onCall(
 
     const parsed = CreateCheckoutSchema.safeParse(req.data);
     if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid order.');
-    const { sessionId, checkoutKey, items, customerPhone } = parsed.data;
+    const { sessionId, checkoutKey, items, customerPhone, couponCode } = parsed.data;
 
     const orderId = 'o' + crypto.createHash('sha256').update(`${uid}:${checkoutKey}`).digest('hex').slice(0, 24);
     const orderRef = db.collection('orders').doc(orderId);
@@ -80,8 +83,18 @@ export const createCheckout = onCall(
       return { itemId: item.id, vendorId: line.vendorId, categoryId: category.id, name: item.name, pricePaise: item.pricePaise, veg: item.veg, qty: line.qty, ...(line.note ? { note: line.note } : {}) };
     });
 
-    const totals = computeOrderTotals({ items: verified, config });
-    if (totals.totalPaise < 100) throw new HttpsError('invalid-argument', 'That order is too small.');
+    const fullTotals = computeOrderTotals({ items: verified, config });
+    if (fullTotals.totalPaise < 100) throw new HttpsError('invalid-argument', 'That order is too small.');
+
+    // Coupons are paid by the court and only work online: at the counter the shop holds the cash.
+    let coupon: { code: string; title: string; discountPaise: number } | null = null;
+    if (couponCode) {
+      if (!config.flags.paymentsEnabled) throw new HttpsError('failed-precondition', 'Coupons work with online payment, which is off right now. Remove the coupon to order.');
+      const provider = signInProvider(req);
+      const found = await discountForCheckout(couponCode, uid, Boolean(provider && provider !== 'anonymous'), verified, fullTotals.totalPaise, now);
+      coupon = { code: found.coupon.code, title: found.coupon.title, discountPaise: found.discountPaise };
+    }
+    const totals = withDiscount(fullTotals, coupon?.discountPaise ?? 0);
 
     const base = {
       sessionId,
@@ -94,6 +107,7 @@ export const createCheckout = onCall(
       totals,
       checkoutKey,
       createdAt: now,
+      ...(coupon ? { coupon, couponCostPaise: coupon.discountPaise } : {}),
     };
 
     // Pay at the counter: the order is confirmed and goes to the kitchens straight away.
@@ -111,6 +125,7 @@ export const createCheckout = onCall(
 
     if (!customerPhone) throw new HttpsError('invalid-argument', 'Enter your mobile number to pay online.');
     const expiresAt = now + PAYMENT_WINDOW_MS;
+    if (coupon) await holdCoupon(coupon.code, uid, orderId, expiresAt, now);
     await orderRef.create({ ...base, status: 'PENDING_PAYMENT', payment: { status: 'PENDING', mode: 'ONLINE' }, customerPhone, expiresAt });
 
     try {
@@ -129,6 +144,7 @@ export const createCheckout = onCall(
     } catch (err) {
       logger.error('Cashfree order creation failed', { orderId, err: (err as Error).message });
       await orderRef.update({ status: 'FAILED', 'payment.status': 'FAILED', updatedAt: Date.now() });
+      if (coupon) await releaseHold(coupon.code, uid);
       throw new HttpsError('unavailable', 'Payments are not responding right now. Nothing was charged. Please try again.');
     }
   }

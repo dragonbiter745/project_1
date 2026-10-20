@@ -224,15 +224,33 @@ function collectedQuery(from: string, to: string) {
     .get();
 }
 
+/**
+ * Coupon discounts the court paid for in a span of days (zero once a fully refunded order hands its
+ * coupon back). Its own query: an aggregation only counts documents that have every summed field.
+ */
+async function couponCost(from: string, to: string): Promise<number> {
+  const snap = await db
+    .collection('orders')
+    .where('payment.mode', '==', 'ONLINE')
+    .where('payment.status', '==', 'SUCCESS')
+    .where('dateKey', '>=', from)
+    .where('dateKey', '<=', to)
+    .aggregate({ coupons: AggregateField.sum('couponCostPaise') })
+    .get();
+  return snap.data().coupons ?? 0;
+}
+
 export async function buildFinanceReport(from: string, to: string): Promise<FinanceReport> {
   const prev = previousRange(from, to);
-  const [vendorSnap, payoutSnap, collected, collectedBefore, chart, previous] = await Promise.all([
+  const [vendorSnap, payoutSnap, collected, collectedBefore, chart, previous, coupons, couponsBefore] = await Promise.all([
     db.collection('vendors').get(),
     db.collection('payouts').where('status', '==', 'RECORDED').select('vendorId', 'amountPaise', 'paidOn').get(),
     collectedQuery(from, to),
     collectedQuery(prev.from, prev.to),
     series(null, from, to),
     periodTotals(null, prev),
+    couponCost(from, to),
+    couponCost(prev.from, prev.to),
   ]);
 
   const paidOut = sumPayouts(payoutSnap.docs.map((d) => d.data() as PayoutRow), from, to);
@@ -253,6 +271,7 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
     paidOrders: c.n,
     refundsPaise,
     netPaise: collectedPaise - refundsPaise,
+    couponsPaise: coupons,
     averageOrderPaise: c.n > 0 ? Math.round(collectedPaise / c.n) : 0,
     counterOrders: total('counterOrders'),
     counterSalesPaise: total('counterSalesPaise'),
@@ -262,7 +281,7 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
     balanceDuePaise: total('balanceDuePaise'),
     shops,
     ...chart,
-    previous: { ...prevTotals, ...prev, collectedPaise: cb.total ?? 0, paidOrders: cb.n },
+    previous: { ...prevTotals, ...prev, collectedPaise: cb.total ?? 0, paidOrders: cb.n, couponsPaise: couponsBefore },
   };
 }
 
@@ -386,15 +405,18 @@ export async function buildFounderIncome(months = 12, today = getIstDateKey()): 
     d.setUTCMonth(d.getUTCMonth() - (months - 1 - i));
     return d.toISOString().slice(0, 10);
   });
-  const [lifetime, ...perMonth] = await Promise.all([
-    periodTotals(null, ALL_TIME),
-    ...starts.map((from) => {
-      const end = new Date(`${from}T00:00:00Z`);
-      end.setUTCMonth(end.getUTCMonth() + 1);
-      return periodTotals(null, { from, to: addDays(end.toISOString().slice(0, 10), -1) });
-    }),
-  ]);
-  return { lifetimeIncomePaise: lifetime.commissionPaise, months: starts.map((from, i) => ({ month: from.slice(0, 7), incomePaise: perMonth[i]!.commissionPaise })) };
+  const monthEnd = (from: string) => {
+    const end = new Date(`${from}T00:00:00Z`);
+    end.setUTCMonth(end.getUTCMonth() + 1);
+    return addDays(end.toISOString().slice(0, 10), -1);
+  };
+  // Revenue is commission less the coupons the court paid for.
+  const net = async (w: { from: string; to: string }) => {
+    const [t, coupons] = await Promise.all([periodTotals(null, w), couponCost(w.from, w.to)]);
+    return t.commissionPaise - coupons;
+  };
+  const [lifetime, ...perMonth] = await Promise.all([net(ALL_TIME as { from: string; to: string }), ...starts.map((from) => net({ from, to: monthEnd(from) }))]);
+  return { lifetimeIncomePaise: lifetime, months: starts.map((from, i) => ({ month: from.slice(0, 7), incomePaise: perMonth[i]! })) };
 }
 
 export const founderReport = onCall({ region: REGION, maxInstances: 5, timeoutSeconds: 60 }, async (req) => {
