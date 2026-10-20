@@ -259,3 +259,37 @@ describe('adminAction', () => {
     await expect(call(startSession, { qrToken: QR }, uniqueUid())).rejects.toMatchObject({ code: 'not-found' });
   });
 });
+
+describe('one table, many phones', () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seed({ paymentsEnabled: false });
+  });
+
+  it('lets a new phone order at a table while an earlier order there is still cooking', async () => {
+    const first = uniqueUid();
+    const firstSession = await sessionFor(startSession, first);
+    const a = await call(createCheckout, { sessionId: firstSession, checkoutKey: 'table-key-01', items: cart }, first);
+    await call(vendorAction, { subOrderId: `${a.orderId}__v-rm`, action: 'ACCEPT' }, 'staff-rm', { role: 'vendorStaff', vendorId: 'v-rm' });
+
+    // Two more groups sit at the same table a minute later, each on their own phone.
+    const second = uniqueUid();
+    const third = uniqueUid();
+    const s2 = await call(startSession, { qrToken: QR }, second);
+    const s3 = await call(startSession, { qrToken: QR }, third);
+    expect(new Set([firstSession, s2.sessionId, s3.sessionId]).size).toBe(3);
+    expect(s2.tableLabel).toBe('T-14');
+
+    const b = await call(createCheckout, { sessionId: s2.sessionId, checkoutKey: 'table-key-02', items: cart }, second);
+    const c = await call(createCheckout, { sessionId: s3.sessionId, checkoutKey: 'table-key-03', items: cart }, third);
+    expect(new Set([a.orderId, b.orderId, c.orderId]).size).toBe(3);
+
+    // Separate tokens per order, so nobody collects another group's food.
+    const tokens = await Promise.all([a, b, c].map(async (o) => (await db.doc(`subOrders/${o.orderId}__v-rm`).get()).data()!.token));
+    expect(new Set(tokens).size).toBe(3);
+    expect((await db.doc(`subOrders/${a.orderId}__v-rm`).get()).data()!.status).toBe('PREPARING');
+
+    // And one phone cannot order on another phone's table session.
+    await expect(call(createCheckout, { sessionId: firstSession, checkoutKey: 'table-key-04', items: cart }, second)).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+});
