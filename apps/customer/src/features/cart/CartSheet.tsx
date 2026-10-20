@@ -6,7 +6,8 @@ import { Button, QtyStepper, Sheet, VegDot } from '@foodcourt/ui';
 import { cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
 import { useOnline } from '../../lib/useOnline';
-import { useProfile } from '../auth/profileStore';
+import { selectMember, useAuth } from '../../lib/authStore';
+import { SignInNudge } from '../auth/SignInNudge';
 import { preloadCheckout, useCheckout } from '../checkout/useCheckout';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
@@ -17,7 +18,6 @@ type Blocked = 'sold-out' | 'paused';
 export function CartSheet({ session }: { session: TableSession }) {
   const open = useUi((s) => s.open.cart);
   const hide = useUi((s) => s.hide);
-  const show = useUi((s) => s.show);
   const items = useCart((s) => s.items);
   const add = useCart((s) => s.add);
   const decrement = useCart((s) => s.decrement);
@@ -27,7 +27,7 @@ export function CartSheet({ session }: { session: TableSession }) {
   const vendors = useLocal((s) => s.vendors, jsonEqual);
   const availability = useLocal((s) => s.availability, jsonEqual);
   const config = useLocal((s) => s.config, jsonEqual);
-  const profile = useProfile((s) => s.profile);
+  const member = useAuth(selectMember);
   const online = useOnline();
   const { checkout, pending } = useCheckout(session);
 
@@ -161,26 +161,13 @@ export function CartSheet({ session }: { session: TableSession }) {
             </div>
           </dl>
 
-          {config.flags.loyaltyEnabled && points > 0 && (
-            profile ? (
-              <p className="mt-4 flex items-center gap-2.5 text-sm text-ink-2">
-                <Gift className="h-[18px] w-[18px] shrink-0 text-accent-ink" strokeWidth={1.75} />
-                You'll earn {points} REVA points when you collect.
-              </p>
-            ) : (
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-card p-4 ring-1 ring-inset ring-line">
-                <p className="flex items-center gap-2.5 text-sm text-ink-2">
-                  <Gift className="h-[18px] w-[18px] shrink-0 text-accent-ink" strokeWidth={1.75} />
-                  <span>
-                    Sign in to earn <span className="font-semibold text-ink">{points} REVA points</span>
-                  </span>
-                </p>
-                <Button variant="quiet" onClick={() => show('login')}>
-                  Sign in
-                </Button>
-              </div>
-            )
+          {member && config.flags.loyaltyEnabled && points > 0 && (
+            <p className="mt-4 flex items-center gap-2.5 text-sm text-ink-2">
+              <Gift className="h-[18px] w-[18px] shrink-0 text-accent-ink" strokeWidth={1.75} />
+              You'll earn {points} REVA points when you collect.
+            </p>
           )}
+          <SignInNudge place="cart" className="mt-4" />
         </>
       )}
     </Sheet>

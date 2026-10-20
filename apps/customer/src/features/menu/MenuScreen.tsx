@@ -1,10 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
-import { Store, UtensilsCrossed } from 'lucide-react';
+import { Store, UserRound, UtensilsCrossed } from 'lucide-react';
 import { formatDailyCustomerNo } from '@foodcourt/shared';
+import { useAuth } from '../../lib/authStore';
 import { cleanLabel, cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
+import { Avatar } from '../account/Avatar';
 import { useProfile } from '../auth/profileStore';
+import { SignInNudge } from '../auth/SignInNudge';
 import { SearchOverlay } from '../search/SearchOverlay';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
@@ -30,6 +33,19 @@ export function MenuScreen({ session }: { session: TableSession }) {
   useEffect(() => {
     entrancePlayed = true;
   }, []);
+
+  // A signed-in diner's "Veg only by default" applies once, when their profile arrives.
+  const prefersVeg = useLocal((s) => {
+    const uid = useAuth.getState().user?.uid;
+    return uid ? s.users[uid]?.prefs?.vegOnly === true : false;
+  });
+  const appliedVegPref = useRef(false);
+  useEffect(() => {
+    if (prefersVeg && !appliedVegPref.current) {
+      appliedVegPref.current = true;
+      setVegOnly(true);
+    }
+  }, [prefersVeg]);
 
   // Shops arrive after the first paint (catalog fetch); pick the first one once they do.
   useEffect(() => {
@@ -103,6 +119,7 @@ export function MenuScreen({ session }: { session: TableSession }) {
       </header>
 
       <main className="px-4 pb-44">
+        <SignInNudge place="menu" className="mt-4" />
         {maintenance && (
           <div role="status" className="mt-4 rounded-card bg-danger-tint p-4 text-sm text-ink-2 ring-1 ring-inset ring-danger/20">
             <span className="font-semibold text-ink">Ordering is paused for a few minutes.</span> You can keep browsing; your
@@ -180,31 +197,40 @@ export function MenuScreen({ session }: { session: TableSession }) {
 
 function IdentityRow({ session, ref }: { session: TableSession; ref: React.Ref<HTMLDivElement> }) {
   const profile = useProfile((s) => s.profile);
+  const user = useAuth((s) => s.user);
   const show = useUi((s) => s.show);
+  const showLogin = useUi((s) => s.showLogin);
+  const member = Boolean(user?.member);
+  const name = (member ? profile?.name || user?.name : null) ?? session.displayName;
   return (
     <div ref={ref} className="flex h-16 items-center justify-between gap-3 pl-4 pr-2 pt-1">
       <div className="min-w-0">
-        <p className="truncate text-lg font-semibold tracking-tight text-ink">{profile?.name ?? session.displayName}</p>
+        <p className="truncate text-lg font-semibold tracking-tight text-ink">{name}</p>
         <p className="text-sm tabular-nums text-ink-3">
           {formatDailyCustomerNo(session.dailyNo)} · Table {session.tableLabel}
         </p>
       </div>
-      {profile ? (
+      <div className="flex shrink-0 items-center">
+        {!member && (
+          <Button variant="quiet" size="sm" onClick={() => showLogin()}>
+            Sign in
+          </Button>
+        )}
         <button
           type="button"
           onClick={() => show('account')}
           aria-label="Your account"
           className="pressable grid h-11 w-11 shrink-0 place-items-center"
         >
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-tint text-sm font-semibold text-accent-ink ring-1 ring-inset ring-accent-line">
-            {profile.name.charAt(0).toUpperCase()}
-          </span>
+          {member ? (
+            <Avatar name={name} photoURL={user?.photoURL} size={36} />
+          ) : (
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-ink-2">
+              <UserRound className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </span>
+          )}
         </button>
-      ) : (
-        <Button variant="quiet" className="mr-2" onClick={() => show('login')}>
-          Sign in
-        </Button>
-      )}
+      </div>
     </div>
   );
 }

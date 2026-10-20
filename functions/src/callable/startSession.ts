@@ -4,6 +4,7 @@ import { StartSessionSchema, generateDisplayName, getIstDateKey, type Table } fr
 import { REGION, SESSION_TTL_MS } from '../config';
 import { db } from '../db';
 import { clientIp, limitLocal, limitShared, requireUid } from '../lib/guard';
+import { signInProvider } from './account';
 
 function hashSeed(s: string): number {
   let h = 2166136261;
@@ -34,6 +35,9 @@ export const startSession = onCall({ region: REGION, minInstances: 1, maxInstanc
   const dateKey = getIstDateKey();
   const sessionRef = db.collection('sessions').doc(`${uid}_${tableDoc.id}_${dateKey}`);
   const counterRef = db.collection('counters').doc(`${dateKey}_${tableDoc.id}`);
+  // Signed-in diners are called by their own name; guests get a generated one.
+  const provider = signInProvider(req);
+  const memberName = provider && provider !== 'anonymous' ? ((await db.collection('users').doc(uid).get()).data()?.name as string | undefined) : undefined;
 
   return db.runTransaction(async (tx) => {
     const [existing, counter] = await Promise.all([tx.get(sessionRef), tx.get(counterRef)]);
@@ -44,7 +48,7 @@ export const startSession = onCall({ region: REGION, minInstances: 1, maxInstanc
     }
     // Per-table daily number (a few diners a day per table, so no contention).
     const dailyNo = ((counter.data()?.count as number | undefined) ?? 0) + 1;
-    const displayName = generateDisplayName(hashSeed(uid));
+    const displayName = memberName || generateDisplayName(hashSeed(uid));
     tx.set(counterRef, { count: dailyNo, updatedAt: now }, { merge: true });
     tx.set(sessionRef, {
       uid,

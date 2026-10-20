@@ -234,7 +234,31 @@ export interface UserProfile {
   lifetimeSpendPaise: number;
   tier?: 'bronze' | 'silver' | 'gold';
   createdAt: number;
+  /** True once the diner signs in with Google; guests (anonymous uids) never have it. */
+  member?: boolean;
+  email?: string | null;
+  photoURL?: string | null;
+  studentId?: string;
+  prefs?: UserPrefs;
+  /** Saved dishes as `${vendorId}:${itemId}`. */
+  favourites?: string[];
+  lastLoginAt?: number;
+  updatedAt?: number;
+  /** Set on a guest uid whose orders were moved into a signed-in account. */
+  mergedInto?: string;
 }
+
+export interface UserPrefs {
+  /** Open the menu with Veg only switched on. */
+  vegOnly?: boolean;
+  /** Consent to offers and announcements (push now, email later). */
+  offers?: boolean;
+  /** Push when food is ready or an order changes. */
+  orderUpdates?: boolean;
+}
+
+export const MAX_FAVOURITES = 200;
+export const favouriteKey = (vendorId: string, itemId: string) => `${vendorId}:${itemId}`;
 
 export interface PointsLedgerEntry {
   id: string;

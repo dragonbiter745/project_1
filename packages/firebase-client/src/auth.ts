@@ -16,4 +16,12 @@ export function getAuthClient(): Auth {
   return auth;
 }
 
-export { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+export {
+  signInAnonymously,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  linkWithPopup,
+  signInWithCredential,
+  signOut,
+  type User,
+} from 'firebase/auth';

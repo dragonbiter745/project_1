@@ -3,6 +3,7 @@ import { Maximize2, MessageSquareWarning } from 'lucide-react';
 import { formatPaise, type Order, type SubOrder } from '@foodcourt/shared';
 import { cx, prefersReducedMotion } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
+import { SignInNudge } from '../auth/SignInNudge';
 import { useCart } from '../cart/cartStore';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
@@ -91,6 +92,7 @@ export function TrackingSheet({ session }: { session: TableSession }) {
                 }
               />
             ))}
+            <SignInNudge place="tracking" />
           </div>
         )}
       </Sheet>

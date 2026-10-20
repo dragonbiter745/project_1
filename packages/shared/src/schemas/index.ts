@@ -76,6 +76,30 @@ export type AdminActionInput = z.infer<typeof AdminActionSchema>;
 
 export type ReportIssueInput = z.infer<typeof ReportIssueSchema>;
 
+const ID = z.string().min(1).max(200);
+
+export const AccountActionSchema = z.discriminatedUnion('action', [
+  // After Google sign-in. guestToken proves the anonymous uid whose orders should move into this account.
+  z.object({ action: z.literal('SYNC'), sessionId: ID.optional(), guestToken: z.string().min(20).max(4096).optional() }),
+  z.object({
+    action: z.literal('UPDATE_PROFILE'),
+    sessionId: ID.optional(),
+    name: z.string().trim().min(2, 'Enter at least 2 letters').max(40, 'Keep it under 40 letters').optional(),
+    phone: z.union([z.literal(''), z.string().regex(/^[6-9]\d{9}$/, 'Enter a 10-digit Indian mobile number')]).optional(),
+    studentId: z.string().trim().max(20).optional(),
+  }),
+  z.object({
+    action: z.literal('SET_PREFS'),
+    vegOnly: z.boolean().optional(),
+    offers: z.boolean().optional(),
+    orderUpdates: z.boolean().optional(),
+  }),
+  z.object({ action: z.literal('FAVOURITE'), vendorId: ID, itemId: ID, on: z.boolean() }),
+  z.object({ action: z.literal('DELETE_ACCOUNT'), confirm: z.literal('DELETE') }),
+]);
+
+export type AccountActionInput = z.infer<typeof AccountActionSchema>;
+
 const DATE_KEY = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use a YYYY-MM-DD date');
 
 export const FinanceReportSchema = z

@@ -1,4 +1,4 @@
-import { collection, doc, documentId, limit, onSnapshot, orderBy, query, where, type DocumentData, type Query, type Unsubscribe } from 'firebase/firestore';
+import { collection, doc, documentId, getDocs, limit, onSnapshot, orderBy, query, where, type DocumentData, type Query, type Unsubscribe } from 'firebase/firestore';
 import { getIstDateKey, type GlobalConfig, type Order, type SubOrder, type Table, type UserProfile, type Vendor, type VendorAvailability, type VendorMenu } from '@foodcourt/shared';
 import { getDb } from './db';
 import { liveStore, type LiveStore } from './liveStore';
@@ -137,7 +137,7 @@ export function watchOrder(uid: string, orderId: string, store: LiveStore = live
   return () => subs.forEach((u) => u());
 }
 
-/** A diner's recent orders and loyalty balance, for the account sheet. */
+/** A diner's recent orders and loyalty balance, for the account screens. */
 export function watchMyHistory(uid: string, store: LiveStore = liveStore): Unsubscribe {
   const db = getDb();
   const subs = [
@@ -145,9 +145,35 @@ export function watchMyHistory(uid: string, store: LiveStore = liveStore): Unsub
       const d = store.getState();
       for (const r of rows) d.orders[r.id] = r;
     }, 'history'),
-    onSnapshot(doc(db, 'users', uid), (snap) => {
-      if (snap.exists()) store.patch((d) => void (d.users[uid] = { ...(snap.data() as UserProfile), uid }));
-    }, onError(store, 'profile')),
+    watchProfile(uid, store),
   ];
   return () => subs.forEach((u) => u());
+}
+
+/** A signed-in diner's own profile: name, preferences, favourites, points. */
+export function watchProfile(uid: string, store: LiveStore = liveStore): Unsubscribe {
+  return onSnapshot(doc(getDb(), 'users', uid), (snap) => {
+    store.patch((d) => {
+      if (snap.exists()) d.users[uid] = { ...(snap.data() as UserProfile), uid };
+      else delete d.users[uid];
+    });
+    store.markLoaded('profile');
+  }, onError(store, 'profile'));
+}
+
+/** One page of a diner's older orders (no listener: past orders rarely change). Returns how many arrived. */
+export async function fetchOrdersBefore(uid: string, beforeMs: number, pageSize = 20, store: LiveStore = liveStore): Promise<number> {
+  const snap = await getDocs(query(collection(getDb(), 'orders'), where('uid', '==', uid), where('createdAt', '<', beforeMs), orderBy('createdAt', 'desc'), limit(pageSize)));
+  store.patch((d) => {
+    for (const r of snap.docs) d.orders[r.id] = withId<Order>(r);
+  });
+  return snap.size;
+}
+
+/** Every kitchen ticket of one past order, for its receipt. */
+export async function fetchTickets(uid: string, orderId: string, store: LiveStore = liveStore): Promise<void> {
+  const snap = await getDocs(query(collection(getDb(), 'subOrders'), where('uid', '==', uid), where('orderId', '==', orderId)));
+  store.patch((d) => {
+    for (const r of snap.docs) d.subOrders[r.id] = withId<SubOrder>(r);
+  });
 }

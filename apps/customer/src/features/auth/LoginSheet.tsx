@@ -1,175 +1,107 @@
-import { useEffect, useId, useState, type FormEvent } from 'react';
-import { cx } from '../../lib/format';
-import { notify } from '../../lib/toast';
+import { useState } from 'react';
+import { BellRing, Heart, ReceiptText, TicketPercent } from 'lucide-react';
+import { notify, notifyError } from '../../lib/toast';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
-import { useProfile } from './profileStore';
+import { SignInCancelled, signInErrorMessage, signInWithGoogle } from './account';
 import { Button, Sheet } from '@foodcourt/ui';
 
-type Step = 'phone' | 'details';
+const PERKS = [
+  { icon: ReceiptText, title: 'Every order, on any phone', text: 'Receipts, refunds and one-tap reorder.' },
+  { icon: Heart, title: 'Your favourite dishes', text: 'Save them once, find them at every visit.' },
+  { icon: TicketPercent, title: 'Coupons as they launch', text: 'Signed-in diners hear about offers first.' },
+  { icon: BellRing, title: 'Know when food is ready', text: 'Order updates on this phone.' },
+];
 
-const fieldClass =
-  'h-12 w-full rounded-field bg-surface-2 px-3.5 text-md text-ink outline-none transition-[background-color,box-shadow] duration-150 placeholder:text-ink-3 focus:bg-surface focus:ring-2 focus:ring-accent/50';
+/** Google's mark, drawn to their brand guidelines (it cannot come from an icon set). */
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden>
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+      <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+    </svg>
+  );
+}
 
-// Two steps today; phone OTP (PRD FR-C8, milestone M5) slots in between them.
-export function LoginSheet(_props: { session: TableSession }) {
+async function celebrate() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const { default: confetti } = await import('canvas-confetti');
+  void confetti({ particleCount: 70, spread: 70, startVelocity: 32, origin: { y: 0.75 }, colors: ['#E4570F', '#F9D6C2', '#15803D', '#FFFFFF'], disableForReducedMotion: true });
+}
+
+export function LoginSheet({ session }: { session: TableSession }) {
   const open = useUi((s) => s.open.login);
+  const reason = useUi((s) => s.loginReason);
   const hide = useUi((s) => s.hide);
-  const signIn = useProfile((s) => s.signIn);
-  const [step, setStep] = useState<Step>('phone');
-  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
-  const [phone, setPhone] = useState('');
-  const [name, setName] = useState('');
-  const [studentId, setStudentId] = useState('');
-  const [error, setError] = useState('');
-  const ids = {
-    phoneForm: useId(),
-    detailsForm: useId(),
-    phone: useId(),
-    phoneHelp: useId(),
-    phoneError: useId(),
-    name: useId(),
-    nameHelp: useId(),
-    student: useId(),
-  };
-
-  useEffect(() => {
-    if (!open) return;
-    setStep('phone');
-    setError('');
-  }, [open]);
-
+  const [pending, setPending] = useState(false);
   const close = () => hide('login');
 
-  const goTo = (next: Step) => {
-    setDirection(next === 'details' ? 'forward' : 'back');
-    setStep(next);
-  };
-
-  const submitPhone = (e: FormEvent) => {
-    e.preventDefault();
-    if (phone.length !== 10) {
-      setError('Enter a 10-digit mobile number.');
-      return;
+  const signIn = async () => {
+    if (pending) return;
+    setPending(true);
+    try {
+      const { firstSignIn, merged, profile } = await signInWithGoogle(session.id);
+      close();
+      const first = profile.name?.split(' ')[0];
+      void celebrate();
+      notify(first ? `You're in, ${first}` : "You're in", {
+        description: firstSignIn
+          ? 'Coupons you get will show up in your account.'
+          : merged > 0
+            ? `${merged === 1 ? 'Your order from this phone is' : `${merged} orders from this phone are`} now in your account.`
+            : 'Your orders and favourites are here.',
+      });
+    } catch (err) {
+      if (err instanceof SignInCancelled) return;
+      console.error('Google sign-in failed', err);
+      notifyError("Couldn't sign you in", { description: signInErrorMessage(err) });
+    } finally {
+      setPending(false);
     }
-    goTo('details');
   };
-
-  const submitDetails = (e: FormEvent) => {
-    e.preventDefault();
-    const displayName = name.trim() || `Diner ${phone.slice(-4)}`;
-    signIn({ name: displayName, phone, studentId: studentId.trim() || undefined });
-    close();
-    notify(`Welcome, ${displayName}`, { description: 'Points are added when you collect your food.' });
-  };
-
-  const isPhone = step === 'phone';
 
   return (
     <Sheet
       open={open}
       onClose={close}
-      title={isPhone ? 'Sign in' : 'Almost done'}
-      description={
-        isPhone ? 'Optional. Keep your order history and earn REVA points.' : 'Tell the counter who to call out.'
-      }
+      title="Sign in"
+      description={reason ?? 'Optional. Ordering as a guest still works.'}
       footer={
         <div className="space-y-1">
-          <Button type="submit" form={isPhone ? ids.phoneForm : ids.detailsForm} size="lg" block>
-            {isPhone ? 'Continue' : 'Sign in'}
+          <Button size="lg" variant="outline" block loading={pending} onClick={() => void signIn()} icon={<GoogleMark />}>
+            Continue with Google
           </Button>
-          {isPhone ? (
-            <Button variant="ghost" block onClick={close}>
-              Continue as guest
-            </Button>
-          ) : (
-            <Button variant="ghost" block onClick={() => goTo('phone')}>
-              Back
-            </Button>
-          )}
+          <Button variant="ghost" block onClick={close}>
+            Not now
+          </Button>
         </div>
       }
     >
-      <div key={step} className={direction === 'forward' ? 'step-forward' : 'step-back'}>
-        {isPhone ? (
-          <form id={ids.phoneForm} onSubmit={submitPhone} noValidate className="space-y-2">
-            <label htmlFor={ids.phone} className="block text-sm font-medium text-ink">
-              Mobile number
-            </label>
-            <div
-              className={cx(
-                'flex h-12 items-center rounded-field bg-surface-2 transition-[background-color,box-shadow] duration-150 focus-within:bg-surface focus-within:ring-2',
-                error ? 'ring-2 ring-danger/60 focus-within:ring-danger/60' : 'focus-within:ring-accent/50'
-              )}
-            >
-              <span className="pl-3.5 pr-2 text-md font-medium text-ink-3" aria-hidden>
-                +91
+      <div className="overflow-hidden rounded-card bg-accent-tint ring-1 ring-inset ring-accent-line">
+        <div className="px-4 pb-3 pt-4">
+          <p className="text-lg font-semibold tracking-tight text-ink">Your REVA account</p>
+          <p className="mt-0.5 text-sm text-ink-2">One tap with Google. This table, your cart and today's orders stay as they are.</p>
+        </div>
+        <ul className="divide-y divide-accent-line/60 border-t border-accent-line/60 bg-surface/70">
+          {PERKS.map(({ icon: Icon, title, text }, i) => (
+            <li key={title} className="enter-up flex items-start gap-3 px-4 py-3" style={{ ['--i' as string]: i }}>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-accent-ink ring-1 ring-inset ring-accent-line">
+                <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
               </span>
-              <input
-                id={ids.phone}
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                maxLength={10}
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value.replace(/\D/g, ''));
-                  if (error) setError('');
-                }}
-                aria-invalid={Boolean(error)}
-                aria-describedby={error ? ids.phoneError : ids.phoneHelp}
-                placeholder="98765 43210"
-                className="h-full min-w-0 flex-1 bg-transparent pr-3.5 text-md tabular-nums tracking-wide text-ink outline-none placeholder:text-ink-3"
-              />
-            </div>
-            {error ? (
-              <p id={ids.phoneError} role="alert" className="text-sm text-danger">
-                {error}
-              </p>
-            ) : (
-              <p id={ids.phoneHelp} className="text-sm text-ink-3">
-                We only use your number for your orders and REVA points.
-              </p>
-            )}
-          </form>
-        ) : (
-          <form id={ids.detailsForm} onSubmit={submitDetails} noValidate className="space-y-5">
-            <div className="space-y-2">
-              <label htmlFor={ids.name} className="block text-sm font-medium text-ink">
-                Your name
-              </label>
-              <input
-                id={ids.name}
-                type="text"
-                autoComplete="given-name"
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                aria-describedby={ids.nameHelp}
-                placeholder="Ananya"
-                className={fieldClass}
-              />
-              <p id={ids.nameHelp} className="text-sm text-ink-3">
-                Shown on your food tokens at the counter.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor={ids.student} className="block text-sm font-medium text-ink">
-                REVA student or staff ID <span className="font-normal text-ink-3">(optional)</span>
-              </label>
-              <input
-                id={ids.student}
-                type="text"
-                autoCapitalize="characters"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value.toUpperCase())}
-                placeholder="R20EA123"
-                className={cx(fieldClass, 'uppercase')}
-              />
-            </div>
-          </form>
-        )}
+              <span className="min-w-0">
+                <span className="block text-base font-medium text-ink">{title}</span>
+                <span className="block text-sm text-ink-3">{text}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
+      <p className="mt-4 text-xs text-ink-3">
+        We use your Google name, email and photo for your account and nothing else. You can delete your account any time
+        from Privacy in your account.
+      </p>
     </Sheet>
   );
 }

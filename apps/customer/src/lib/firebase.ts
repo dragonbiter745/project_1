@@ -1,20 +1,30 @@
 import type { HttpsCallable } from '@foodcourt/firebase-client/functions';
 import type { IssueInput } from '@foodcourt/firebase-client/issues';
+import { useAuth } from './authStore';
 
 let userPromise: Promise<string> | null = null;
 
-// Firebase Auth is not needed to browse the menu, so it loads off the critical path.
+// Firebase Auth is not needed to browse the menu, so it loads off the critical path. Every diner
+// starts as an anonymous guest; signing in with Google upgrades (or switches) that user, and the
+// listener below keeps `useAuth` and later calls on whoever is signed in now.
 export function ensureAnonymousUser(): Promise<string> {
   if (!userPromise) {
     userPromise = import('@foodcourt/firebase-client/auth').then(
       ({ getAuthClient, onAuthStateChanged, signInAnonymously }) =>
         new Promise<string>((resolve, reject) => {
           const auth = getAuthClient();
+          let settled = false;
           const unsubscribe = onAuthStateChanged(auth, (user) => {
+            useAuth.setState({
+              user: user
+                ? { uid: user.uid, member: !user.isAnonymous, email: user.email, photoURL: user.photoURL, name: user.displayName }
+                : null,
+            });
             if (user) {
-              unsubscribe();
+              if (settled) userPromise = Promise.resolve(user.uid);
+              settled = true;
               resolve(user.uid);
-            } else {
+            } else if (!settled) {
               signInAnonymously(auth).catch((err: unknown) => {
                 unsubscribe();
                 reject(err);

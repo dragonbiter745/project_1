@@ -1,23 +1,40 @@
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { QrCode, WifiOff } from 'lucide-react';
 import { warmAuthWhenIdle } from './lib/firebase';
-import { AccountSheet } from './features/account/AccountSheet';
+import { DetailsSheet } from './features/auth/DetailsSheet';
 import { LoginSheet } from './features/auth/LoginSheet';
 import { CartBar } from './features/cart/CartBar';
 import { CartSheet } from './features/cart/CartSheet';
 import { MenuScreen } from './features/menu/MenuScreen';
-import { useActiveOrderSync, useCatalog, useHistorySync, useReturnFromPayment } from './features/session/useLiveData';
-import { useTableSession } from './features/session/useTableSession';
+import { useActiveOrderSync, useCatalog, useHistorySync, useProfileSync, useReturnFromPayment } from './features/session/useLiveData';
+import { useTableSession, type TableSession } from './features/session/useTableSession';
 import { ActiveOrderBar } from './features/tracking/ActiveOrderBar';
 import { TrackingSheet } from './features/tracking/TrackingSheet';
 import { AppToaster } from './features/ui/AppToaster';
 import { OfflineBanner } from './features/ui/OfflineBanner';
+import { useUi } from './features/ui/uiStore';
+
+// The account hub is its own chunk: it loads the first time a diner opens their account.
+const AccountHub = lazy(() => import('./features/account/AccountHub'));
+
+function LazyAccountHub({ session }: { session: TableSession }) {
+  const open = useUi((s) => s.open.account);
+  const [wanted, setWanted] = useState(open);
+  if (open && !wanted) setWanted(true);
+  if (!wanted) return null;
+  return (
+    <Suspense fallback={null}>
+      <AccountHub session={session} />
+    </Suspense>
+  );
+}
 
 export default function App() {
   const state = useTableSession();
   useCatalog();
   useActiveOrderSync();
   useHistorySync();
+  useProfileSync();
   useReturnFromPayment();
 
   useEffect(() => {
@@ -37,7 +54,8 @@ export default function App() {
       <CartSheet session={session} />
       <TrackingSheet session={session} />
       <LoginSheet session={session} />
-      <AccountSheet session={session} />
+      <DetailsSheet session={session} />
+      <LazyAccountHub session={session} />
       <OfflineBanner />
       <AppToaster />
     </div>

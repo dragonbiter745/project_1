@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 
+/** The details checkout needs: the name on tokens and the mobile number for online payments. */
 export interface CustomerProfile {
   name: string;
-  phone: string;
+  /** A Google account may not have given a number yet; checkout asks for it before paying online. */
+  phone?: string;
   studentId?: string;
 }
 
-// Same key and shape as the previous app, so existing sign-ins carry over.
+// Same key and shape as the previous app, so details saved before accounts existed carry over.
 const KEY = 'fc_customer_profile';
 
 const read = (): CustomerProfile | null => {

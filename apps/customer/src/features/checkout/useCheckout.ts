@@ -82,9 +82,9 @@ export function useCheckout(session: TableSession) {
     if (items.length === 0 || pending) return;
     const paymentsOn = liveStore.getState().config.flags.paymentsEnabled;
     const phone = useProfile.getState().profile?.phone;
-    // Cashfree needs a real mobile number for online payments; the sign-in sheet collects it.
+    // Cashfree needs a real mobile number for online payments; the details sheet collects it.
     if (paymentsOn && !phone) {
-      useUi.getState().show('login');
+      useUi.getState().show('details');
       notify('Add your mobile number to pay', { description: 'Your payment receipt is sent to it.' });
       return;
     }
