@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SHOPS } from '../data/shops';
-import { asphaltMap, courtMap, doorMatMap, fabricMap, facadeMaps, gateSignMap, grassMap, noticeMap, pavingMap, plasterMaps, steelMaps, wallTileMap, woodMaps, type FacadeStyle } from './textures';
+import { asphaltMap, courtMap, courtSignMap, doorMatMap, fabricMap, facadeMaps, gateSignMap, grassMap, noticeMap, pavingMap, plasterMaps, steelMaps, wallTileMap, woodMaps, type FacadeStyle } from './textures';
 
 export type MatKey = string;
 
@@ -97,6 +97,9 @@ function build(): Map<MatKey, THREE.Material> {
   const sign = gateSignMap();
   NIGHT_GLOW.set('gateSign', { day: 0.15, night: 1.2 });
   m.set('gateSign', std({ map: sign, emissiveMap: sign, emissive: '#ffffff', emissiveIntensity: 0.15, roughness: 0.5 }));
+  const court = courtSignMap();
+  NIGHT_GLOW.set('courtSign', { day: 0.25, night: 0.9 });
+  m.set('courtSign', std({ map: court, emissiveMap: court, emissive: '#ffffff', emissiveIntensity: 0.25, roughness: 0.45 }));
   m.set('roof', std({ color: '#8d8f92', roughness: 0.9 }));
   m.set('patina', std({ color: '#5f9e8f', roughness: 0.45, metalness: 0.5 }));
   m.set('trim', std({ color: '#f1ece2', roughness: 0.6 }));

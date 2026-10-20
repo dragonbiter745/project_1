@@ -99,7 +99,12 @@ export function Hero() {
             </SceneBoundary>
           </div>
         )}
-        {!ready && !failed && <Loader />}
+        {!ready && !failed && (
+          <>
+            <Backdrop />
+            <Loader />
+          </>
+        )}
         {explore && !failed ? <Hud /> : <HeroOverlay />}
       </div>
     </section>

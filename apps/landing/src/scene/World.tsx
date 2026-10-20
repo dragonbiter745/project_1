@@ -19,6 +19,30 @@ const UP: Record<Quality, Quality> = { low: 'medium', medium: 'high', high: 'hig
 // SMAA keeps edges clean, so 1.5x on retina screens is indistinguishable from 2x at half the fill cost.
 const DPR: Record<Quality, [number, number]> = { high: [1, 1.5], medium: [1, 1.25], low: [0.75, 1] };
 
+/**
+ * Frame-rate driven tuning: pixel density moves first (barely visible), and the quality preset
+ * only steps down once density is already at its floor and frames are still slow.
+ */
+function AdaptiveQuality() {
+  const setDpr = useThree((s) => s.setDpr);
+  const quality = useUi((s) => s.quality);
+  const [lo, hi] = DPR[quality];
+  return (
+    <PerformanceMonitor
+      flipflops={4}
+      onChange={({ factor }) => setDpr(Math.round((lo + (hi - lo) * factor) * 20) / 20)}
+      onDecline={({ factor }) => {
+        const s = useUi.getState();
+        if (s.autoQuality && factor <= 0.05) s.set({ quality: DOWN[s.quality] });
+      }}
+      onIncline={({ factor }) => {
+        const s = useUi.getState();
+        if (s.autoQuality && factor >= 0.95) s.set({ quality: UP[s.quality] });
+      }}
+    />
+  );
+}
+
 function SimDriver() {
   useEffect(() => {
     const sim = getSim();
@@ -71,7 +95,12 @@ function Ready() {
     };
   }, [gl, scene, camera]);
   useFrame(() => {
-    if (compiled && getSim().time >= WARMUP_SECONDS && !useUi.getState().sceneReady) useUi.setState({ sceneReady: true });
+    const ui = useUi.getState();
+    if (ui.sceneReady) return;
+    // The scene chunk has loaded by now (0.35); the rest is shader compile and crowd warm-up.
+    const progress = 0.35 + 0.45 * Math.min(1, getSim().time / WARMUP_SECONDS) + (compiled ? 0.2 : 0);
+    if (progress - ui.sceneProgress > 0.04) useUi.setState({ sceneProgress: progress });
+    if (compiled && getSim().time >= WARMUP_SECONDS) useUi.setState({ sceneReady: true, sceneProgress: 1 });
   });
   return null;
 }
@@ -109,17 +138,7 @@ export default function World() {
       onPointerMissed={() => useUi.getState().select(null)}
     >
       <color attach="background" args={['#d6dee4']} />
-      <PerformanceMonitor
-        flipflops={3}
-        onDecline={() => {
-          const s = useUi.getState();
-          if (s.autoQuality) s.set({ quality: DOWN[s.quality] });
-        }}
-        onIncline={() => {
-          const s = useUi.getState();
-          if (s.autoQuality) s.set({ quality: UP[s.quality] });
-        }}
-      />
+      <AdaptiveQuality />
       <SimDriver />
       <Suspense fallback={null}>
         <Lighting />

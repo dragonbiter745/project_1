@@ -11,7 +11,7 @@ export function Effects() {
       <N8AO key="ao" halfRes depthAwareUpsampling aoRadius={1.1} distanceFalloff={0.9} intensity={quality === 'high' ? 2.2 : 1.7} quality={quality === 'high' ? 'medium' : 'performance'} />
     );
   }
-  effects.push(<Bloom key="bloom" mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.25} intensity={quality === 'low' ? 0.45 : 0.85} radius={0.72} />);
+  effects.push(<Bloom key="bloom" mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.08} intensity={quality === 'low' ? 0.45 : 0.85} radius={0.72} />);
   if (cinematic && quality === 'high') effects.push(<TiltShift2 key="tilt" blur={0.12} taper={0.45} />);
   effects.push(<ToneMapping key="tone" mode={ToneMappingMode.ACES_FILMIC} />);
   effects.push(<SMAA key="smaa" />);

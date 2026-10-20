@@ -526,18 +526,50 @@ export function courtMap() {
   });
 }
 
-/** Lettering for the campus gate arch. */
+/** Non-square canvas for signs, so lettering keeps its proportions on long, thin boards. */
+function wideTexture(key: string, w: number, h: number, paint: (ctx: CanvasRenderingContext2D, w: number, h: number) => void) {
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  paint(canvas.getContext('2d')!, w, h);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 16;
+  cache.set(key, tex);
+  return tex;
+}
+
+const SIGN_FONT = '"Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif';
+
+/** Lettering for the campus gate arch: board is 10.8 m x 1.3 m. */
 export function gateSignMap() {
-  return canvasTexture('gate-sign', 1024, (ctx, s) => {
+  return wideTexture('gate-sign', 2048, 248, (ctx, w, h) => {
     ctx.fillStyle = '#1c1d21';
-    ctx.fillRect(0, 0, s, s);
-    ctx.fillStyle = '#f5d9a8';
-    ctx.font = '800 150px system-ui, -apple-system, sans-serif';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#c9a24a';
+    ctx.fillRect(0, 10, w, 4);
+    ctx.fillRect(0, h - 14, w, 4);
+    ctx.fillStyle = '#f5e2bd';
+    ctx.font = `800 150px ${SIGN_FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('REVA CAMPUS', s / 2, s / 2 - 40);
-    ctx.font = '600 64px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#e4570f';
-    ctx.fillText('Food Court  →', s / 2, s / 2 + 110);
+    ctx.letterSpacing = '18px';
+    ctx.fillText('REVA UNIVERSITY', w / 2, h / 2 + 6);
+  });
+}
+
+/** Sign over the food court entrance canopy: board is 5.4 m x 0.7 m. */
+export function courtSignMap() {
+  return wideTexture('court-sign', 2048, 266, (ctx, w, h) => {
+    ctx.fillStyle = '#b4430b';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `800 170px ${SIGN_FONT}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.letterSpacing = '24px';
+    ctx.fillText('FOOD COURT', w / 2, h / 2 + 8);
   });
 }

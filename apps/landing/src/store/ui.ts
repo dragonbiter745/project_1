@@ -21,6 +21,8 @@ interface UiState {
   sceneReady: boolean;
   /** WebGL is unavailable or the 3D scene crashed; the hero falls back to a static backdrop. */
   sceneFailed: boolean;
+  /** 0..1 while the 3D scene loads and the opening crowd settles in. */
+  sceneProgress: number;
   quality: Quality;
   autoQuality: boolean;
   weather: Weather;
@@ -61,6 +63,7 @@ export const useUi = create<UiState>((set) => ({
   heroVisible: true,
   sceneReady: false,
   sceneFailed: false,
+  sceneProgress: 0,
   quality: initialQuality(),
   autoQuality: true,
   weather: 'clear',

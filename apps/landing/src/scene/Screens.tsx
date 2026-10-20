@@ -17,7 +17,7 @@ function makeCanvas(w: number, h: number) {
   canvas.height = h;
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = 16;
   return { canvas, ctx: canvas.getContext('2d')!, tex };
 }
 
@@ -189,7 +189,8 @@ export function Screens() {
     () =>
       SHOP_SLOTS.map((slot) => {
         const shop = SHOP_BY_ID[slot.shopId]!;
-        const sign = makeCanvas(1280, 160);
+        // 2048 px wide: crisp lettering even when the camera is right at the counter.
+        const sign = makeCanvas(2048, 256);
         const menu = makeCanvas(1600, 290);
         const token = makeCanvas(320, 190);
         return { slot, shop, sign, menu, token, matrix: slotMatrix(slot) };
@@ -198,6 +199,8 @@ export function Screens() {
   );
   const wall = useMemo(() => makeCanvas(1024, 352), []);
   const lastSoldOut = useRef(new Map<string, string>());
+  const lastToken = useRef(new Map<string, string>());
+  const lastWall = useRef('');
   const nextTick = useRef(0);
   const minuteHand = useRef<THREE.Group>(null);
   const hourHand = useRef<THREE.Group>(null);
@@ -227,6 +230,7 @@ export function Screens() {
 
   useEffect(() => {
     for (const b of boards) {
+      b.sign.ctx.setTransform(1.6, 0, 0, 1.6, 0, 0);
       drawSign(b.sign.ctx, b.shop, 1280, 160);
       b.sign.tex.needsUpdate = true;
     }
@@ -245,11 +249,22 @@ export function Screens() {
           b.menu.tex.needsUpdate = true;
         }
         const tokens = (ids: number[]) => ids.map((id) => sim.orders.get(id)?.token).filter(Boolean) as string[];
-        drawTokenScreen(b.token.ctx, b.shop, tokens(k.ready).reverse(), tokens(k.cooking), 320, 190);
-        b.token.tex.needsUpdate = true;
+        const ready = tokens(k.ready).reverse();
+        const cooking = tokens(k.cooking);
+        // Re-upload a screen only when what it shows changed; uploads were the source of hitches.
+        const key = `${ready.join()}|${cooking.join()}|${fontsReady}`;
+        if (lastToken.current.get(b.shop.id) !== key) {
+          lastToken.current.set(b.shop.id, key);
+          drawTokenScreen(b.token.ctx, b.shop, ready, cooking, 320, 190);
+          b.token.tex.needsUpdate = true;
+        }
       }
-      drawWallBoard(wall.ctx, 1024, 352);
-      wall.tex.needsUpdate = true;
+      const wallKey = [...sim.kitchens.values()].map((k) => k.ready.slice(-2).join('.')).join('|') + fontsReady;
+      if (wallKey !== lastWall.current) {
+        lastWall.current = wallKey;
+        drawWallBoard(wall.ctx, 1024, 352);
+        wall.tex.needsUpdate = true;
+      }
     }
     const minutes = sim.clockMinutes();
     if (minuteHand.current) minuteHand.current.rotation.z = -((minutes % 60) / 60) * Math.PI * 2;
@@ -263,15 +278,15 @@ export function Screens() {
         <group key={b.shop.id} matrixAutoUpdate={false} matrix={b.matrix}>
           <mesh position={[0, 3.36, 0.006]}>
             <planeGeometry args={[5.4, 0.675]} />
-            <meshBasicMaterial map={b.sign.tex} transparent toneMapped={false} />
+            <meshBasicMaterial map={b.sign.tex} transparent toneMapped={false} color={[0.92, 0.92, 0.92]} />
           </mesh>
           <mesh position={[0, 2.45, -0.826]}>
             <planeGeometry args={[4.8, 0.87]} />
-            <meshBasicMaterial map={b.menu.tex} toneMapped={false} color={[1.15, 1.15, 1.15]} />
+            <meshBasicMaterial map={b.menu.tex} toneMapped={false} color={[0.94, 0.94, 0.94]} />
           </mesh>
           <mesh position={[2.05, 1.86, -0.12]}>
             <planeGeometry args={[0.56, 0.33]} />
-            <meshBasicMaterial map={b.token.tex} toneMapped={false} color={[1.3, 1.3, 1.3]} />
+            <meshBasicMaterial map={b.token.tex} toneMapped={false} color={[0.95, 0.95, 0.95]} />
           </mesh>
         </group>
       ))}
@@ -279,7 +294,7 @@ export function Screens() {
         <group key={ry} position={[tb.x, tb.y, tb.z]} rotation-y={ry}>
           <mesh position={[0, 0, 0.062]}>
             <planeGeometry args={[3.15, 1.08]} />
-            <meshBasicMaterial map={wall.tex} toneMapped={false} color={[1.25, 1.25, 1.25]} />
+            <meshBasicMaterial map={wall.tex} toneMapped={false} color={[0.95, 0.95, 0.95]} />
           </mesh>
         </group>
       ))}
