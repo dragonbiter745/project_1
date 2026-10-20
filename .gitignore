@@ -26,3 +26,6 @@ serviceAccountKey.json
 secrets/
 
 !functions/.env.reva-nest-foodcourt
+
+# Staff login handover (never commit)
+staff-credentials.local.txt
