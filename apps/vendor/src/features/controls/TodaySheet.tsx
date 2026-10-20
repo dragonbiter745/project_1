@@ -1,7 +1,8 @@
 import { Minus, Plus } from 'lucide-react';
 import { formatPaise, type SubOrder, type Vendor } from '@foodcourt/shared';
 import { Sheet, cx, useNow } from '@foodcourt/ui';
-import { setPrepMinutes } from '@foodcourt/firebase-client/local-ops';
+import { run } from '@foodcourt/ui';
+import { setPrepMinutes } from '@foodcourt/firebase-client/ops';
 import { jsonEqual, useLocal } from '../../lib/store';
 import { todayStats } from '@foodcourt/shared';
 
@@ -41,13 +42,13 @@ export function TodaySheet({ vendor, open, onClose }: { vendor: Vendor; open: bo
           <p className="mt-0.5 text-sm text-ink-3">Diners see this as their typical wait.</p>
         </div>
         <div className="flex shrink-0 items-center gap-1 rounded-full bg-surface-2 p-1">
-          <StepButton label="Shorter" onClick={() => setPrepMinutes(vendor.id, vendor.defaultPrepMin - 1)} disabled={vendor.defaultPrepMin <= 3}>
+          <StepButton label="Shorter" onClick={() => void run(setPrepMinutes(vendor.id, vendor.defaultPrepMin - 1))} disabled={vendor.defaultPrepMin <= 3}>
             <Minus className="h-4 w-4" strokeWidth={2.25} />
           </StepButton>
           <span className="w-16 text-center font-mono text-lg font-semibold tabular-nums text-ink" aria-live="polite">
             {vendor.defaultPrepMin} min
           </span>
-          <StepButton label="Longer" onClick={() => setPrepMinutes(vendor.id, vendor.defaultPrepMin + 1)} disabled={vendor.defaultPrepMin >= 60}>
+          <StepButton label="Longer" onClick={() => void run(setPrepMinutes(vendor.id, vendor.defaultPrepMin + 1))} disabled={vendor.defaultPrepMin >= 60}>
             <Plus className="h-4 w-4" strokeWidth={2.25} />
           </StepButton>
         </div>

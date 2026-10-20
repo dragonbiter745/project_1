@@ -1,6 +1,6 @@
 import { LogOut, RotateCcw } from 'lucide-react';
-import { calculatePointsEarned, formatPaise, type Order, type OrderStatus } from '@foodcourt/shared';
-import { jsonEqual, localStore, useLocal } from '../../lib/store';
+import { formatPaise, type Order, type OrderStatus } from '@foodcourt/shared';
+import { jsonEqual, liveStore, useLocal } from '../../lib/store';
 import { notify, notifyError } from '../../lib/toast';
 import { useProfile } from '../auth/profileStore';
 import { useCart } from '../cart/cartStore';
@@ -35,21 +35,18 @@ export function AccountSheet({ session }: { session: TableSession }) {
   const addMany = useCart((s) => s.addMany);
   const historyIds = useOrderHistory((s) => s.orderIds);
 
+  // Orders placed from this phone (live from Firestore while the sheet is open).
   const orders = useLocal(
-    (s) =>
-      historyIds
-        .map((id) => s.orders[id])
-        .filter((o): o is Order => Boolean(o))
-        .sort((a, b) => b.createdAt - a.createdAt),
+    (s) => {
+      const ids = new Set(historyIds);
+      return Object.values(s.orders)
+        .filter((o) => ids.has(o.id) && o.status !== 'FAILED')
+        .sort((a, b) => b.createdAt - a.createdAt);
+    },
     jsonEqual
   );
-  // Credited when a sub-order is collected (PRD §7.3), so only collected sub-orders count.
-  const points = useLocal((s) => {
-    const ids = new Set(historyIds);
-    return Object.values(s.subOrders)
-      .filter((sub) => ids.has(sub.orderId) && sub.status === 'COLLECTED')
-      .reduce((sum, sub) => sum + calculatePointsEarned(sub.subtotalPaise, s.config.pointsPerRupee), 0);
-  });
+  // The server credits points when a ticket is collected; this is the balance it keeps.
+  const points = useLocal((s) => Object.values(s.users)[0]?.pointsBalance ?? 0);
 
   const thisVisit = orders.filter((o) => o.sessionId === session.id);
   const earlier = orders.filter((o) => o.sessionId !== session.id);
@@ -63,7 +60,7 @@ export function AccountSheet({ session }: { session: TableSession }) {
   };
 
   const reorder = (order: Order) => {
-    const { lines, skipped } = planReorder(order, localStore.getState());
+    const { lines, skipped } = planReorder(order, liveStore.getState());
     if (lines.length === 0) {
       notifyError("Couldn't reorder", { description: 'None of these dishes are available right now.' });
       return;

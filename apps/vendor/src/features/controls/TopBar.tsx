@@ -1,6 +1,6 @@
 import { ArrowLeftRight, BarChart3, Loader2, PackageX, PauseCircle, PlayCircle, Volume2, VolumeX, WifiOff } from 'lucide-react';
 import type { Vendor } from '@foodcourt/shared';
-import type { SyncStatus } from '@foodcourt/firebase-client/local-store';
+import type { SyncStatus } from '../../lib/store';
 import { Button, IconButton, Monogram, cx, useNow } from '@foodcourt/ui';
 
 interface TopBarProps {
@@ -16,6 +16,7 @@ interface TopBarProps {
   onPause: () => void;
   onResume: () => void;
   onSwitchShop: () => void;
+  exitLabel?: string;
 }
 
 const timeFormat = new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
@@ -41,7 +42,7 @@ export function TopBar(props: TopBarProps) {
             <SyncLabel sync={sync} paused={paused} />
           </div>
           {!phone && (
-            <IconButton label="Switch shop" onClick={props.onSwitchShop}>
+            <IconButton label={props.exitLabel ?? "Switch shop"} onClick={props.onSwitchShop}>
               <ArrowLeftRight className="h-4 w-4" strokeWidth={2} />
             </IconButton>
           )}

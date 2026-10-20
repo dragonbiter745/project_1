@@ -1,6 +1,8 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { BarChart3, QrCode, Radio, Settings2, Store } from 'lucide-react';
-import { BrandMark, cx, useNow } from '@foodcourt/ui';
+import { BarChart3, LogOut, QrCode, Radio, Settings2, ShieldAlert, Store } from 'lucide-react';
+import { ActionToast, BrandMark, Button, StaffLogin, cx, useNow } from '@foodcourt/ui';
+import { connectMaster } from '@foodcourt/firebase-client/live';
+import { staffSignIn, staffSignOut, watchStaff, type StaffUser } from '@foodcourt/firebase-client/staff';
 import { Insights } from './features/insights/Insights';
 import { LiveOrders } from './features/live/LiveOrders';
 import { Settings } from './features/settings/Settings';
@@ -27,6 +29,36 @@ const dateFormat = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'num
 const timeFormat = new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
 
 export default function App() {
+  // undefined while Firebase restores the session, null when signed out.
+  const [staff, setStaff] = useState<StaffUser | null | undefined>(undefined);
+  useEffect(() => watchStaff(setStaff), []);
+  if (staff === undefined) return <div className="grain min-h-[100dvh]" aria-busy="true" />;
+  if (!staff) {
+    return <StaffLogin title="Operations console" subtitle="Court manager sign-in. Kitchen accounts use the kitchen display instead." onSubmit={staffSignIn} />;
+  }
+  if (staff.role !== 'master') return <NoAccess email={staff.email} />;
+  return <Console staff={staff} />;
+}
+
+function NoAccess({ email }: { email: string | null }) {
+  return (
+    <main className="grain grid min-h-[100dvh] place-items-center px-6">
+      <div className="max-w-sm text-center">
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-danger-tint text-danger">
+          <ShieldAlert className="h-6 w-6" />
+        </span>
+        <h1 className="mt-5 text-xl font-semibold tracking-tight text-ink">Manager access only</h1>
+        <p className="mt-2 text-sm text-ink-3">{email} cannot open the operations console.</p>
+        <Button variant="outline" className="mt-6" onClick={() => void staffSignOut()} icon={<LogOut className="h-4 w-4" />}>
+          Sign out
+        </Button>
+      </div>
+    </main>
+  );
+}
+
+function Console({ staff }: { staff: StaffUser }) {
+  useEffect(() => connectMaster(), []);
   const [page, setPage] = useState<Page>(readPage);
   const flags = useLocal((s) => s.config.flags, jsonEqual);
   const live = useLocal(
@@ -117,6 +149,14 @@ export default function App() {
             {flags.maintenance && <Flag on={false} danger label="Maintenance on" />}
           </div>
         </section>
+        <button
+          type="button"
+          onClick={() => void staffSignOut()}
+          className="mt-3 flex h-10 items-center gap-2 rounded-field px-3 text-sm font-medium text-ink-3 transition-colors hover:bg-surface hover:text-ink"
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          <span className="truncate">Sign out {staff.email}</span>
+        </button>
       </aside>
 
       <div className="ambient min-w-0 flex-1">
@@ -165,6 +205,7 @@ export default function App() {
         <main key={page} className="enter-up mx-auto max-w-[1320px] px-5 py-7 lg:px-10">
           <Page />
         </main>
+        <ActionToast />
       </div>
     </div>
   );

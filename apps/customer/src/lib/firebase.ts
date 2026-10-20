@@ -41,13 +41,25 @@ export function warmAuthWhenIdle(): void {
   }
 }
 
-// Firestore is only needed here, so it loads on the first report rather than at startup.
+// Reasons as shown on the sheet, mapped to the codes the reportIssue function accepts.
+const ISSUE_CODES: Record<string, string> = {
+  'Wrong item': 'wrong_item',
+  'Something is missing': 'missing_item',
+  'Taking too long': 'wait',
+  'Food quality': 'quality',
+  'Something else': 'other',
+};
+
+// Reports go through a validated, rate-limited function; clients cannot write issues directly.
 export async function reportIssue(input: IssueInput): Promise<string> {
-  const [{ submitIssue }] = await Promise.all([
-    import('@foodcourt/firebase-client/issues'),
-    ensureAnonymousUser(),
-  ]);
-  return submitIssue(input);
+  const fn = await getCallable<{ orderId: string; subOrderId?: string; reason: string; text?: string }, { issueId: string }>('reportIssue');
+  const { data } = await fn({
+    orderId: input.orderId,
+    ...(input.subOrderId ? { subOrderId: input.subOrderId } : {}),
+    reason: ISSUE_CODES[input.reason] ?? 'other',
+    ...(input.text?.trim() ? { text: input.text.trim().slice(0, 600) } : {}),
+  });
+  return data.issueId;
 }
 
 export async function getCallable<Req, Res>(name: string): Promise<HttpsCallable<Req, Res>> {

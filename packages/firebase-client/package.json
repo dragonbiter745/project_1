@@ -11,7 +11,14 @@
     "./functions": "./src/functions.ts",
     "./issues": "./src/issues.ts",
     "./local-store": "./src/localStore.ts",
-    "./local-ops": "./src/localOps.ts"
+    "./local-ops": "./src/localOps.ts",
+    "./state": "./src/state.ts",
+    "./live-store": "./src/liveStore.ts",
+    "./rest": "./src/rest.ts",
+    "./live": "./src/live.ts",
+    "./ops": "./src/ops.ts",
+    "./staff": "./src/staff.ts",
+    "./db": "./src/db.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

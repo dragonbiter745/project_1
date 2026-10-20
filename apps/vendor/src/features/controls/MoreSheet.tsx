@@ -14,6 +14,7 @@ interface MoreSheetProps {
   onResume: () => void;
   onToggleAlarm: () => void;
   onSwitchShop: () => void;
+  exitLabel?: string;
 }
 
 // Phone home for the controls that sit in the tablet top bar.
@@ -43,7 +44,13 @@ export function MoreSheet(props: MoreSheetProps) {
           hint={alarmOn ? 'The phone rings until each order is accepted' : 'Alarm is muted right now'}
           onClick={props.onToggleAlarm}
         />
-        <Row icon={ArrowLeftRight} tone="bg-surface-2 text-ink-2" label="Switch shop" hint="Use this phone for another kitchen" onClick={props.onSwitchShop} />
+        <Row
+          icon={ArrowLeftRight}
+          tone="bg-surface-2 text-ink-2"
+          label={props.exitLabel ?? 'Switch shop'}
+          hint={props.exitLabel === 'Sign out' ? 'Leave this device signed out' : 'Use this phone for another kitchen'}
+          onClick={props.onSwitchShop}
+        />
       </ul>
     </Sheet>
   );

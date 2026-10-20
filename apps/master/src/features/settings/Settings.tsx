@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { setMaintenance, setPaymentsEnabled } from '@foodcourt/firebase-client/local-ops';
-import { Button, Sheet, cx } from '@foodcourt/ui';
+import { setMaintenance, setPaymentsEnabled } from '@foodcourt/firebase-client/ops';
+import { Button, Sheet, cx, run } from '@foodcourt/ui';
 import { jsonEqual, useLocal } from '../../lib/store';
 
 type Pending = { flag: 'payments' | 'maintenance'; next: boolean } | null;
@@ -28,8 +28,7 @@ export function Settings() {
 
   const apply = () => {
     if (!pending) return;
-    if (pending.flag === 'payments') setPaymentsEnabled(pending.next);
-    else setMaintenance(pending.next);
+    void run(pending.flag === 'payments' ? setPaymentsEnabled(pending.next) : setMaintenance(pending.next));
     setPending(null);
   };
 

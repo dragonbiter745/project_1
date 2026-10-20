@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { ChefHat, Inbox, PackageCheck, type LucideIcon } from 'lucide-react';
 import type { SubOrder, SubOrderStatus } from '@foodcourt/shared';
 import { cx, prefersReducedMotion, useNow } from '@foodcourt/ui';
-import { acceptOrder, markCollected, markReady, rejectOrder, undoReady } from '@foodcourt/firebase-client/local-ops';
+import { run } from '@foodcourt/ui';
+import { acceptOrder, markCollected, markReady, rejectOrder, undoReady } from '@foodcourt/firebase-client/ops';
 import { buzz } from '../../lib/device';
 import { playNewOrderChime } from '../../lib/sound';
 import { jsonEqual, useLocal } from '../../lib/store';
@@ -108,7 +109,7 @@ export function Board({ vendorId, alarmOn, phone, onMore, moreAlert }: BoardProp
     const flush = () => {
       for (const [id, timer] of pending) {
         clearTimeout(timer);
-        markCollected(id);
+        void run(markCollected(id));
       }
       pending.clear();
     };
@@ -120,14 +121,16 @@ export function Board({ vendorId, alarmOn, phone, onMore, moreAlert }: BoardProp
   }, []);
 
   const onAccept = useCallback((sub: SubOrder) => {
-    if (acceptOrder(sub.id)) buzz(10);
+    void run(acceptOrder(sub.id)).then((ok) => ok && buzz(10));
   }, []);
   const onReject = useCallback((sub: SubOrder) => setRejecting(sub), []);
 
   const onReady = useCallback((sub: SubOrder) => {
-    if (!markReady(sub.id)) return;
-    buzz(10);
-    setUndo({ label: `${sub.token} marked ready`, run: () => undoReady(sub.id), expiresAt: Date.now() + READY_UNDO_MS });
+    void run(markReady(sub.id)).then((ok) => {
+      if (!ok) return;
+      buzz(10);
+      setUndo({ label: `${sub.token} marked ready`, run: () => void run(undoReady(sub.id)), expiresAt: Date.now() + READY_UNDO_MS });
+    });
   }, []);
 
   const onCollect = useCallback((sub: SubOrder) => {
@@ -135,7 +138,7 @@ export function Board({ vendorId, alarmOn, phone, onMore, moreAlert }: BoardProp
     setCollecting((c) => ({ ...c, [sub.id]: true }));
     const finish = () => {
       timers.current.delete(sub.id);
-      markCollected(sub.id);
+      void run(markCollected(sub.id));
       setCollecting(({ [sub.id]: _, ...rest }) => rest);
     };
     timers.current.set(sub.id, setTimeout(finish, COLLECT_UNDO_MS));
@@ -359,7 +362,7 @@ export function Board({ vendorId, alarmOn, phone, onMore, moreAlert }: BoardProp
         sub={rejecting}
         onClose={() => setRejecting(null)}
         onConfirm={(sub, reason) => {
-          rejectOrder(sub.id, reason);
+          void run(rejectOrder(sub.id, reason));
           setRejecting(null);
         }}
       />

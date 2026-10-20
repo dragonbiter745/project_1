@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { ChefHat, Clock3, IndianRupee, PackageCheck, PackageX, PauseCircle, PlayCircle, Timer } from 'lucide-react';
-import { pauseOrders, resumeOrders } from '@foodcourt/firebase-client/local-ops';
+import { pauseOrders, resumeOrders } from '@foodcourt/firebase-client/ops';
 import { formatPaise, todayStats, type Vendor } from '@foodcourt/shared';
-import { Button, Monogram, PauseSheet, cx, useNow } from '@foodcourt/ui';
+import { Button, Monogram, PauseSheet, cx, run, useNow } from '@foodcourt/ui';
 import { jsonEqual, useLocal } from '../../lib/store';
 
 const formatTime = (iso: string) =>
@@ -24,7 +24,7 @@ export function Shops() {
         open={pausing !== null}
         onClose={() => setPausing(null)}
         onPause={(until) => {
-          if (pausing) pauseOrders(pausing.id, until);
+          if (pausing) void run(pauseOrders(pausing.id, until));
           setPausing(null);
         }}
       />
@@ -98,7 +98,7 @@ function ShopCard({ vendor, onPause }: { vendor: Vendor; onPause: () => void }) 
           </div>
         </div>
         {paused ? (
-          <Button variant="positive" onClick={() => resumeOrders(vendor.id)} icon={<PlayCircle className="h-4 w-4" strokeWidth={2} />}>
+          <Button variant="positive" onClick={() => void run(resumeOrders(vendor.id))} icon={<PlayCircle className="h-4 w-4" strokeWidth={2} />}>
             Resume orders
           </Button>
         ) : (

@@ -1,6 +1,5 @@
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { cx } from '../../lib/format';
-import { localStore } from '../../lib/store';
 import { notify } from '../../lib/toast';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
@@ -13,7 +12,7 @@ const fieldClass =
   'h-12 w-full rounded-field bg-surface-2 px-3.5 text-md text-ink outline-none transition-[background-color,box-shadow] duration-150 placeholder:text-ink-3 focus:bg-surface focus:ring-2 focus:ring-accent/50';
 
 // Two steps today; phone OTP (PRD FR-C8, milestone M5) slots in between them.
-export function LoginSheet({ session }: { session: TableSession }) {
+export function LoginSheet(_props: { session: TableSession }) {
   const open = useUi((s) => s.open.login);
   const hide = useUi((s) => s.hide);
   const signIn = useProfile((s) => s.signIn);
@@ -60,10 +59,6 @@ export function LoginSheet({ session }: { session: TableSession }) {
     e.preventDefault();
     const displayName = name.trim() || `Diner ${phone.slice(-4)}`;
     signIn({ name: displayName, phone, studentId: studentId.trim() || undefined });
-    localStore.mutate((draft) => {
-      const current = draft.sessions[session.id];
-      if (current) current.displayName = displayName;
-    });
     close();
     notify(`Welcome, ${displayName}`, { description: 'Points are added when you collect your food.' });
   };

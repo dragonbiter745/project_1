@@ -1,21 +1,21 @@
 import { useSyncExternalStore } from 'react';
 import { useStoreSelector } from '@foodcourt/ui';
-import { localStore, type FoodCourtDataState, type SyncStatus } from '@foodcourt/firebase-client/local-store';
+import { liveStore } from '@foodcourt/firebase-client/live-store';
+import type { FoodCourtDataState } from '@foodcourt/firebase-client/state';
 
 // Passing an equality function (always jsonEqual here) opts into structural comparison.
 export function useLocal<T>(selector: (state: FoodCourtDataState) => T, isEqual?: (a: T, b: T) => boolean): T {
-  return useStoreSelector(localStore, selector, isEqual ? 'json' : 'ref');
+  return useStoreSelector(liveStore, selector, isEqual ? 'json' : 'ref');
 }
 
-const subscribeSync = (onChange: () => void) => {
-  const unsubscribe = localStore.subscribeSyncStatus(() => onChange());
-  return () => {
-    unsubscribe();
-  };
+export type SyncStatus = 'connected' | 'connecting' | 'disconnected';
+
+const toSync = (): SyncStatus => {
+  const s = liveStore.getStatus();
+  return s === 'live' ? 'connected' : s === 'connecting' ? 'connecting' : 'disconnected';
 };
 
-export const useSyncStatus = (): SyncStatus =>
-  useSyncExternalStore(subscribeSync, () => localStore.getSyncStatus());
+export const useSyncStatus = (): SyncStatus => useSyncExternalStore((cb) => liveStore.subscribeStatus(() => cb()), toSync);
 
 export { jsonEqual } from '@foodcourt/ui';
-export { localStore };
+export { liveStore };

@@ -1,8 +1,8 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import { ChefHat, Clock3, Inbox, IndianRupee, PackageCheck, Search, Timer } from 'lucide-react';
-import { cancelSubOrder } from '@foodcourt/firebase-client/local-ops';
+import { cancelSubOrder } from '@foodcourt/firebase-client/ops';
 import { canTransitionSubOrder, formatPaise, todayStats, type SubOrder, type SubOrderStatus } from '@foodcourt/shared';
-import { Button, Monogram, cx, useNow } from '@foodcourt/ui';
+import { Button, Monogram, cx, run, useNow } from '@foodcourt/ui';
 import { Sparkline } from '../../components/Charts';
 import { KpiTile } from '../../components/KpiTile';
 import { StatusPill } from '../../components/StatusPill';
@@ -243,7 +243,7 @@ export function LiveOrders() {
         sub={cancelling}
         onClose={() => setCancelling(null)}
         onConfirm={(sub, reason) => {
-          cancelSubOrder(sub.id, reason);
+          void run(cancelSubOrder(sub.id, reason));
           setCancelling(null);
         }}
       />

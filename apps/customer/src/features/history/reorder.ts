@@ -1,5 +1,5 @@
 import type { CartItem, Order } from '@foodcourt/shared';
-import type { FoodCourtDataState } from '@foodcourt/firebase-client/local-store';
+import type { FoodCourtDataState } from '@foodcourt/firebase-client/state';
 
 export interface ReorderPlan {
   lines: CartItem[];
@@ -15,7 +15,7 @@ export function planReorder(order: Order, state: FoodCourtDataState): ReorderPla
     const menuItem = state.menus[item.vendorId]?.categories
       .flatMap((c) => c.items)
       .find((i) => i.id === item.itemId);
-    const soldOut = Boolean(state.availability[item.vendorId]?.unavailable[item.itemId]);
+    const soldOut = Boolean(state.availability[item.vendorId]?.unavailable?.[item.itemId]);
     if (!vendor?.acceptingOrders || !menuItem || soldOut) {
       skipped.push(item.name);
       continue;

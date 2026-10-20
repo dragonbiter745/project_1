@@ -1,7 +1,6 @@
 import { z } from 'zod';
+import { QR_TOKEN_PATTERN } from '../tables';
 
-/** Unguessable per-table token from the QR (base64url, 22+ chars). Short table codes are no longer accepted. */
-export const QR_TOKEN_PATTERN = /^[A-Za-z0-9_-]{22,64}$/;
 
 export const StartSessionSchema = z.object({
   qrToken: z.string().regex(QR_TOKEN_PATTERN, 'This table code is not valid. Scan the QR on your table again.'),

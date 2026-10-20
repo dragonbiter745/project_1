@@ -31,6 +31,11 @@ export function MenuScreen({ session }: { session: TableSession }) {
     entrancePlayed = true;
   }, []);
 
+  // Shops arrive after the first paint (catalog fetch); pick the first one once they do.
+  useEffect(() => {
+    if (vendors.length > 0 && !vendors.some((v) => v.id === vendorId)) setVendorId(vendors[0]!.id);
+  }, [vendors, vendorId]);
+
   // Section jumps land just below the sticky header, whatever height it renders at.
   useLayoutEffect(() => {
     const header = headerRef.current;

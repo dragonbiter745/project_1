@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { formatPaise } from '@foodcourt/shared';
 import { Sheet, cx } from '@foodcourt/ui';
-import { setItemAvailable } from '@foodcourt/firebase-client/local-ops';
+import { run } from '@foodcourt/ui';
+import { setItemAvailable } from '@foodcourt/firebase-client/ops';
+import { liveStore } from '../../lib/store';
 import { jsonEqual, useLocal } from '../../lib/store';
 
 const NONE: Record<string, boolean> = {};
@@ -83,7 +85,7 @@ export function StockSheet({ vendorId, open, onClose }: { vendorId: string; open
                     <StockSwitch
                       label={item.name}
                       checked={available}
-                      onChange={(next) => setItemAvailable(vendorId, item.id, next)}
+                      onChange={(next) => void run(setItemAvailable(vendorId, item.id, next, liveStore.getState().availability[vendorId]?.unavailable ?? {}))}
                     />
                   </li>
                 );

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { notifyError } from '../../lib/toast';
+import { notify, notifyError } from '../../lib/toast';
 import { getIstDateKey, type CartItem, type Order, type OrderTotals } from '@foodcourt/shared';
 import { ensureAnonymousUser, getCallable } from '../../lib/firebase';
-import { localStore } from '../../lib/store';
+import { liveStore } from '../../lib/store';
 import { useProfile } from '../auth/profileStore';
 import { useCart } from '../cart/cartStore';
 import { useOrderHistory } from '../history/orderHistory';
@@ -63,9 +63,16 @@ interface CheckoutRequest {
 
 interface CheckoutResponse {
   orderId: string;
-  paymentSessionId: string;
   status: string;
-  totalPaise?: number;
+  paymentSessionId: string | null;
+  cashfreeMode: 'production' | 'sandbox' | null;
+  totalPaise: number;
+}
+
+interface CashfreeResult {
+  error?: { message?: string };
+  paymentDetails?: unknown;
+  redirect?: boolean;
 }
 
 export function useCheckout(session: TableSession) {
@@ -73,41 +80,38 @@ export function useCheckout(session: TableSession) {
 
   const checkout = async (items: CartItem[], totals: OrderTotals) => {
     if (items.length === 0 || pending) return;
+    const paymentsOn = liveStore.getState().config.flags.paymentsEnabled;
+    const phone = useProfile.getState().profile?.phone;
+    // Cashfree needs a real mobile number for online payments; the sign-in sheet collects it.
+    if (paymentsOn && !phone) {
+      useUi.getState().show('login');
+      notify('Add your mobile number to pay', { description: 'Your payment receipt is sent to it.' });
+      return;
+    }
     setPending(true);
 
-    const now = Date.now();
-    const dateKey = getIstDateKey();
-    const checkoutKey =
-      typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `ck_${now}`;
+    // A fresh key per attempt: the same key always maps to the same server order.
+    const checkoutKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `ck_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-    // The real order and sub-orders are written server-side by the webhook. This placeholder
-    // lets tracking open immediately; the listener replaces it with real data.
-    const finalize = (orderId: string) => {
-      localStore.mutate((draft) => {
+    const finalize = (orderId: string, status: string) => {
+      // Shown until the live listener delivers the real order a moment later.
+      liveStore.patch((draft) => {
         if (draft.orders[orderId]) return;
-        const optimistic: Order = {
+        const placeholder: Order = {
           id: orderId,
           sessionId: session.id,
-          uid: `guest_${session.dailyNo}`,
+          uid: '',
           tableId: session.tableId,
           tableLabel: session.tableLabel,
-          dateKey,
-          items: items.map((i) => ({
-            itemId: i.itemId,
-            vendorId: i.vendorId,
-            name: i.name,
-            pricePaise: i.pricePaise,
-            veg: i.veg,
-            qty: i.qty,
-            note: i.note,
-          })),
+          dateKey: getIstDateKey(),
+          items: items.map((i) => ({ itemId: i.itemId, vendorId: i.vendorId, name: i.name, pricePaise: i.pricePaise, veg: i.veg, qty: i.qty, note: i.note })),
           totals,
           payment: { status: 'PENDING' },
-          status: 'PENDING_PAYMENT',
+          status: status === 'PAID' ? 'PAID' : 'PENDING_PAYMENT',
           checkoutKey,
-          createdAt: now,
+          createdAt: Date.now(),
         };
-        draft.orders[orderId] = optimistic;
+        draft.orders[orderId] = placeholder;
       });
       useOrderHistory.getState().record(orderId);
       const cart = useCart.getState();
@@ -116,7 +120,6 @@ export function useCheckout(session: TableSession) {
       const ui = useUi.getState();
       ui.hide('cart');
       ui.show('tracking');
-      setPending(false);
     };
 
     try {
@@ -124,41 +127,40 @@ export function useCheckout(session: TableSession) {
       const { data } = await createCheckout({
         sessionId: session.id,
         checkoutKey,
-        items: items.map((i) => ({
-          itemId: i.itemId,
-          vendorId: i.vendorId,
-          name: i.name,
-          pricePaise: i.pricePaise,
-          veg: i.veg,
-          qty: i.qty,
-          note: i.note || undefined,
-        })),
-        customerPhone: useProfile.getState().profile?.phone || '9876543210',
+        items: items.map((i) => ({ itemId: i.itemId, vendorId: i.vendorId, name: i.name, pricePaise: i.pricePaise, veg: i.veg, qty: i.qty, note: i.note || undefined })),
+        ...(phone ? { customerPhone: phone } : {}),
       });
 
-      const Cashfree = await loadCashfree();
-      if (Cashfree && data.paymentSessionId) {
-        Cashfree({ mode: 'sandbox' })
-          .checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: '_modal' })
-          .then(() => finalize(data.orderId))
-          .catch((err: unknown) => {
-            console.warn('Cashfree modal error:', err);
-            // Existing behaviour, kept until the payments PR (with webhook tests) revisits it.
-            finalize(data.orderId);
-          });
-      } else {
-        finalize(data.orderId);
+      // Pay at the counter: already confirmed and sent to the kitchens.
+      if (!data.paymentSessionId || !data.cashfreeMode) {
+        finalize(data.orderId, data.status);
+        return;
       }
+
+      const Cashfree = await loadCashfree();
+      if (!Cashfree) {
+        notifyError("Couldn't open the payment window", { description: 'Check your connection. Nothing was charged.' });
+        return;
+      }
+      const result = (await Cashfree({ mode: data.cashfreeMode }).checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: '_modal' })) as CashfreeResult;
+      if (result?.error) {
+        // Closed or failed: nothing is sent to the kitchens; the cart stays as it was.
+        notifyError('Payment not completed', { description: result.error.message || 'Nothing was charged. You can try again.' });
+        return;
+      }
+      // Paid in the window (or about to redirect): tracking shows "Confirming payment" until Cashfree confirms.
+      finalize(data.orderId, data.status);
     } catch (err: unknown) {
-      console.error('createCheckout callable failed:', err);
-      setPending(false);
-      const offline = !navigator.onLine || (err as { code?: string })?.code === 'functions/unavailable';
-      notifyError("Couldn't start payment", {
-        description: offline
-          ? 'Check your connection. Your cart is saved.'
-          : 'Nothing was charged. Your cart is saved.',
-        action: { label: 'Try again', onClick: () => void checkout(items, totals) },
+      console.error('Checkout failed:', err);
+      const e = err as { code?: string; message?: string };
+      const offline = !navigator.onLine || e?.code === 'functions/unavailable';
+      const known = e?.code === 'functions/failed-precondition' || e?.code === 'functions/invalid-argument' || e?.code === 'functions/not-found' || e?.code === 'functions/resource-exhausted';
+      notifyError("Couldn't place the order", {
+        description: known ? e.message : offline ? 'Check your connection. Your cart is saved.' : 'Nothing was charged. Your cart is saved.',
+        action: known ? undefined : { label: 'Try again', onClick: () => void checkout(items, totals) },
       });
+    } finally {
+      setPending(false);
     }
   };
 
