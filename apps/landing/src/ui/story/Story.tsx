@@ -11,15 +11,15 @@ const STEPS = [
     title: 'Sit anywhere, scan the table.',
     body: 'Every table carries its own QR. Your table number rides along with the order, so nobody shouts names across the hall.',
     tint: 'rgb(255 228 210)',
-    chips: ['Table T07', 'No app to install', 'Opens in 1 second'],
+    chips: ['Your table number', 'No app to install', 'Opens in the browser'],
   },
   {
     icon: LayoutGrid,
     kicker: 'Browse',
-    title: 'All eight kitchens in one menu.',
+    title: 'Every kitchen in one menu.',
     body: 'Dosa, biryani, momos and a mango shake side by side, with live prices, prep times and what just sold out.',
     tint: 'rgb(254 240 199)',
-    chips: ['8 kitchens', '56 dishes', 'Live sold-out'],
+    chips: ['Every shop', 'Live prices', 'Sold-out shown'],
   },
   {
     icon: ShoppingBag,
@@ -27,7 +27,7 @@ const STEPS = [
     title: 'One cart. One UPI payment.',
     body: 'Mix dishes from as many shops as you like. You pay once, and each kitchen gets exactly its own share.',
     tint: 'rgb(253 226 228)',
-    chips: ['3 shops', '1 payment', 'GST included'],
+    chips: ['Many shops', 'One payment', 'GST included'],
   },
   {
     icon: ReceiptText,
@@ -35,7 +35,7 @@ const STEPS = [
     title: 'A token for every shop, live.',
     body: 'Each kitchen gets its ticket the same second. Watch every token move from accepted to cooking to ready.',
     tint: 'rgb(237 233 254)',
-    chips: ['DC-042 cooking', 'WM-019 accepted', 'CC-107 ready'],
+    chips: ['Accepted', 'Cooking', 'Ready'],
   },
   {
     icon: BellRing,
@@ -43,7 +43,7 @@ const STEPS = [
     title: 'Collect it, or have it brought over.',
     body: 'Your phone pings the moment a tray is ready. Grab it at the counter, or a runner carries it to your table.',
     tint: 'rgb(209 250 229)',
-    chips: ['Ping on ready', 'Runner to T07', 'Zero queueing'],
+    chips: ['Ping when ready', 'Delivered to the table', 'No queueing'],
   },
 ];
 

@@ -15,14 +15,14 @@ export function Footer() {
             How it works
           </a>
           <a href="#live" className="hover:text-ink">
-            Live court
+            3D preview
           </a>
           <a href={orderAtTable()} className="hover:text-ink">
             Order now
           </a>
         </nav>
       </div>
-      <p className="mx-auto mt-6 max-w-[1240px] text-xs text-ink-3">The 3D court is a live simulation of the hall for this page; dishes, tokens and diners shown in it are illustrative.</p>
+      <p className="mx-auto mt-6 max-w-[1240px] text-xs text-ink-3">The 3D court is a simulated preview. Its shops, dishes, prices, diners and orders are illustrative and not real activity.</p>
     </footer>
   );
 }

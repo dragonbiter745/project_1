@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { formatPaise } from '@foodcourt/shared';
 import { cx } from '@foodcourt/ui';
 import { TABLES } from '../../data/layout';
 import { useUi } from '../../store/ui';
@@ -52,7 +51,6 @@ export function LiveData() {
                 <th className="py-2 font-medium">Token</th>
                 <th className="py-2 font-medium">Table</th>
                 <th className="py-2 font-medium">Status</th>
-                <th className="py-2 text-right font-medium">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/70">
@@ -66,7 +64,6 @@ export function LiveData() {
                   </td>
                   <td className="py-2 text-ink-2">{o.table}</td>
                   <td className="py-2 text-ink-2">{o.status}</td>
-                  <td className="py-2 text-right font-semibold tabular-nums text-ink">{formatPaise(o.totalPaise)}</td>
                 </tr>
               ))}
             </tbody>

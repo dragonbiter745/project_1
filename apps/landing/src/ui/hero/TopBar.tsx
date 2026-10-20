@@ -16,7 +16,7 @@ const iconBtn =
 export function TopBar() {
   const snap = useUi((s) => s.snapshot);
   const count = useCart((s) => s.lines.reduce((n, l) => n + l.qty, 0));
-  const exit = () => useUi.getState().set({ explore: false, cameraMode: 'cinematic', orderOpen: false, dataOpen: false, follow: null, selection: null });
+  const exit = () => useUi.getState().set({ explore: false, cameraMode: 'orbit', orderOpen: false, dataOpen: false, follow: null, selection: null });
 
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-3 md:p-4">
@@ -24,9 +24,9 @@ export function TopBar() {
         <div className="glass flex h-11 items-center gap-2.5 rounded-full pl-1.5 pr-4">
           <BrandMark size="sm" />
           <span className="hidden text-sm font-semibold tracking-tight text-ink sm:inline">REVA Food Court</span>
-          <span className="hidden items-center gap-1.5 rounded-full bg-ready-tint px-2 py-0.5 text-[11px] font-semibold text-ready md:inline-flex">
-            <span className="live-dot h-1.5 w-1.5 rounded-full bg-ready" />
-            Live
+          <span title="A simulated lunch service; diners, orders and timings are illustrative." className="hidden items-center gap-1.5 rounded-full bg-accent-tint px-2 py-0.5 text-[11px] font-semibold text-accent-ink md:inline-flex">
+            <span className="live-dot h-1.5 w-1.5 rounded-full bg-accent" />
+            Demo
           </span>
         </div>
         <div className="hidden lg:block">

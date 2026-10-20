@@ -6,7 +6,6 @@ import { Managers } from './ui/story/Managers';
 import { Nav } from './ui/story/Nav';
 import { Numbers } from './ui/story/Numbers';
 import { CursorGlow, ScrollProgress } from './ui/story/ScrollFx';
-import { ShopsMarquee } from './ui/story/ShopsMarquee';
 import { Split } from './ui/story/Split';
 import { Story } from './ui/story/Story';
 
@@ -26,7 +25,6 @@ export default function App() {
         <Kitchens />
         <Managers />
         <Numbers />
-        <ShopsMarquee />
         <FinalCta />
       </main>
       <Footer />

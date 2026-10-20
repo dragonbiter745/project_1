@@ -8,7 +8,7 @@ export function Effects() {
   const effects = [];
   if (quality !== 'low') {
     effects.push(
-      <N8AO key="ao" halfRes={quality === 'medium'} aoRadius={1.1} distanceFalloff={0.9} intensity={quality === 'high' ? 2.2 : 1.7} quality={quality === 'high' ? 'medium' : 'performance'} />
+      <N8AO key="ao" halfRes depthAwareUpsampling aoRadius={1.1} distanceFalloff={0.9} intensity={quality === 'high' ? 2.2 : 1.7} quality={quality === 'high' ? 'medium' : 'performance'} />
     );
   }
   effects.push(<Bloom key="bloom" mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.25} intensity={quality === 'low' ? 0.45 : 0.85} radius={0.72} />);

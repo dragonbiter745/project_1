@@ -32,7 +32,6 @@ export function CameraRig() {
   const selection = useUi((s) => s.selection);
   const cameraMode = useUi((s) => s.cameraMode);
   const tour = useRef({ index: 0, next: 0 });
-  const idleSince = useRef(0);
 
   useEffect(() => {
     const c = ref.current;
@@ -99,7 +98,6 @@ export function CameraRig() {
     if (!c) return;
     const ui = useUi.getState();
     const dragging = c.currentAction !== CameraControlsImpl.ACTION.NONE;
-    if (dragging) idleSince.current = frame.t;
 
     if (ui.follow !== null) {
       const a = getSim().agent(ui.follow);
@@ -126,9 +124,8 @@ export function CameraRig() {
       if (!dragging) c.rotate(dt * 0.025, 0, true);
       return;
     }
+    // The camera only moves when the visitor moves it (or picks Cinematic).
     c.smoothTime = 0.55;
-    // Hero mode: a slow drift around the court until someone takes the wheel.
-    if (!ui.explore && !ui.selection && frame.t - idleSince.current > 3 && !dragging) c.rotate(dt * 0.035, 0, true);
   });
 
   useEffect(() => {

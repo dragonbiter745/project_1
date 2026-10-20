@@ -24,7 +24,7 @@ export function FinalCta() {
               type="button"
               onClick={() => {
                 document.getElementById('live')?.scrollIntoView({ behavior: 'smooth' });
-                setTimeout(() => useUi.setState({ explore: true, cameraMode: 'cinematic' }), 600);
+                setTimeout(() => useUi.setState({ explore: true, cameraMode: 'orbit' }), 600);
               }}
               className="pressable inline-flex h-14 items-center gap-2 rounded-full bg-white/10 px-7 text-base font-semibold text-white ring-1 ring-inset ring-white/25 backdrop-blur hover:bg-white/15"
             >

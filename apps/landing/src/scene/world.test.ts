@@ -19,13 +19,13 @@ describe('static world', () => {
 
   it('only uses materials that exist', () => {
     const known = declaredMaterials();
-    const unknown = world.meshes.map((m) => m.key).filter((k) => !known.has(k));
+    const unknown = [...world.meshes, ...world.campus].map((m) => m.key).filter((k) => !known.has(k));
     expect(unknown).toEqual([]);
   });
 
   it('merges into a small number of draw calls with valid geometry', () => {
-    expect(world.meshes.length).toBeLessThan(90);
-    for (const { key, geometry } of world.meshes) {
+    expect(world.meshes.length + world.campus.length).toBeLessThan(120);
+    for (const { key, geometry } of [...world.meshes, ...world.campus]) {
       const pos = geometry.attributes.position!;
       expect(pos.count, key).toBeGreaterThan(0);
       expect(geometry.attributes.normal, key).toBeDefined();

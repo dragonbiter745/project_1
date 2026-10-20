@@ -8,7 +8,7 @@ import { grassMap, qrMap, terrazzoMaps } from './textures';
 import { staticWorld } from './buildWorld';
 
 export function StaticWorld() {
-  const { meshes } = useMemo(staticWorld, []);
+  const { meshes, campus } = useMemo(staticWorld, []);
   return (
     <group>
       <Floor />
@@ -22,6 +22,9 @@ export function StaticWorld() {
           receiveShadow={!TRANSPARENT.has(key)}
           renderOrder={TRANSPARENT.has(key) ? 2 : 0}
         />
+      ))}
+      {campus.map(({ key, geometry }) => (
+        <mesh key={`campus-${key}`} geometry={geometry} material={mat(key)} renderOrder={TRANSPARENT.has(key) ? 2 : 0} />
       ))}
       <Chairs />
       <QrPlates />

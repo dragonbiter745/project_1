@@ -1,5 +1,4 @@
 import { Bell, Check, QrCode } from 'lucide-react';
-import { formatPaise } from '@foodcourt/shared';
 import { VegDot, cx } from '@foodcourt/ui';
 import { SHOPS, SHOP_BY_ID } from '../../data/shops';
 
@@ -55,7 +54,7 @@ function BrowseScreen() {
     <div className="flex h-full flex-col">
       <StatusBar />
       <div className="px-5">
-        <p className="text-xs font-semibold text-ink-3">T07 · REVA Food Court</p>
+        <p className="text-xs font-semibold text-ink-3">Your table · REVA Food Court</p>
         <p className="mt-1 text-[22px] font-semibold tracking-tight text-ink">What are you craving?</p>
       </div>
       <div className="no-scrollbar mt-3 flex gap-2 overflow-hidden px-5">
@@ -75,7 +74,7 @@ function BrowseScreen() {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-ink">{m.name}</p>
               <p className="text-xs text-ink-3">
-                {formatPaise(m.pricePaise)} · {m.prepMin} min
+                Ready in about {m.prepMin} min
               </p>
             </div>
             <span className={cx('rounded-full px-3 py-1.5 text-xs font-semibold', i === 0 ? 'bg-accent-ink text-white' : 'bg-accent-tint text-accent-ink')}>{i === 0 ? '1' : 'Add'}</span>
@@ -93,13 +92,11 @@ const CART = [
 ];
 
 function CartScreen() {
-  const subtotal = CART.reduce((n, l) => n + SHOP_BY_ID[l.shop]!.menu.find((m) => m.id === l.item)!.pricePaise * l.qty, 0);
-  const gst = Math.round((subtotal * 5) / 100);
   return (
     <div className="flex h-full flex-col">
       <StatusBar />
       <p className="px-5 text-[22px] font-semibold tracking-tight text-ink">Your cart</p>
-      <p className="px-5 text-xs text-ink-3">3 shops · 3 tokens · 1 payment</p>
+      <p className="px-5 text-xs text-ink-3">Several shops · one token each · one payment</p>
       <ul className="mt-3 space-y-2 px-4">
         {CART.map((l) => {
           const s = SHOP_BY_ID[l.shop]!;
@@ -114,17 +111,13 @@ function CartScreen() {
                 <span>
                   {l.qty} × {m.name}
                 </span>
-                <span className="tabular-nums">{formatPaise(m.pricePaise * l.qty)}</span>
               </p>
             </li>
           );
         })}
       </ul>
       <div className="mt-auto space-y-3 p-4">
-        <div className="flex justify-between text-sm text-ink-2">
-          <span>Incl. 5% GST {formatPaise(gst, true)}</span>
-          <span className="font-semibold text-ink">{formatPaise(subtotal + gst, true)}</span>
-        </div>
+        <p className="text-center text-xs text-ink-3">Taxes shown before you pay</p>
         <div className="flex h-12 items-center justify-center rounded-full bg-accent-ink text-sm font-semibold text-white">Pay once with UPI</div>
       </div>
     </div>
@@ -140,7 +133,7 @@ function TokenScreen() {
   return (
     <div className="flex h-full flex-col">
       <StatusBar />
-      <p className="px-5 text-[22px] font-semibold tracking-tight text-ink">Paid. Three tokens.</p>
+      <p className="px-5 text-[22px] font-semibold tracking-tight text-ink">Paid. A token per shop.</p>
       <p className="px-5 text-xs text-ink-3">Every kitchen got its ticket the same second.</p>
       <ul className="mt-4 space-y-2.5 px-4">
         {rows.map((r) => {

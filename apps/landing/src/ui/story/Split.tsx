@@ -1,5 +1,4 @@
 import { IndianRupee } from 'lucide-react';
-import { formatPaise } from '@foodcourt/shared';
 import { SHOP_BY_ID } from '../../data/shops';
 import { spotlight, useScrollProgress } from '../../lib/hooks';
 import { RevealWords } from './ScrollFx';
@@ -39,9 +38,9 @@ export function Split() {
                 <span className="grid h-8 w-8 place-items-center rounded-[10px] bg-accent-ink text-white">
                   <IndianRupee className="h-4 w-4" />
                 </span>
-                One UPI payment · T07
+                One UPI payment
               </p>
-              <p className="mt-3 text-4xl font-semibold tabular-nums tracking-tight text-ink md:text-5xl">{formatPaise(total)}</p>
+              <p className="mt-3 text-3xl font-semibold tracking-tight text-ink md:text-4xl">Paid once</p>
               <div className="mt-4 flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface-2">
                 {TICKETS.map((t) => (
                   <span
@@ -74,7 +73,7 @@ export function Split() {
                         <li key={l}>{l}</li>
                       ))}
                     </ul>
-                    <p className="mt-3 border-t border-line/70 pt-2 text-sm font-semibold tabular-nums text-ink">{formatPaise(priceOf(t.shop, t.items))}</p>
+                    <p className="mt-3 border-t border-line/70 pt-2 text-xs font-semibold text-ink-3">Only this kitchen's share</p>
                   </li>
                 );
               })}

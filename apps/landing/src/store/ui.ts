@@ -19,6 +19,8 @@ interface UiState {
   /** The hero canvas is on screen; the 3D pauses when it is not. */
   heroVisible: boolean;
   sceneReady: boolean;
+  /** WebGL is unavailable or the 3D scene crashed; the hero falls back to a static backdrop. */
+  sceneFailed: boolean;
   quality: Quality;
   autoQuality: boolean;
   weather: Weather;
@@ -58,11 +60,12 @@ export const useUi = create<UiState>((set) => ({
   explore: false,
   heroVisible: true,
   sceneReady: false,
+  sceneFailed: false,
   quality: initialQuality(),
   autoQuality: true,
   weather: 'clear',
   dayMode: 'auto',
-  cameraMode: 'cinematic',
+  cameraMode: 'orbit',
   speed: 1,
   crowd: 'normal',
   sound: false,

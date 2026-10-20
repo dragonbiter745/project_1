@@ -7,7 +7,7 @@ const LINKS = [
   { href: '#story', label: 'How it works' },
   { href: '#kitchens', label: 'For kitchens' },
   { href: '#managers', label: 'For the court' },
-  { href: '#live', label: 'Live court' },
+  { href: '#live', label: '3D preview' },
 ];
 
 export function Nav() {

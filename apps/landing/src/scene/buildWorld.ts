@@ -9,7 +9,10 @@ import { buildShop, type ShopFx } from './build/shops';
 import type { MatKey } from './materials';
 
 interface StaticWorld {
+  /** The hall, courtyard and plaza: inside the sun's shadow frustum. */
   meshes: Array<{ key: MatKey; geometry: THREE.BufferGeometry }>;
+  /** The campus around it: outside the shadow frustum, so it skips the shadow passes entirely. */
+  campus: Array<{ key: MatKey; geometry: THREE.BufferGeometry }>;
   fx: Array<{ shopId: string; fx: ShopFx }>;
 }
 
@@ -21,10 +24,11 @@ export function staticWorld(): StaticWorld {
   const b = new Batch();
   buildHall(b);
   buildCourtyard(b);
-  buildCampus(b);
   const fx = SHOP_SLOTS.map((slot) => ({ shopId: slot.shopId, fx: buildShop(b, slot, SHOP_BY_ID[slot.shopId]!) }));
   buildFurniture(b);
   buildStations(b);
-  built = { meshes: b.build(), fx };
+  const campus = new Batch();
+  buildCampus(campus);
+  built = { meshes: b.build(), campus: campus.build(), fx };
   return built;
 }

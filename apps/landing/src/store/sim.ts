@@ -8,7 +8,8 @@ let sim: Sim | null = null;
 
 /** One live court per page; the scene reads it every frame, the DOM through snapshots. */
 export function getSim(): Sim {
-  if (!sim) sim = new Sim({ warmup: 75 });
+  // Warm-up runs in slices inside the render loop (see World.tsx) so it never freezes the page.
+  if (!sim) sim = new Sim({ warmup: 0 });
   return sim;
 }
 

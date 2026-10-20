@@ -1,5 +1,5 @@
-import { Suspense, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import { getSim, takeSnapshot } from '../store/sim';
 import { useUi, type Quality } from '../store/ui';
@@ -16,7 +16,8 @@ import { Weather } from './Weather';
 
 const DOWN: Record<Quality, Quality> = { high: 'medium', medium: 'low', low: 'low' };
 const UP: Record<Quality, Quality> = { low: 'medium', medium: 'high', high: 'high' };
-const DPR: Record<Quality, [number, number]> = { high: [1, 1.75], medium: [1, 1.3], low: [0.75, 1] };
+// SMAA keeps edges clean, so 1.5x on retina screens is indistinguishable from 2x at half the fill cost.
+const DPR: Record<Quality, [number, number]> = { high: [1, 1.5], medium: [1, 1.25], low: [0.75, 1] };
 
 function SimDriver() {
   useEffect(() => {
@@ -28,10 +29,9 @@ function SimDriver() {
     };
     sync();
     const unsub = useUi.subscribe(sync);
+    // Off-screen, nothing reads the court: skip the snapshot work too.
     const publish = () => {
-      // While the canvas is paused off-screen the court keeps running for the live dashboard below.
-      if (!useUi.getState().heroVisible) sim.advance(0.25);
-      useUi.setState({ snapshot: takeSnapshot(sim, useUi.getState().selection) });
+      if (useUi.getState().heroVisible) useUi.setState({ snapshot: takeSnapshot(sim, useUi.getState().selection) });
     };
     publish();
     const id = window.setInterval(publish, 250);
@@ -42,17 +42,56 @@ function SimDriver() {
   }, []);
   // Runs before every other frame callback so the scene reads one consistent tick.
   useFrame((_, dt) => {
+    const sim = getSim();
+    // The opening crowd builds up over the first frames instead of blocking the page.
+    if (sim.time < WARMUP_SECONDS) {
+      for (let i = 0; i < WARMUP_STEPS_PER_FRAME && sim.time < WARMUP_SECONDS; i++) sim.step();
+      frame.alpha = 1;
+      return;
+    }
     frame.t += dt;
-    frame.alpha = getSim().advance(dt);
+    frame.alpha = sim.advance(dt);
   }, -2);
   return null;
 }
 
+const WARMUP_SECONDS = 75;
+const WARMUP_STEPS_PER_FRAME = 260;
+
+/** Compiles every shader once up front and reveals the scene when the crowd has settled in. */
 function Ready() {
+  const { gl, scene, camera } = useThree();
+  const [compiled, setCompiled] = useState(false);
   useEffect(() => {
-    const id = requestAnimationFrame(() => useUi.setState({ sceneReady: true }));
-    return () => cancelAnimationFrame(id);
-  }, []);
+    let live = true;
+    const done = () => live && setCompiled(true);
+    gl.compileAsync(scene, camera).then(done, done);
+    return () => {
+      live = false;
+    };
+  }, [gl, scene, camera]);
+  useFrame(() => {
+    if (compiled && getSim().time >= WARMUP_SECONDS && !useUi.getState().sceneReady) useUi.setState({ sceneReady: true });
+  });
+  return null;
+}
+
+/** Shadows from the moving crowd refresh every other frame (every third on Low): half the cost of the biggest pass. */
+function ShadowCadence() {
+  const gl = useThree((s) => s.gl);
+  const quality = useUi((s) => s.quality);
+  const n = useRef(0);
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false;
+    gl.shadowMap.needsUpdate = true;
+    return () => {
+      gl.shadowMap.autoUpdate = true;
+    };
+  }, [gl]);
+  useFrame(() => {
+    n.current++;
+    if (n.current % (quality === 'low' ? 3 : 2) === 0) gl.shadowMap.needsUpdate = true;
+  });
   return null;
 }
 
@@ -92,6 +131,7 @@ export default function World() {
         <Weather />
         <CameraRig />
         <Effects />
+        <ShadowCadence />
         <Ready />
       </Suspense>
     </Canvas>
