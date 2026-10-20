@@ -1,76 +1,78 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
-    function isAuthenticated() {
+    function signedIn() {
       return request.auth != null;
     }
-    
     function isMaster() {
-      return isAuthenticated() && request.auth.token.role == 'master';
+      return signedIn() && request.auth.token.role == 'master';
     }
-    
     function isVendor(vendorId) {
-      return isAuthenticated() && 
-        (request.auth.token.role == 'vendorAdmin' || request.auth.token.role == 'vendorStaff') &&
-        request.auth.token.vendorId == vendorId;
+      return signedIn()
+        && (request.auth.token.role == 'vendorAdmin' || request.auth.token.role == 'vendorStaff')
+        && request.auth.token.vendorId == vendorId;
     }
-    
     function isOwner(uid) {
-      return isAuthenticated() && request.auth.uid == uid;
+      return signedIn() && request.auth.uid == uid;
+    }
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
 
-    // Venues: Public read, master write
     match /venues/{venueId} {
       allow read: if true;
       allow write: if isMaster();
     }
 
-    // Vendors: Public read for active shops, master write
+    // Shop status: kitchens may only pause/resume and set their prep time.
     match /vendors/{vendorId} {
       allow read: if true;
-      allow write: if isMaster() || (isVendor(vendorId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['acceptingOrders', 'pausedUntil', 'defaultPrepMin']));
+      allow create, delete: if isMaster();
+      allow update: if isMaster()
+        || (isVendor(vendorId) && onlyChanges(['acceptingOrders', 'pausedUntil', 'defaultPrepMin', 'updatedAt'])
+            && request.resource.data.acceptingOrders is bool
+            && (!('defaultPrepMin' in request.resource.data) || (request.resource.data.defaultPrepMin is int
+                && request.resource.data.defaultPrepMin >= 1 && request.resource.data.defaultPrepMin <= 120)));
     }
 
-    // Menus: Public read, vendor or master write
+    // Menus and prices are changed by the court manager only; prices are re-checked server-side anyway.
     match /menus/{vendorId} {
-      allow read: if true;
-      allow write: if isMaster() || isVendor(vendorId);
-    }
-
-    // Availability: Public read, vendor quick stock toggle
-    match /availability/{vendorId} {
-      allow read: if true;
-      allow write: if isMaster() || isVendor(vendorId);
-    }
-
-    // Tables: Read only, master write
-    match /tables/{tableId} {
       allow read: if true;
       allow write: if isMaster();
     }
 
-    // Sessions: User can read their own session; creation through callable function only
-    match /sessions/{sessionId} {
-      allow read: if isOwner(resource.data.uid) || isMaster();
-      allow write: if false; // Only server-side functions write sessions
+    // Sold-out toggles: the shop's own staff, only the stock map.
+    match /availability/{vendorId} {
+      allow read: if true;
+      allow create, update: if isMaster()
+        || (isVendor(vendorId)
+            && request.resource.data.vendorId == vendorId
+            && request.resource.data.unavailable is map
+            && request.resource.data.unavailable.size() <= 500
+            && request.resource.data.keys().hasOnly(['vendorId', 'unavailable', 'updatedAt']));
+      allow delete: if isMaster();
     }
 
-    // Orders: Diner can read their own orders; no client writes (server-authoritative)
+    // Tables carry the secret QR tokens: never readable by diners (the server resolves tokens).
+    match /tables/{tableId} {
+      allow read, write: if isMaster();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isOwner(resource.data.uid) || isMaster();
+      allow write: if false;
+    }
+
     match /orders/{orderId} {
       allow read: if isOwner(resource.data.uid) || isMaster();
       allow write: if false;
     }
 
-    // SubOrders: Diner can read own, vendor can read their scoped orders
     match /subOrders/{subOrderId} {
-      allow read: if isMaster() || 
-        isVendor(resource.data.vendorId) || 
-        (isAuthenticated() && request.auth.uid == resource.data.uid);
-      allow write: if false; // All state transitions happen via vendorAction callable
+      allow read: if isMaster() || isVendor(resource.data.vendorId) || isOwner(resource.data.uid);
+      allow write: if false;
     }
 
-    // Users & Loyalty points: Read own, no direct client modification of points
     match /users/{uid} {
       allow read: if isOwner(uid) || isMaster();
       allow write: if false;
@@ -81,23 +83,28 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Issues: Any authenticated customer or vendor can submit an issue
+    // Reports arrive through the reportIssue function (validated, rate-limited).
     match /issues/{id} {
-      allow create: if isAuthenticated();
-      allow read: if isMaster();
-      allow update, delete: if isMaster();
+      allow read, update: if isMaster();
+      allow create, delete: if false;
     }
 
-    // System configurations: Public read of global flags, master write
     match /config/{configId} {
       allow read: if true;
       allow write: if isMaster();
     }
 
-    // Audit logs: Strictly master read-only, append via functions
     match /auditLogs/{logId} {
       allow read: if isMaster();
       allow write: if false;
+    }
+
+    // Server-only bookkeeping.
+    match /counters/{id} {
+      allow read, write: if false;
+    }
+    match /rateLimits/{id} {
+      allow read, write: if false;
     }
   }
 }

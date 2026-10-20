@@ -55,3 +55,40 @@ export function deriveParentOrderStatus(
 
   return 'PAID';
 }
+
+/** The statuses a kitchen action walks through, in order. ACCEPT passes ACCEPTED straight into PREPARING. */
+export const VENDOR_ACTION_STEPS: Record<'ACCEPT' | 'READY' | 'UNDO_READY' | 'COLLECTED' | 'REJECT' | 'CANCEL', SubOrderStatus[]> = {
+  ACCEPT: ['ACCEPTED', 'PREPARING'],
+  READY: ['READY'],
+  UNDO_READY: ['PREPARING'],
+  COLLECTED: ['COLLECTED'],
+  REJECT: ['REJECTED'],
+  CANCEL: ['CANCELLED'],
+};
+
+/**
+ * Where each action may start. The machine alone is too loose here: it allows PREPARING → ACCEPTED as
+ * an undo, which would let a double-tapped Accept re-run on a ticket already cooking.
+ */
+export const VENDOR_ACTION_FROM: Record<keyof typeof VENDOR_ACTION_STEPS, SubOrderStatus[]> = {
+  ACCEPT: ['NEW'],
+  READY: ['ACCEPTED', 'PREPARING'],
+  UNDO_READY: ['READY'],
+  COLLECTED: ['READY'],
+  REJECT: ['NEW'],
+  CANCEL: ['NEW', 'ACCEPTED', 'PREPARING'],
+};
+
+/** True when the action may start from `from` and every step of it is a legal transition. */
+export function canApplyVendorAction(from: SubOrderStatus, action: keyof typeof VENDOR_ACTION_STEPS): boolean {
+  if (!VENDOR_ACTION_FROM[action].includes(from)) return false;
+  let cur = from;
+  for (const next of VENDOR_ACTION_STEPS[action]) {
+    if (!canTransitionSubOrder(cur, next)) return false;
+    cur = next;
+  }
+  return true;
+}
+
+/** Sub-order outcomes that owe the diner their money back when paid online. */
+export const REFUNDABLE_STATUSES: ReadonlySet<SubOrderStatus> = new Set(['REJECTED', 'TIMED_OUT', 'CANCELLED']);

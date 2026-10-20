@@ -2,7 +2,7 @@
   "name": "foodcourt-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "FoodCourt — Multi-Vendor QR Order & Pay POS",
+  "description": "FoodCourt \u2014 Multi-Vendor QR Order & Pay POS",
   "packageManager": "pnpm@12.14.0",
   "scripts": {
     "dev": "turbo run dev --parallel",
@@ -11,7 +11,8 @@
     "test": "turbo run test",
     "clean": "turbo run clean",
     "seed": "pnpm --filter scripts seed",
-    "qrs": "pnpm --filter scripts qrs"
+    "qrs": "pnpm --filter scripts qrs",
+    "pack:shared": "pnpm --filter @foodcourt/shared build && cd packages/shared && npm pack --pack-destination ../../functions --silent"
   },
   "devDependencies": {
     "turbo": "^2.4.4",

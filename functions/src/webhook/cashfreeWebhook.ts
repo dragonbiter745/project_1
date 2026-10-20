@@ -1,145 +1,93 @@
 import { onRequest } from 'firebase-functions/v2/https';
-import * as crypto from 'crypto';
-import {
-  formatVendorToken,
-  type Order,
-  type Vendor,
-} from '@foodcourt/shared';
-
+import { logger } from 'firebase-functions/v2';
+import { CASHFREE_SECRET_KEY, CASHFREE_SECRETS, REGION } from '../config';
 import { db } from '../db';
+import { toPaise, verifyWebhookSignature } from '../lib/cashfree';
+import { materializePaidOrder } from '../lib/orders';
 
-function verifyCashfreeSignature(
-  rawBody: string,
-  timestamp: string,
-  signature: string,
-  secretKey: string
-): boolean {
-  try {
-    const payload = `${timestamp}${rawBody}`;
-    const generatedSignature = crypto
-      .createHmac('sha256', secretKey)
-      .update(payload)
-      .digest('base64');
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(generatedSignature)
-    );
-  } catch (err) {
-    return false;
-  }
+interface WebhookEvent {
+  type?: string;
+  data?: {
+    order?: { order_id?: string; order_amount?: number; order_currency?: string };
+    payment?: { payment_status?: string; payment_amount?: number; cf_payment_id?: string | number; payment_group?: string };
+    refund?: { refund_id?: string; refund_status?: string; cf_refund_id?: string | number; order_id?: string };
+  };
 }
 
-export const cashfreeWebhook = onRequest(
-  {
-    region: 'asia-south1',
-    cors: false,
-  },
-  async (req, res) => {
-    if (req.method !== 'POST') {
-      res.status(405).send('Method Not Allowed');
+/**
+ * Cashfree payment and refund notifications. Every request must carry a valid signature; anything
+ * else is rejected before it can touch an order. Handling is idempotent, so Cashfree retries are safe.
+ */
+export const cashfreeWebhook = onRequest({ region: REGION, secrets: CASHFREE_SECRETS, cors: false, maxInstances: 50, concurrency: 80, timeoutSeconds: 30 }, async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+  const timestamp = req.get('x-webhook-timestamp');
+  const signature = req.get('x-webhook-signature');
+  const rawBody = req.rawBody?.toString('utf8');
+  if (!timestamp || !signature || !rawBody || !verifyWebhookSignature(rawBody, timestamp, signature, CASHFREE_SECRET_KEY.value())) {
+    logger.warn('Rejected unsigned or badly signed webhook', { ip: req.ip });
+    res.status(401).send('Invalid signature');
+    return;
+  }
+
+  let event: WebhookEvent;
+  try {
+    event = JSON.parse(rawBody) as WebhookEvent;
+  } catch {
+    res.status(400).send('Bad payload');
+    return;
+  }
+
+  try {
+    if (event.type === 'REFUND_STATUS_WEBHOOK' && event.data?.refund?.refund_id) {
+      const r = event.data.refund;
+      const ticket = await db.collection('subOrders').where('refund.refundId', '==', r.refund_id).limit(1).get();
+      const doc = ticket.docs[0];
+      if (doc) {
+        const status = r.refund_status === 'SUCCESS' ? 'PROCESSED' : r.refund_status === 'CANCELLED' || r.refund_status === 'FAILED' ? 'FAILED' : 'PENDING';
+        await doc.ref.update({ 'refund.status': status, 'refund.cfRefundId': String(r.cf_refund_id ?? ''), 'refund.updatedAt': Date.now() });
+      }
+      res.status(200).json({ ok: true });
       return;
     }
 
-    const timestamp = req.headers['x-webhook-timestamp'] as string;
-    const signature = req.headers['x-webhook-signature'] as string;
-    const secretKey = process.env.CASHFREE_SECRET_KEY;
-
-    // Verify signature if secret key is present
-    if (secretKey && timestamp && signature) {
-      const rawBody = typeof req.rawBody === 'string' ? req.rawBody : (req.rawBody as Buffer)?.toString('utf8') || JSON.stringify(req.body);
-      const isValid = verifyCashfreeSignature(rawBody, timestamp, signature, secretKey);
-      if (!isValid) {
-        console.warn('Invalid Cashfree webhook signature');
-        res.status(401).send('Invalid signature');
-        return;
-      }
-    }
-
-    const event = req.body;
-    const orderId = event?.data?.order?.order_id;
-    const paymentStatus = event?.data?.payment?.payment_status;
-
+    const orderId = event.data?.order?.order_id;
+    const status = event.data?.payment?.payment_status;
     if (!orderId) {
       res.status(400).send('Missing order_id');
       return;
     }
 
-    if (paymentStatus !== 'SUCCESS') {
-      console.log(`Payment status for order ${orderId} is ${paymentStatus}. No suborders created.`);
-      res.status(200).json({ received: true });
+    if (status === 'SUCCESS') {
+      if (event.data?.order?.order_currency && event.data.order.order_currency !== 'INR') {
+        logger.error('Non-INR payment', { orderId });
+        res.status(400).send('Unsupported currency');
+        return;
+      }
+      const amountPaise = toPaise(event.data?.payment?.payment_amount ?? event.data?.order?.order_amount ?? 0);
+      const outcome = await materializePaidOrder(orderId, {
+        amountPaise,
+        cfPaymentId: event.data?.payment?.cf_payment_id != null ? String(event.data.payment.cf_payment_id) : null,
+        method: event.data?.payment?.payment_group ?? null,
+      });
+      if (outcome === 'amount-mismatch') {
+        // Paid amount differs from what we computed: never fulfil it automatically.
+        logger.error('Payment amount mismatch', { orderId, amountPaise });
+        await db.collection('orders').doc(orderId).update({ 'payment.status': 'FLAGGED', updatedAt: Date.now() });
+      }
+      res.status(200).json({ ok: true, outcome });
       return;
     }
 
-    const orderRef = db.collection('orders').doc(orderId);
-
-    try {
-      await db.runTransaction(async (transaction) => {
-        const orderDoc = await transaction.get(orderRef);
-        if (!orderDoc.exists) {
-          throw new Error(`Order ${orderId} not found`);
-        }
-
-        const order = orderDoc.data() as Order;
-        if (order.status === 'PAID') {
-          // Already processed idempotently
-          return;
-        }
-
-        const now = Date.now();
-        const dateKey = order.dateKey;
-
-        // 1. Mark Order as PAID
-        transaction.update(orderRef, {
-          status: 'PAID',
-          'payment.status': 'SUCCESS',
-          'payment.paidAt': now,
-          'payment.cfPaymentId': event?.data?.payment?.cf_payment_id || null,
-          'payment.method': event?.data?.payment?.payment_group || 'UPI',
-        });
-
-        // 2. Group items by vendor and create subOrders
-        const uniqueVendorIds = Array.from(new Set(order.items.map((i) => i.vendorId)));
-
-        for (const vId of uniqueVendorIds) {
-          const vendorItems = order.items.filter((i) => i.vendorId === vId);
-          const vendorSubtotalPaise = vendorItems.reduce((acc, i) => acc + i.pricePaise * i.qty, 0);
-
-          const vendorCounterRef = db.collection('counters').doc(`${dateKey}_${vId}`);
-          const vendorCounterDoc = await transaction.get(vendorCounterRef);
-          const currentSeq = vendorCounterDoc.exists ? (vendorCounterDoc.data()?.count || 0) : 0;
-          const nextSeq = currentSeq + 1;
-
-          transaction.set(vendorCounterRef, { count: nextSeq }, { merge: true });
-
-          const vendorRef = db.collection('vendors').doc(vId);
-          const vendorDoc = await transaction.get(vendorRef);
-          const vendorData = vendorDoc.data() as Vendor | undefined;
-          const vendorCode = vendorData?.code || 'RM';
-          const token = formatVendorToken(vendorCode, nextSeq);
-
-          const subOrderRef = db.collection('subOrders').doc();
-          transaction.set(subOrderRef, {
-            orderId: orderRef.id,
-            vendorId: vId,
-            vendorName: vendorData?.name || '',
-            token,
-            tableLabel: order.tableLabel,
-            customerDisplay: `#${order.dateKey}`,
-            items: vendorItems,
-            subtotalPaise: vendorSubtotalPaise,
-            status: 'NEW',
-            ts: {
-              placed: now,
-            },
-          });
-        }
-      });
-
-      console.log(`Successfully processed Cashfree payment for order ${orderId}`);
-      res.status(200).json({ success: true });
-    } catch (err: any) {
-      console.error('Error handling Cashfree webhook:', err);
-      res.status(500).send('Webhook processing failed');
+    if (status === 'FAILED' || status === 'USER_DROPPED' || status === 'CANCELLED') {
+      // The order stays payable until it expires, so the diner can retry from the same screen.
+      await db.collection('orders').doc(orderId).set({ payment: { lastAttempt: status, lastAttemptAt: Date.now() } }, { merge: true });
     }
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    logger.error('Webhook handling failed', { err: (err as Error).message });
+    res.status(500).send('Retry later');
   }
-);
+});

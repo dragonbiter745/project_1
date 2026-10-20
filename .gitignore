@@ -25,3 +25,4 @@ Thumbs.db
 serviceAccountKey.json
 secrets/
 
+!functions/.env.reva-nest-foodcourt

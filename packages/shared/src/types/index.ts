@@ -96,7 +96,9 @@ export interface VendorAvailability {
 // Table & Session
 export interface Table {
   id: string;
-  code: string; // public token embedded in QR
+  code: string; // short human code printed on the stand, e.g. "T14"; never accepted on its own
+  /** Unguessable token embedded in the QR link; only the server and the master console see it. */
+  qrToken?: string;
   label: string; // e.g. "T-14"
   zone: string;
   capacity?: number; // 4 or 6 seater
@@ -162,11 +164,15 @@ export interface Order {
     method?: string;
     status: PaymentStatus;
     paidAt?: number;
+    /** ONLINE goes through Cashfree; COUNTER is paid at collection. */
+    mode?: 'ONLINE' | 'COUNTER';
   };
   status: OrderStatus;
   checkoutKey: string;
   createdAt: number;
   updatedAt?: number;
+  /** Unpaid online orders expire at this time. */
+  expiresAt?: number;
 }
 
 export interface SubOrderTimeline {
@@ -183,6 +189,11 @@ export interface SubOrderTimeline {
 export interface SubOrder {
   id: string;
   orderId: string;
+  /** The diner's auth uid, so they can read their own tickets. */
+  uid?: string;
+  sessionId?: string;
+  tableId?: string;
+  dateKey?: string;
   vendorId: string;
   vendorName?: string;
   token: string; // e.g. "RM-042"
@@ -199,10 +210,14 @@ export interface SubOrder {
   status: SubOrderStatus;
   ts: SubOrderTimeline;
   rejectReason?: string;
+  cancelReason?: string;
+  prepTimeOverrideMin?: number;
   refund?: {
-    status: 'PENDING' | 'PROCESSED' | 'FAILED';
+    status: 'PENDING' | 'PROCESSED' | 'FAILED' | 'NOT_REQUIRED';
     amountPaise: number;
+    refundId?: string;
     cfRefundId?: string;
+    updatedAt?: number;
   };
 }
 

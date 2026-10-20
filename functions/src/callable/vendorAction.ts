@@ -1,145 +1,70 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
+import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { FieldValue } from 'firebase-admin/firestore';
 import {
+  VENDOR_ACTION_STEPS,
   VendorActionSchema,
-  canTransitionSubOrder,
-  deriveParentOrderStatus,
   calculatePointsEarned,
-  type SubOrderStatus,
+  canApplyVendorAction,
+  type GlobalConfig,
   type SubOrder,
 } from '@foodcourt/shared';
-
+import { REGION } from '../config';
 import { db } from '../db';
+import { limitShared, requireUid, roleOf } from '../lib/guard';
+import { syncParentStatus, timelineKey } from '../lib/orders';
 
-export const vendorAction = onCall(
-  {
-    region: 'asia-south1',
-    cors: true,
-  },
-  async (request) => {
-    const parseResult = VendorActionSchema.safeParse(request.data);
-    if (!parseResult.success) {
-      throw new HttpsError('invalid-argument', parseResult.error.message);
+/**
+ * Every kitchen status change goes through here and the shared status machine. Shop staff can only
+ * touch their own shop's tickets; only the court master can cancel.
+ */
+export const vendorAction = onCall({ region: REGION, minInstances: 1, maxInstances: 50, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
+  const uid = requireUid(req);
+  const { role, vendorId: staffVendor } = roleOf(req);
+  if (!role) throw new HttpsError('permission-denied', 'Sign in with a kitchen or manager account.');
+  await limitShared(`vendor:${uid}`, 400, 300);
+
+  const parsed = VendorActionSchema.safeParse(req.data);
+  if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid action.');
+  const { subOrderId, action, prepTimeOverrideMin, reason } = parsed.data;
+  if ((action === 'REJECT' || action === 'CANCEL') && !reason) throw new HttpsError('invalid-argument', 'Give the diner a reason.');
+
+  const ref = db.collection('subOrders').doc(subOrderId);
+  const result = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new HttpsError('not-found', 'That ticket no longer exists.');
+    const ticket = snap.data() as SubOrder;
+    const isMaster = role === 'master';
+    if (!isMaster && staffVendor !== ticket.vendorId) throw new HttpsError('permission-denied', 'This ticket belongs to another shop.');
+    if (action === 'CANCEL' && !isMaster) throw new HttpsError('permission-denied', 'Only the court manager can cancel; reject the ticket instead.');
+    if (!canApplyVendorAction(ticket.status, action)) {
+      throw new HttpsError('failed-precondition', `This ticket is already ${ticket.status.toLowerCase().replace('_', ' ')}.`);
     }
-
-    const { subOrderId, action, prepTimeOverrideMin, rejectReason } = parseResult.data;
-    const auth = request.auth;
-    if (!auth) {
-      throw new HttpsError('unauthenticated', 'Staff must be logged in.');
-    }
-
-    const subOrderRef = db.collection('subOrders').doc(subOrderId);
-    const subOrderDoc = await subOrderRef.get();
-    if (!subOrderDoc.exists) {
-      throw new HttpsError('not-found', 'Sub-order not found.');
-    }
-
-    const subOrder = subOrderDoc.data() as SubOrder;
-    const vendorId = subOrder.vendorId;
-
-    // Check custom claims
-    const isMaster = auth.token.role === 'master';
-    const isVendorStaff =
-      (auth.token.role === 'vendorAdmin' || auth.token.role === 'vendorStaff') &&
-      auth.token.vendorId === vendorId;
-
-    // In local dev allow bypassing claim check if emulator/dev
-    const isDev = process.env.NODE_ENV !== 'production';
-    if (!isMaster && !isVendorStaff && !isDev) {
-      throw new HttpsError('permission-denied', 'You do not have permission to manage this kitchen ticket.');
-    }
-
-    const targetStatus: SubOrderStatus = action as SubOrderStatus;
-
-    if (!canTransitionSubOrder(subOrder.status, targetStatus)) {
-      throw new HttpsError(
-        'failed-precondition',
-        `Illegal status transition from ${subOrder.status} to ${targetStatus}.`
-      );
-    }
-
     const now = Date.now();
-    const tsKey = `ts.${targetStatus.toLowerCase()}`;
-    const updates: Record<string, any> = {
-      status: targetStatus,
-      [tsKey]: now,
-    };
+    const steps = VENDOR_ACTION_STEPS[action];
+    const updates: Record<string, unknown> = { status: steps[steps.length - 1], updatedAt: now, updatedBy: uid };
+    for (const s of steps) updates[`ts.${timelineKey[s]}`] = now;
+    if (action === 'UNDO_READY') updates['ts.ready'] = FieldValue.delete();
+    if (prepTimeOverrideMin) updates.prepTimeOverrideMin = prepTimeOverrideMin;
+    if (action === 'REJECT') updates.rejectReason = reason;
+    if (action === 'CANCEL') updates.cancelReason = reason;
+    tx.update(ref, updates);
+    return { ticket, status: updates.status as string, now };
+  });
 
-    if (prepTimeOverrideMin) {
-      updates.prepTimeOverrideMin = prepTimeOverrideMin;
+  await syncParentStatus(result.ticket.orderId);
+
+  // Loyalty points on collection, idempotent per ticket.
+  if (action === 'COLLECTED' && result.ticket.uid) {
+    const config = (await db.collection('config').doc('global').get()).data() as GlobalConfig | undefined;
+    const points = config?.flags.loyaltyEnabled ? calculatePointsEarned(result.ticket.subtotalPaise) : 0;
+    if (points > 0) {
+      const ledgerRef = db.collection('pointsLedger').doc(`earn_${subOrderId}`);
+      await db.runTransaction(async (tx) => {
+        if ((await tx.get(ledgerRef)).exists) return;
+        tx.set(ledgerRef, { uid: result.ticket.uid, orderId: result.ticket.orderId, subOrderId, type: 'earn', points, createdAt: result.now, notes: `Earned from ${result.ticket.token}` });
+        tx.set(db.collection('users').doc(result.ticket.uid!), { pointsBalance: FieldValue.increment(points), lifetimeSpendPaise: FieldValue.increment(result.ticket.subtotalPaise) }, { merge: true });
+      });
     }
-
-    if (targetStatus === 'REJECTED') {
-      if (!rejectReason) {
-        throw new HttpsError('invalid-argument', 'A reason is required to reject an order.');
-      }
-      updates.rejectReason = rejectReason;
-      updates.refund = {
-        status: 'PENDING',
-        amountPaise: subOrder.subtotalPaise,
-        cfRefundId: `ref_${subOrderId}_${now}`,
-      };
-    }
-
-    await subOrderRef.update(updates);
-
-    // Update parent order status and check points
-    const parentOrderRef = db.collection('orders').doc(subOrder.orderId);
-    const allSiblingSubOrdersSnap = await db
-      .collection('subOrders')
-      .where('orderId', '==', subOrder.orderId)
-      .get();
-
-    const siblingSubOrders = allSiblingSubOrdersSnap.docs.map((d) => d.data() as SubOrder);
-    const derivedStatus = deriveParentOrderStatus(siblingSubOrders);
-
-    await parentOrderRef.update({
-      status: derivedStatus,
-      updatedAt: now,
-    });
-
-    // If sub-order is COLLECTED, credit loyalty points
-    if (targetStatus === 'COLLECTED') {
-      const parentOrderDoc = await parentOrderRef.get();
-      const parentOrder = parentOrderDoc.data();
-      const dinerUid = parentOrder?.uid;
-
-      if (dinerUid) {
-        const points = calculatePointsEarned(subOrder.subtotalPaise);
-        if (points > 0) {
-          const ledgerRef = db.collection('pointsLedger').doc(`earn_${subOrderId}`);
-          await ledgerRef.set(
-            {
-              uid: dinerUid,
-              orderId: subOrder.orderId,
-              subOrderId: subOrderId,
-              type: 'earn',
-              points,
-              createdAt: now,
-              notes: `Earned from ${subOrder.token}`,
-            },
-            { merge: true }
-          );
-
-          // Update user points balance
-          await db
-            .collection('users')
-            .doc(dinerUid)
-            .set(
-              {
-                pointsBalance: admin.firestore.FieldValue.increment(points),
-                lifetimeSpendPaise: admin.firestore.FieldValue.increment(subOrder.subtotalPaise),
-              },
-              { merge: true }
-            );
-        }
-      }
-    }
-
-    return {
-      subOrderId,
-      status: targetStatus,
-      updatedAt: now,
-    };
   }
-);
+  return { subOrderId, status: result.status, updatedAt: result.now };
+});
