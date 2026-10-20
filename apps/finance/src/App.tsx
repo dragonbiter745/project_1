@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { CalendarDays, LogOut, ShieldAlert } from 'lucide-react';
-import { ActionToast, BrandMark, Button, Monogram, StaffLogin } from '@foodcourt/ui';
-import { staffSignIn, staffSignOut, watchStaff, type StaffUser } from '@foodcourt/firebase-client/staff';
+import { ActionToast, BrandMark, Button, Monogram } from '@foodcourt/ui';
+import { staffSignOut, watchStaff, type StaffUser } from '@foodcourt/firebase-client/staff';
 import { RangePicker, ShopFinance, presetRange, rangeLabel, type Range } from '@foodcourt/finance-ui';
 import type { ShopFinance as ShopFigures } from '@foodcourt/shared';
+import MoneyLogin from './login/MoneyLogin';
 
 // Each shop's own finance login (role vendorFinance + vendorId). It is separate from the kitchen
 // login, so counter staff never see money, and it only ever shows that one shop.
@@ -11,11 +12,11 @@ import type { ShopFinance as ShopFigures } from '@foodcourt/shared';
 export default function App() {
   // undefined while Firebase restores the session, null when signed out.
   const [staff, setStaff] = useState<StaffUser | null | undefined>(undefined);
+  // True from the sign-in tap until the money has flown off screen.
+  const [holding, setHolding] = useState(false);
   useEffect(() => watchStaff(setStaff), []);
   if (staff === undefined) return <div className="grain min-h-[100dvh]" aria-busy="true" />;
-  if (!staff) {
-    return <StaffLogin title="Shop finance" subtitle="Your shop's earnings, the court's commission and payments received. Use your shop's finance login." onSubmit={staffSignIn} />;
-  }
+  if (!staff || holding) return <MoneyLogin onHold={setHolding} />;
   if (staff.role !== 'vendorFinance' || !staff.vendorId) return <NoAccess staff={staff} />;
   return <Console staff={staff} vendorId={staff.vendorId} />;
 }
