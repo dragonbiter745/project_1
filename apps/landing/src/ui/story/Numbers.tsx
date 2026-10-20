@@ -13,12 +13,14 @@ export function Numbers() {
   const ref = useReveal<HTMLUListElement>();
   const band = useScrollProgress<HTMLElement>('through');
   return (
-    <section ref={band} aria-label="Why it works" className="relative overflow-hidden bg-bg py-16 md:py-24">
-      {/* Oversized words drifting sideways with the scroll. */}
-      <p aria-hidden className="text-outline pointer-events-none absolute left-0 top-6 whitespace-nowrap text-[18vw] font-bold leading-none tracking-[-0.04em]" style={{ transform: 'translateX(calc(var(--p) * -45%))' }}>
-        Scan · Order · Pay once · Eat · Scan · Order
-      </p>
-      <div className="relative mx-auto max-w-[1240px] px-5 md:px-10">
+    <section ref={band} aria-label="Why it works" className="relative overflow-hidden bg-bg pb-16 pt-6 md:pb-24 md:pt-10">
+      {/* A band of its own above the heading, drifting with the scroll; never behind text. */}
+      <div aria-hidden className="pointer-events-none overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+        <p className="text-outline whitespace-nowrap text-[12vw] font-bold leading-[1.1] tracking-[-0.04em] md:text-[9vw]" style={{ transform: 'translateX(calc(var(--p) * -30%))' }}>
+          Scan · Order · Pay once · Eat · Scan · Order · Pay once · Eat
+        </p>
+      </div>
+      <div className="relative mx-auto mt-6 max-w-[1240px] px-5 md:mt-10 md:px-10">
         <RevealWords text="Built for the lunch rush, not the quiet afternoon." accent={['rush,']} className="max-w-[18ch] text-[34px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink md:text-6xl" />
         <ul ref={ref} className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {POINTS.map((p, i) => (

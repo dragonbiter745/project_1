@@ -24,7 +24,7 @@ export function Nav() {
         aria-label="Main"
         className={cx(
           'pointer-events-auto mx-auto flex h-14 max-w-[1240px] items-center justify-between rounded-full pl-2 pr-2 transition-[background-color,box-shadow,backdrop-filter] duration-300',
-          scrolled ? 'glass' : 'bg-transparent'
+          scrolled ? 'glass-strong' : 'bg-transparent'
         )}
       >
         <a href="#live" className="flex items-center gap-2.5 rounded-full pr-3">

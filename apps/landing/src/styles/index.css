@@ -288,7 +288,7 @@
 /* Outlined display type for the moving word band. */
 .text-outline {
   color: transparent;
-  -webkit-text-stroke: 1.5px rgb(var(--ink) / 0.14);
+  -webkit-text-stroke: 1.5px rgb(var(--accent-ink) / 0.22);
 }
 
 @media (prefers-reduced-motion: reduce) {
