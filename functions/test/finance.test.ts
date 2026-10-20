@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getIstDateKey } from '@foodcourt/shared';
+import { addDays, getIstDateKey } from '@foodcourt/shared';
 import { db } from '../src/db';
 import { startSession } from '../src/callable/startSession';
 import { createCheckout } from '../src/callable/createCheckout';
@@ -49,6 +49,26 @@ describe('finance', () => {
     expect(rm.balanceDuePaise).toBe(20400);
     const sv = r.shops.find((s) => s.vendorId === 'v-sv')!;
     expect(sv).toMatchObject({ orders: 1, salesPaise: 7000, commissionPaise: 0, payablePaise: 7000 });
+
+    // Today is charted by the hour, and the hours add up to the period totals.
+    expect(r.granularity).toBe('hour');
+    const sum = (k: 'salesPaise' | 'commissionPaise' | 'orders') => r.series.reduce((n, p) => n + p[k], 0);
+    expect({ sales: sum('salesPaise'), commission: sum('commissionPaise'), orders: sum('orders') }).toEqual({ sales: 31000, commission: 3600, orders: 2 });
+    // Compared with yesterday, which had nothing.
+    expect(r.previous).toMatchObject({ salesPaise: 0, orders: 0, collectedPaise: 0, paidOrders: 0 });
+    expect(rm.previousSalesPaise).toBe(0);
+  });
+
+  it('charts a longer range by the day and compares it with the period before', async () => {
+    await paidOnline([line('rm-1', 'v-rm')], 12000);
+    const week = await buildFinanceReport(addDays(today, -6), today);
+    expect(week.granularity).toBe('day');
+    expect(week.series).toHaveLength(7);
+    expect(week.series.at(-1)).toMatchObject({ key: today, salesPaise: 12000, orders: 1 });
+    expect(week.previous).toMatchObject({ from: addDays(today, -13), to: addDays(today, -7) });
+    const year = await buildFinanceReport(addDays(today, -89), today);
+    expect(year.granularity).toBe('week');
+    expect(year.series.reduce((n, p) => n + p.salesPaise, 0)).toBe(12000);
   });
 
   it('records each payout once, lowers the balance, and can void a mistake', async () => {
@@ -81,7 +101,8 @@ describe('finance', () => {
     await paidOnline([line('rm-1', 'v-rm', 2), line('sv-1', 'v-sv')], 31000);
     const range = { from: today, to: today };
     const mine = await call(shopReport, { ...range, vendorId: 'v-sv' }, uniqueUid(), rmFinance);
-    expect(mine).toMatchObject({ vendorId: 'v-rm', orders: 1, salesPaise: 24000, commissionPaise: 2400, payablePaise: 21600, balanceDuePaise: 21600 });
+    expect(mine).toMatchObject({ vendorId: 'v-rm', orders: 1, salesPaise: 24000, commissionPaise: 2400, payablePaise: 21600, balanceDuePaise: 21600, granularity: 'hour' });
+    expect(mine.series.reduce((n: number, p: { salesPaise: number }) => n + p.salesPaise, 0)).toBe(24000);
     expect(mine).not.toHaveProperty('shops');
     await expect(call(shopReport, { ...range, vendorId: 'v-sv' }, uniqueUid(), { role: 'master' })).resolves.toMatchObject({ vendorId: 'v-sv', salesPaise: 7000 });
     await expect(call(shopReport, range, uniqueUid(), { role: 'vendorAdmin', vendorId: 'v-rm' })).rejects.toMatchObject({ code: 'permission-denied' });

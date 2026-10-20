@@ -1,5 +1,5 @@
 import { collection, doc, getDoc, getDocs, limit, orderBy, query, startAfter, where, type QueryConstraint, type QueryDocumentSnapshot } from 'firebase/firestore';
-import { istDayStartMs, type FinanceReport, type Order, type OrderStatus, type Payout, type ShopFinance, type SubOrder } from '@foodcourt/shared';
+import { istDayStartMs, type FinanceReport, type Order, type OrderStatus, type Payout, type ShopReport, type SubOrder } from '@foodcourt/shared';
 import { getDb } from './db';
 import { getFunctionsClient, httpsCallable } from './functions';
 import { ActionError } from './ops';
@@ -113,7 +113,7 @@ export const listPayouts = (max = 500) =>
 // ─── One shop (its own finance login, or the master previewing a shop) ──────
 
 export const getShopReport = (from: string, to: string, vendorId?: string) =>
-  guarded(async () => (await httpsCallable<unknown, ShopFinance>(getFunctionsClient(), 'shopReport')({ from, to, ...(vendorId ? { vendorId } : {}) })).data);
+  guarded(async () => (await httpsCallable<unknown, ShopReport>(getFunctionsClient(), 'shopReport')({ from, to, ...(vendorId ? { vendorId } : {}) })).data);
 
 export interface TicketPage {
   rows: SubOrder[];

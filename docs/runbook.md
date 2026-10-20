@@ -107,4 +107,6 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
   (Finance → Income and shops) or **Record a payout** (Finance → Payouts) with the amount and
   UTR. The shop sees it under "Payments from the court". A wrong entry is voided with a reason.
 - **Commission:** click the rate under a shop's name. It applies to new orders only.
+- Periods: Today, Yesterday, Last 7 days, Last 30 days or any from–to dates. Every headline figure
+  shows its change against the previous period of the same length.
 - Figures are in IST days. Exports are CSV with rupee amounts (two decimals).

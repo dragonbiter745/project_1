@@ -1,15 +1,33 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowDownLeft, Banknote, Download, Inbox, Landmark, ReceiptText, RefreshCw, RotateCcw, Wallet } from 'lucide-react';
+import { Download, Inbox, IndianRupee, Landmark, ReceiptText, RefreshCw, RotateCcw, ShoppingBag, Wallet } from 'lucide-react';
 import { allShopTickets, getShopReport, listShopPayouts, listShopTickets, type TicketPage } from '@foodcourt/firebase-client/finance';
-import { formatPaise, type Payout, type ShopFinance as ShopFigures, type SubOrder } from '@foodcourt/shared';
+import { formatPaise, type Payout, type ShopFinance as ShopFigures, type ShopReport, type SubOrder } from '@foodcourt/shared';
 import { Button, Skeleton, cx, run } from '@foodcourt/ui';
 import { KpiTile } from '../components/KpiTile';
 import { LoadError } from '../components/LoadError';
 import { downloadCsv, rupees } from '../lib/csv';
 import { formatTime } from '../lib/orderStatus';
-import { formatDay, type Range } from '../lib/range';
+import { compareLabel, formatDay, type Range } from '../lib/range';
+import { bucketTitle, compactRupees, money } from '../lib/format';
+import { Delta } from '../components/Delta';
+import { Segmented } from '../components/Segmented';
+import { TrendChart } from '../components/TrendChart';
 
-const money = (p: number) => formatPaise(p, p % 100 !== 0);
+type Trend = 'earnings' | 'sales' | 'orders';
+const TREND: Array<{ key: Trend; label: string }> = [
+  { key: 'earnings', label: 'Earnings' },
+  { key: 'sales', label: 'Sales' },
+  { key: 'orders', label: 'Orders' },
+];
+
+function Line({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-3 py-2.5">
+      <dt className="text-ink-3">{label}</dt>
+      <dd className="font-semibold tabular-nums text-ink">{value}</dd>
+    </div>
+  );
+}
 
 const TICKET: Record<string, { label: string; tone: string }> = {
   NEW: { label: 'New', tone: 'bg-prep-tint text-prep' },
@@ -32,7 +50,7 @@ export const rateText = (s: Pick<ShopFigures, 'feePct' | 'perOrderFeePaise'>) =>
  * what it has been paid and what the court still owes it. Nothing about any other shop.
  */
 export function ShopFinance({ vendorId, range, onLoaded }: { vendorId: string; range: Range; onLoaded?: (s: ShopFigures) => void }) {
-  const [figures, setFigures] = useState<ShopFigures | null>(null);
+  const [figures, setFigures] = useState<ShopReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [payouts, setPayouts] = useState<Payout[] | null>(null);
@@ -41,6 +59,7 @@ export function ShopFinance({ vendorId, range, onLoaded }: { vendorId: string; r
   const [more, setMore] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [tick, setTick] = useState(0);
+  const [trend, setTrend] = useState<Trend>('earnings');
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
@@ -109,39 +128,63 @@ export function ShopFinance({ vendorId, range, onLoaded }: { vendorId: string; r
 
   if (!figures) return error ? <LoadError text={error} onRetry={reload} /> : <ShopSkeleton />;
   const f = figures;
+  const cmp = compareLabel(range);
+  const points = f.series.map((p) => ({ key: p.key, value: trend === 'sales' ? p.salesPaise : trend === 'orders' ? p.orders : p.payablePaise }));
+  const peak = points.reduce<(typeof points)[number] | null>((best, p) => (!best || p.value > best.value ? p : best), null);
+  const trendFormat = (v: number) => (trend === 'orders' ? `${v.toLocaleString('en-IN')} ${v === 1 ? 'order' : 'orders'}` : formatPaise(v, true));
   const received = (payouts ?? []).filter((p) => p.paidOn >= range.from && p.paidOn <= range.to);
 
   return (
     <div className={cx('transition-opacity duration-200', loading && 'opacity-60')} aria-busy={loading}>
       {error && <LoadError text={error} onRetry={reload} compact />}
-      <dl className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile
-          feature
-          className="md:col-span-2 xl:row-span-2"
-          label="Your earnings"
-          value={money(f.payablePaise)}
-          icon={Wallet}
-          tone="accent"
-          hint={`${f.orders} online ${f.orders === 1 ? 'order' : 'orders'} in this period`}
-        >
-          <dl className="grid grid-cols-2 gap-3 border-t border-accent-line/70 pt-4 text-sm">
-            <div>
-              <dt className="text-ink-3">Food sold online</dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink">{money(f.salesPaise)}</dd>
-            </div>
-            <div>
-              <dt className="text-ink-3">Court commission ({rateText(f)})</dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink">− {money(f.commissionPaise)}</dd>
-            </div>
-          </dl>
-        </KpiTile>
-        <KpiTile label="Due from the court" value={money(Math.max(0, f.balanceDuePaise))} icon={Landmark} tone={f.balanceDuePaise > 0 ? 'prep' : 'neutral'} hint="All time, after every payment received" />
-        <KpiTile label="Paid to you" value={money(f.paidOutPaise)} icon={ArrowDownLeft} tone="ready" hint="Payments dated in this period" />
-        <KpiTile label="Refunded to diners" value={money(f.refundsPaise)} icon={RotateCcw} tone="neutral" hint="Rejected, cancelled or timed-out orders" />
-        <KpiTile label="Paid at your counter" value={money(f.counterSalesPaise)} icon={Banknote} tone="neutral" hint={`${f.counterOrders} ${f.counterOrders === 1 ? 'order' : 'orders'} · you already hold this cash`} />
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiTile feature label="Your earnings" value={money(f.payablePaise)} icon={Wallet} tone="accent" hint={<Delta now={f.payablePaise} before={f.previous.payablePaise} label={cmp} />} />
+        <KpiTile label="Food sold online" value={money(f.salesPaise)} icon={IndianRupee} tone="ready" hint={<Delta now={f.salesPaise} before={f.previous.salesPaise} label={cmp} />} />
+        <KpiTile label="Orders" value={f.orders.toLocaleString('en-IN')} icon={ShoppingBag} tone="prep" hint={<Delta now={f.orders} before={f.previous.orders} label={cmp} />} />
+        <KpiTile label="Refunded to diners" value={money(f.refundsPaise)} icon={RotateCcw} tone="neutral" hint={<Delta now={f.refundsPaise} before={f.previous.refundsPaise} label={cmp} goodWhenDown />} />
       </dl>
 
-      <section aria-labelledby="received-title" className="mt-8 overflow-hidden rounded-sheet bg-surface shadow-card ring-1 ring-inset ring-line/70">
+      <div className="mt-4 grid gap-4 xl:grid-cols-3">
+        <section aria-labelledby="shop-trend-title" className="rounded-sheet bg-surface p-5 shadow-card ring-1 ring-inset ring-line/70 xl:col-span-2">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 id="shop-trend-title" className="text-lg font-semibold tracking-tight text-ink">
+                {TREND.find((t) => t.key === trend)!.label} by {f.granularity}
+              </h2>
+              <p className="text-sm text-ink-3">
+                {peak && peak.value > 0 ? (
+                  <>
+                    Busiest {f.granularity}: <span className="font-medium text-ink-2">{bucketTitle(peak.key, f.granularity)}</span> · {trendFormat(peak.value)}
+                  </>
+                ) : (
+                  `Each bar is one ${f.granularity}. Hover a bar for its figure.`
+                )}
+              </p>
+            </div>
+            <Segmented label="Chart shows" value={trend} options={TREND} onChange={setTrend} />
+          </div>
+          <div className="mt-4">
+            <TrendChart points={points} granularity={f.granularity} format={trendFormat} axis={trend === 'orders' ? (v) => String(v) : compactRupees} label={`${TREND.find((t) => t.key === trend)!.label} by ${f.granularity}`} />
+          </div>
+        </section>
+
+        <section aria-labelledby="due-title" className="flex flex-col rounded-sheet bg-surface p-5 shadow-card ring-1 ring-inset ring-line/70">
+          <p className="flex items-center gap-2 text-sm font-medium text-ink-2">
+            <Landmark className="h-4 w-4 text-prep" />
+            <span id="due-title">Due from the court</span>
+          </p>
+          <p className={cx('mt-3 text-[34px] font-semibold leading-none tracking-tight tabular-nums', f.balanceDuePaise > 0 ? 'text-ink' : 'text-ink-3')}>{money(Math.max(0, f.balanceDuePaise))}</p>
+          <p className="mt-1.5 text-sm text-ink-3">All time, after every payment you have received.</p>
+          <dl className="mt-4 divide-y divide-line/80 border-y border-line/80 text-sm">
+            <Line label="Paid to you this period" value={money(f.paidOutPaise)} />
+            <Line label={`Court commission (${rateText(f)})`} value={`− ${money(f.commissionPaise)}`} />
+            <Line label={`Paid at your counter · ${f.counterOrders}`} value={money(f.counterSalesPaise)} />
+          </dl>
+          <p className="mt-auto pt-4 text-xs text-ink-3">You already hold counter cash, so the court's commission on it is taken from what it pays you.</p>
+        </section>
+      </div>
+
+      <section aria-labelledby="received-title" className="mt-4 overflow-hidden rounded-sheet bg-surface shadow-card ring-1 ring-inset ring-line/70">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
           <div>
             <h2 id="received-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -260,13 +303,12 @@ export function ShopFinance({ vendorId, range, onLoaded }: { vendorId: string; r
 function ShopSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading your figures">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Skeleton className="h-[260px] rounded-sheet md:col-span-2 xl:row-span-2" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-[122px] rounded-sheet" />
         ))}
       </div>
-      <Skeleton className="mt-8 h-40 rounded-sheet" />
+      <Skeleton className="mt-4 h-[340px] rounded-sheet" />
     </div>
   );
 }

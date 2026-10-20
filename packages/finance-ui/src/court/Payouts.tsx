@@ -16,6 +16,7 @@ export function Payouts({ range, report: { report, reload: reloadReport } }: Pag
   const [error, setError] = useState<string | null>(null);
   const [shop, setShop] = useState('ALL');
   const [recording, setRecording] = useState(false);
+  const [recordFor, setRecordFor] = useState<string | null>(null);
   const [voiding, setVoiding] = useState<Payout | null>(null);
   const [tick, setTick] = useState(0);
 
@@ -63,6 +64,55 @@ export function Payouts({ range, report: { report, reload: reloadReport } }: Pag
           </Button>
         </div>
       </div>
+
+      {shops.length > 0 && (
+        <section aria-labelledby="by-shop-title" className="mt-6 rounded-sheet bg-surface p-5 shadow-card ring-1 ring-inset ring-line/70">
+          <h2 id="by-shop-title" className="text-lg font-semibold tracking-tight text-ink">
+            Paid versus owed, by shop
+          </h2>
+          <p className="text-sm text-ink-3">The filled part of each bar is what the court has paid; the rest is still owed.</p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="text-xs text-ink-3">
+                <tr>
+                  <th className="pb-2 pr-3 font-medium">Shop</th>
+                  <th className="px-3 pb-2 text-right font-medium">Earned this period</th>
+                  <th className="px-3 pb-2 text-right font-medium">Paid this period</th>
+                  <th className="px-3 pb-2 text-right font-medium">Still owed</th>
+                  <th className="w-[32%] pb-2 pl-3 font-medium">Settled</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line/80">
+                {shops.map((s) => {
+                  const owed = Math.max(0, s.balanceDuePaise);
+                  const settled = s.paidOutPaise + owed > 0 ? s.paidOutPaise / (s.paidOutPaise + owed) : 1;
+                  return (
+                    <tr key={s.vendorId}>
+                      <td className="py-3 pr-3 font-medium text-ink">{s.name}</td>
+                      <td className="px-3 py-3 text-right tabular-nums text-ink-2">{formatPaise(s.payablePaise, true)}</td>
+                      <td className="px-3 py-3 text-right tabular-nums text-ink-2">{formatPaise(s.paidOutPaise, true)}</td>
+                      <td className={cx('px-3 py-3 text-right font-semibold tabular-nums', owed > 0 ? 'text-prep' : 'text-ink-3')}>{formatPaise(owed, true)}</td>
+                      <td className="py-3 pl-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-2" aria-hidden>
+                            <div className="h-full rounded-full bg-ready transition-[width] duration-500 ease-out" style={{ width: `${settled * 100}%` }} />
+                          </div>
+                          <span className="w-10 text-right text-xs font-semibold tabular-nums text-ink-2">{Math.round(settled * 100)}%</span>
+                          {owed > 0 && (
+                            <Button variant="tint" size="sm" onClick={() => setRecordFor(s.vendorId)}>
+                              Pay
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       <section aria-label="Payout history" className="mt-6 overflow-hidden rounded-sheet bg-surface shadow-card ring-1 ring-inset ring-line/70">
         <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
@@ -161,7 +211,16 @@ export function Payouts({ range, report: { report, reload: reloadReport } }: Pag
         </div>
       </section>
 
-      <PayoutSheet open={recording} shops={shops} vendorId={shop === 'ALL' ? undefined : shop} onClose={() => setRecording(false)} onSaved={refresh} />
+      <PayoutSheet
+        open={recording || recordFor !== null}
+        shops={shops}
+        vendorId={recordFor ?? (shop === 'ALL' ? undefined : shop)}
+        onClose={() => {
+          setRecording(false);
+          setRecordFor(null);
+        }}
+        onSaved={refresh}
+      />
       <VoidSheet payout={voiding} onClose={() => setVoiding(null)} onDone={refresh} />
     </>
   );

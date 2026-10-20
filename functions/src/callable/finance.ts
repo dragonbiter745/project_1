@@ -5,10 +5,18 @@ import {
   FinanceActionSchema,
   FinanceReportSchema,
   REFUNDABLE_STATUSES,
+  addDays,
   getIstDateKey,
+  granularityFor,
+  istDayStartMs,
+  previousRange,
   type FinanceReport,
+  type Granularity,
   type Payout,
+  type PeriodTotals,
+  type SeriesPoint,
   type ShopFinance,
+  type ShopReport,
   type Vendor,
 } from '@foodcourt/shared';
 import { REGION } from '../config';
@@ -16,6 +24,7 @@ import { db } from '../db';
 import { limitShared, requireUid, roleOf } from '../lib/guard';
 
 const FAILED = [...REFUNDABLE_STATUSES];
+const ALL_TIME: Window = { from: '2000-01-01', to: '9999-12-31' };
 
 /** Court income and payouts: the court manager only. */
 function requireCourt(req: CallableRequest): string {
@@ -24,6 +33,9 @@ function requireCourt(req: CallableRequest): string {
   return uid;
 }
 
+/** A span of IST days (inclusive), or of placed-at times in ms [start, end). */
+type Window = { from: string; to: string } | { start: number; end: number };
+
 interface TicketTotals {
   orders: number;
   salesPaise: number;
@@ -31,18 +43,20 @@ interface TicketTotals {
   refundsPaise: number;
 }
 
+function ticketQuery(vendorId: string | null, mode: 'ONLINE' | 'COUNTER', w: Window): Query {
+  let q: Query = db.collection('subOrders');
+  if (vendorId) q = q.where('vendorId', '==', vendorId);
+  q = q.where('paymentMode', '==', mode);
+  return 'from' in w ? q.where('dateKey', '>=', w.from).where('dateKey', '<=', w.to) : q.where('ts.placed', '>=', w.start).where('ts.placed', '<', w.end);
+}
+
 /**
- * Sums one shop's tickets with aggregation queries (one read per 1,000 tickets), so a month of
- * peak traffic costs a few reads instead of tens of thousands. Failed tickets are taken back out:
- * the diner got that money back and the court keeps no commission on it.
+ * Sums tickets with aggregation queries (one read per 1,000 tickets), so a month of peak traffic
+ * costs a few reads instead of tens of thousands. Failed tickets are taken back out: the diner got
+ * that money back and the court keeps no commission on it. `vendorId: null` means every shop.
  */
-async function ticketTotals(vendorId: string, mode: 'ONLINE' | 'COUNTER', from = '2000-01-01', to = '9999-12-31'): Promise<TicketTotals> {
-  const q: Query = db
-    .collection('subOrders')
-    .where('vendorId', '==', vendorId)
-    .where('paymentMode', '==', mode)
-    .where('dateKey', '>=', from)
-    .where('dateKey', '<=', to);
+async function ticketTotals(vendorId: string | null, mode: 'ONLINE' | 'COUNTER', w: Window): Promise<TicketTotals> {
+  const q = ticketQuery(vendorId, mode, w);
   const [all, failed] = await Promise.all([
     q.aggregate({ n: AggregateField.count(), sales: AggregateField.sum('subtotalPaise'), commission: AggregateField.sum('commissionPaise') }).get(),
     q
@@ -65,6 +79,50 @@ async function ticketTotals(vendorId: string, mode: 'ONLINE' | 'COUNTER', from =
   };
 }
 
+// The shop already holds counter money, so commission on it comes off what the court pays out.
+const combine = (online: TicketTotals, counter: TicketTotals): PeriodTotals => ({
+  orders: online.orders,
+  salesPaise: online.salesPaise,
+  refundsPaise: online.refundsPaise,
+  commissionPaise: online.commissionPaise + counter.commissionPaise,
+  payablePaise: online.salesPaise - online.commissionPaise - counter.commissionPaise,
+  counterSalesPaise: counter.salesPaise,
+});
+
+async function periodTotals(vendorId: string | null, w: Window): Promise<PeriodTotals & { counterOrders: number }> {
+  const [online, counter] = await Promise.all([ticketTotals(vendorId, 'ONLINE', w), ticketTotals(vendorId, 'COUNTER', w)]);
+  return { ...combine(online, counter), counterOrders: counter.orders };
+}
+
+/** The chart buckets for a range: IST hours for one day (up to now if it is today), else days or weeks. */
+function buckets(from: string, to: string): { granularity: Granularity; list: Array<{ key: string; w: Window }> } {
+  const granularity = granularityFor(from, to);
+  if (granularity === 'hour') {
+    const start = istDayStartMs(from);
+    const hours = from === getIstDateKey() ? Math.floor((Date.now() - start) / 3_600_000) + 1 : 24;
+    return {
+      granularity,
+      list: Array.from({ length: Math.min(24, Math.max(1, hours)) }, (_, h) => ({
+        key: `${from}T${String(h).padStart(2, '0')}`,
+        w: { start: start + h * 3_600_000, end: start + (h + 1) * 3_600_000 },
+      })),
+    };
+  }
+  const step = granularity === 'day' ? 1 : 7;
+  const list: Array<{ key: string; w: Window }> = [];
+  for (let d = from; d <= to; d = addDays(d, step)) {
+    const end = addDays(d, step - 1);
+    list.push({ key: d, w: { from: d, to: end < to ? end : to } });
+  }
+  return { granularity, list };
+}
+
+async function series(vendorId: string | null, from: string, to: string): Promise<{ granularity: Granularity; series: SeriesPoint[] }> {
+  const { granularity, list } = buckets(from, to);
+  const points = await Promise.all(list.map(async (b) => ({ key: b.key, ...(await periodTotals(vendorId, b.w)) })));
+  return { granularity, series: points.map(({ counterOrders: _n, ...p }) => p) };
+}
+
 type PayoutRow = Pick<Payout, 'vendorId' | 'amountPaise' | 'paidOn'>;
 
 function sumPayouts(rows: PayoutRow[], from: string, to: string): Map<string, { all: number; range: number }> {
@@ -79,55 +137,67 @@ function sumPayouts(rows: PayoutRow[], from: string, to: string): Map<string, { 
 }
 
 async function shopFinance(vendorId: string, v: Partial<Vendor>, from: string, to: string, paid = { all: 0, range: 0 }): Promise<ShopFinance> {
-  const [online, counter, onlineEver, counterEver] = await Promise.all([
-    ticketTotals(vendorId, 'ONLINE', from, to),
-    ticketTotals(vendorId, 'COUNTER', from, to),
-    ticketTotals(vendorId, 'ONLINE'),
-    ticketTotals(vendorId, 'COUNTER'),
-  ]);
-  // The shop already holds counter money, so commission on it comes off what the court pays out.
-  const owed = (o: TicketTotals, c: TicketTotals) => o.salesPaise - o.commissionPaise - c.commissionPaise;
+  const prev = previousRange(from, to);
+  const [now, ever, before] = await Promise.all([periodTotals(vendorId, { from, to }), periodTotals(vendorId, ALL_TIME), periodTotals(vendorId, prev)]);
   return {
     vendorId,
     name: v.name ?? vendorId,
     code: v.code ?? '',
     feePct: v.feePct ?? 0,
     perOrderFeePaise: v.perOrderFeePaise ?? 0,
-    orders: online.orders,
-    salesPaise: online.salesPaise,
-    refundsPaise: online.refundsPaise,
-    commissionPaise: online.commissionPaise + counter.commissionPaise,
-    payablePaise: owed(online, counter),
-    counterOrders: counter.orders,
-    counterSalesPaise: counter.salesPaise,
+    orders: now.orders,
+    salesPaise: now.salesPaise,
+    refundsPaise: now.refundsPaise,
+    commissionPaise: now.commissionPaise,
+    payablePaise: now.payablePaise,
+    counterOrders: now.counterOrders,
+    counterSalesPaise: now.counterSalesPaise,
     paidOutPaise: paid.range,
-    balanceDuePaise: owed(onlineEver, counterEver) - paid.all,
+    balanceDuePaise: ever.payablePaise - paid.all,
+    previousSalesPaise: before.salesPaise,
+    previousPayablePaise: before.payablePaise,
+    previousOrders: before.orders,
   };
 }
 
 /** One shop's figures, for that shop's own finance login. Nothing about other shops or the court total. */
-export async function buildShopReport(vendorId: string, from: string, to: string): Promise<ShopFinance> {
+export async function buildShopReport(vendorId: string, from: string, to: string): Promise<ShopReport> {
   const [vendor, payouts] = await Promise.all([
     db.collection('vendors').doc(vendorId).get(),
     db.collection('payouts').where('vendorId', '==', vendorId).where('status', '==', 'RECORDED').select('vendorId', 'amountPaise', 'paidOn').get(),
   ]);
   if (!vendor.exists) throw new HttpsError('not-found', 'This shop is not set up.');
   const paid = sumPayouts(payouts.docs.map((d) => d.data() as PayoutRow), from, to).get(vendorId);
-  return shopFinance(vendorId, vendor.data() as Partial<Vendor>, from, to, paid);
+  const prev = previousRange(from, to);
+  const [shop, chart, previous] = await Promise.all([
+    shopFinance(vendorId, vendor.data() as Partial<Vendor>, from, to, paid),
+    series(vendorId, from, to),
+    periodTotals(vendorId, prev),
+  ]);
+  const { counterOrders: _n, ...prevTotals } = previous;
+  return { ...shop, from, to, generatedAt: Date.now(), ...chart, previous: { ...prevTotals, ...prev } };
+}
+
+function collectedQuery(from: string, to: string) {
+  return db
+    .collection('orders')
+    .where('payment.mode', '==', 'ONLINE')
+    .where('payment.status', '==', 'SUCCESS')
+    .where('dateKey', '>=', from)
+    .where('dateKey', '<=', to)
+    .aggregate({ n: AggregateField.count(), total: AggregateField.sum('totals.totalPaise') })
+    .get();
 }
 
 export async function buildFinanceReport(from: string, to: string): Promise<FinanceReport> {
-  const [vendorSnap, payoutSnap, collected] = await Promise.all([
+  const prev = previousRange(from, to);
+  const [vendorSnap, payoutSnap, collected, collectedBefore, chart, previous] = await Promise.all([
     db.collection('vendors').get(),
     db.collection('payouts').where('status', '==', 'RECORDED').select('vendorId', 'amountPaise', 'paidOn').get(),
-    db
-      .collection('orders')
-      .where('payment.mode', '==', 'ONLINE')
-      .where('payment.status', '==', 'SUCCESS')
-      .where('dateKey', '>=', from)
-      .where('dateKey', '<=', to)
-      .aggregate({ n: AggregateField.count(), total: AggregateField.sum('totals.totalPaise') })
-      .get(),
+    collectedQuery(from, to),
+    collectedQuery(prev.from, prev.to),
+    series(null, from, to),
+    periodTotals(null, prev),
   ]);
 
   const paidOut = sumPayouts(payoutSnap.docs.map((d) => d.data() as PayoutRow), from, to);
@@ -135,9 +205,11 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
   shops.sort((a, b) => b.salesPaise - a.salesPaise || a.name.localeCompare(b.name));
 
   const c = collected.data();
-  const total = (k: keyof ShopFinance) => shops.reduce((n, s) => n + (s[k] as number), 0);
+  const cb = collectedBefore.data();
+  const total = (k: keyof ShopFinance) => shops.reduce((n, s) => n + ((s[k] as number | undefined) ?? 0), 0);
   const collectedPaise = c.total ?? 0;
   const refundsPaise = total('refundsPaise');
+  const { counterOrders: _n, ...prevTotals } = previous;
   return {
     from,
     to,
@@ -154,6 +226,8 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
     paidOutPaise: total('paidOutPaise'),
     balanceDuePaise: total('balanceDuePaise'),
     shops,
+    ...chart,
+    previous: { ...prevTotals, ...prev, collectedPaise: cb.total ?? 0, paidOrders: cb.n },
   };
 }
 

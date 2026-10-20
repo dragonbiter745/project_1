@@ -2,7 +2,7 @@ import { useState, type ComponentType } from 'react';
 import { Landmark, LayoutDashboard, ReceiptText } from 'lucide-react';
 import { cx } from '@foodcourt/ui';
 import { RangePicker } from '../components/RangePicker';
-import { presetRange, rangeLabel, type Range } from '../lib/range';
+import { compareLabel, presetRange, rangeLabel, type Range } from '../lib/range';
 import { useReport } from '../lib/useReport';
 import type { PageProps } from '../types';
 import { Overview } from './Overview';
@@ -12,9 +12,9 @@ import { Transactions } from './Transactions';
 type Tab = 'overview' | 'transactions' | 'payouts';
 
 const TABS: Array<{ key: Tab; label: string; icon: typeof LayoutDashboard; component: ComponentType<PageProps> }> = [
-  { key: 'overview', label: 'Income and shops', icon: LayoutDashboard, component: Overview },
-  { key: 'transactions', label: 'Transactions', icon: ReceiptText, component: Transactions },
-  { key: 'payouts', label: 'Payouts', icon: Landmark, component: Payouts },
+  { key: 'overview', label: 'Overview', icon: LayoutDashboard, component: Overview },
+  { key: 'transactions', label: 'Payments', icon: ReceiptText, component: Transactions },
+  { key: 'payouts', label: 'Payouts to shops', icon: Landmark, component: Payouts },
 ];
 
 /** The court's own money: commission income, what every shop is owed, payouts and the payment ledger. */
@@ -47,7 +47,9 @@ export function CourtFinance() {
         </div>
         <RangePicker value={range} onChange={setRange} />
       </div>
-      <p className="mt-3 text-sm text-ink-3">{rangeLabel(range)} · all shops</p>
+      <p className="mt-3 text-sm text-ink-3">
+        {rangeLabel(range)} · all shops · compared {compareLabel(range).replace(/^vs /, 'with ')}
+      </p>
       <div key={tab} className="enter-up mt-5">
         <Page range={range} report={report} />
       </div>

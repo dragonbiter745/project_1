@@ -14,6 +14,29 @@ export function commissionFor(subtotalPaise: number, vendor: { feePct?: number |
 /** Midnight IST of a YYYY-MM-DD day, in epoch ms. */
 export const istDayStartMs = (dateKey: string) => Date.parse(`${dateKey}T00:00:00+05:30`);
 
+/** Shifts a YYYY-MM-DD day by n days without touching time zones. */
+export function addDays(dateKey: string, n: number): string {
+  const d = new Date(`${dateKey}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Days in an inclusive YYYY-MM-DD range (1 for a single day). */
+export const daysInRange = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1;
+
+/** The period of the same length that ends the day before `from`, for "vs previous period". */
+export function previousRange(from: string, to: string): { from: string; to: string } {
+  const n = daysInRange(from, to);
+  return { from: addDays(from, -n), to: addDays(from, -1) };
+}
+
+/** One day is shown by the hour, up to two months by the day, anything longer by the week. */
+export type Granularity = 'hour' | 'day' | 'week';
+export const granularityFor = (from: string, to: string): Granularity => {
+  const n = daysInRange(from, to);
+  return n <= 1 ? 'hour' : n <= 62 ? 'day' : 'week';
+};
+
 export interface Payout {
   id: string;
   vendorId: string;
@@ -54,6 +77,37 @@ export interface ShopFinance {
   paidOutPaise: number;
   /** Everything ever owed minus everything ever paid out. Positive means the court still owes the shop. */
   balanceDuePaise: number;
+  /** Same figures for the previous period of equal length, for comparison. */
+  previousSalesPaise?: number;
+  previousPayablePaise?: number;
+  previousOrders?: number;
+}
+
+/** Money for any window: one shop's, or the whole court's. */
+export interface PeriodTotals {
+  /** Online tickets that were not rejected, cancelled or timed out. */
+  orders: number;
+  salesPaise: number;
+  refundsPaise: number;
+  /** Court commission on online and counter tickets. */
+  commissionPaise: number;
+  /** What the shop(s) earned: online sales minus all commission. */
+  payablePaise: number;
+  counterSalesPaise: number;
+}
+
+/** One bar on a trend chart. `key` is a YYYY-MM-DD day, or `YYYY-MM-DDTHH` for an IST hour. */
+export interface SeriesPoint extends PeriodTotals {
+  key: string;
+}
+
+export interface ShopReport extends ShopFinance {
+  from: string;
+  to: string;
+  generatedAt: number;
+  granularity: Granularity;
+  series: SeriesPoint[];
+  previous: PeriodTotals & { from: string; to: string };
 }
 
 export interface FinanceReport {
@@ -73,4 +127,7 @@ export interface FinanceReport {
   paidOutPaise: number;
   balanceDuePaise: number;
   shops: ShopFinance[];
+  granularity: Granularity;
+  series: SeriesPoint[];
+  previous: PeriodTotals & { from: string; to: string; collectedPaise: number; paidOrders: number };
 }

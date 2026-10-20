@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ArrowDownLeft, Banknote, Download, HandCoins, IndianRupee, Percent, RefreshCw, RotateCcw, Store, Wallet } from 'lucide-react';
+import { Banknote, Download, HandCoins, IndianRupee, Percent, RefreshCw, RotateCcw, ShoppingBag, Wallet } from 'lucide-react';
 import { formatPaise, type ShopFinance } from '@foodcourt/shared';
 import { Button, Monogram, Skeleton, cx } from '@foodcourt/ui';
 import type { PageProps } from '../types';
@@ -8,19 +8,36 @@ import { PayoutSheet } from '../components/PayoutSheet';
 import { downloadCsv, rupees } from '../lib/csv';
 import { CommissionSheet } from './CommissionSheet';
 import { LoadError } from '../components/LoadError';
+import { Delta } from '../components/Delta';
+import { Segmented } from '../components/Segmented';
+import { ShopCompare } from '../components/ShopCompare';
+import { TrendChart } from '../components/TrendChart';
+import { bucketTitle, compactRupees, money } from '../lib/format';
+import { compareLabel } from '../lib/range';
 
-const money = (p: number) => formatPaise(p, p % 100 !== 0);
+type Trend = 'commission' | 'sales' | 'orders';
+const TREND: Array<{ key: Trend; label: string }> = [
+  { key: 'commission', label: 'Court income' },
+  { key: 'sales', label: 'Sales' },
+  { key: 'orders', label: 'Orders' },
+];
 const rate = (s: ShopFinance) => [s.feePct ? `${s.feePct}%` : '', s.perOrderFeePaise ? `${formatPaise(s.perOrderFeePaise)}/order` : ''].filter(Boolean).join(' + ') || 'No commission';
 
 export function Overview({ range, report: { report, loading, error, reload } }: PageProps) {
   const [paying, setPaying] = useState<string | null>(null);
   const [editing, setEditing] = useState<ShopFinance | null>(null);
+  const [trend, setTrend] = useState<Trend>('commission');
 
   if (!report) {
     return error ? <LoadError text={error} onRetry={reload} /> : <OverviewSkeleton />;
   }
 
   const r = report;
+  const cmp = compareLabel(range);
+  const points = r.series.map((p) => ({ key: p.key, value: trend === 'sales' ? p.salesPaise : trend === 'orders' ? p.orders : p.commissionPaise }));
+  const peak = points.reduce<(typeof points)[number] | null>((best, p) => (!best || p.value > best.value ? p : best), null);
+  const trendFormat = (v: number) => (trend === 'orders' ? `${v.toLocaleString('en-IN')} ${v === 1 ? 'order' : 'orders'}` : formatPaise(v, true));
+  const owing = r.shops.filter((s) => s.balanceDuePaise > 0).sort((a, b) => b.balanceDuePaise - a.balanceDuePaise);
   const exportShops = () =>
     downloadCsv(
       `reva-shops-${range.from}_to_${range.to}.csv`,
@@ -31,44 +48,73 @@ export function Overview({ range, report: { report, loading, error, reload } }: 
   return (
     <div className={cx('transition-opacity duration-200', loading && 'opacity-60')} aria-busy={loading}>
       {error && <LoadError text={error} onRetry={reload} compact />}
-      <dl className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiTile
-          feature
-          className="md:col-span-2 xl:row-span-2"
-          label="Court income"
-          value={money(r.commissionPaise)}
-          icon={Percent}
-          tone="accent"
-          hint="Commission earned on every shop's orders in this period"
-        >
-          <dl className="grid grid-cols-2 gap-3 border-t border-accent-line/70 pt-4 text-sm">
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiTile feature label="Court income" value={money(r.commissionPaise)} icon={Percent} tone="accent" hint={<Delta now={r.commissionPaise} before={r.previous.commissionPaise} label={cmp} />} />
+        <KpiTile label="Collected online" value={money(r.collectedPaise)} icon={IndianRupee} tone="ready" hint={<Delta now={r.collectedPaise} before={r.previous.collectedPaise} label={cmp} />} />
+        <KpiTile label="Paid orders" value={r.paidOrders.toLocaleString('en-IN')} icon={ShoppingBag} tone="prep" hint={<Delta now={r.paidOrders} before={r.previous.paidOrders} label={cmp} />} />
+        <KpiTile label="Refunded to diners" value={money(r.refundsPaise)} icon={RotateCcw} tone="neutral" hint={<Delta now={r.refundsPaise} before={r.previous.refundsPaise} label={cmp} goodWhenDown />} />
+      </dl>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-3">
+        <section aria-labelledby="trend-title" className="rounded-sheet bg-surface p-5 shadow-card ring-1 ring-inset ring-line/70 xl:col-span-2">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <dt className="text-ink-3">Collected online</dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink">{money(r.collectedPaise)}</dd>
+              <h2 id="trend-title" className="text-lg font-semibold tracking-tight text-ink">
+                {TREND.find((t) => t.key === trend)!.label} by {r.granularity}
+              </h2>
+              <p className="text-sm text-ink-3">
+                {peak && peak.value > 0 ? (
+                  <>
+                    Busiest {r.granularity === 'hour' ? 'hour' : r.granularity === 'day' ? 'day' : 'week'}: <span className="font-medium text-ink-2">{bucketTitle(peak.key, r.granularity)}</span> ·{' '}
+                    {trendFormat(peak.value)}
+                  </>
+                ) : (
+                  'Each bar is one ' + r.granularity + '. Hover a bar for its figure.'
+                )}
+              </p>
+            </div>
+            <Segmented label="Chart shows" value={trend} options={TREND} onChange={setTrend} />
+          </div>
+          <div className="mt-4">
+            <TrendChart points={points} granularity={r.granularity} format={trendFormat} axis={trend === 'orders' ? (v) => String(v) : compactRupees} label={`${TREND.find((t) => t.key === trend)!.label} by ${r.granularity}`} />
+          </div>
+        </section>
+
+        <section aria-labelledby="owed-title" className="flex flex-col rounded-sheet bg-surface p-5 shadow-card ring-1 ring-inset ring-line/70">
+          <p className="flex items-center gap-2 text-sm font-medium text-ink-2">
+            <Wallet className="h-4 w-4 text-prep" />
+            <span id="owed-title">Still owed to shops</span>
+          </p>
+          <p className={cx('mt-3 text-[34px] font-semibold leading-none tracking-tight tabular-nums', r.balanceDuePaise > 0 ? 'text-ink' : 'text-ink-3')}>{money(Math.max(0, r.balanceDuePaise))}</p>
+          <p className="mt-1.5 text-sm text-ink-3">All time, after every payout recorded.</p>
+          <ul className="mt-4 divide-y divide-line/80 border-y border-line/80">
+            {owing.length === 0 ? (
+              <li className="py-3 text-sm text-ink-3">Every shop is paid up.</li>
+            ) : (
+              owing.slice(0, 5).map((s) => (
+                <li key={s.vendorId} className="flex items-center gap-3 py-2.5">
+                  <Monogram code={s.code || s.name} size="sm" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{s.name}</span>
+                  <span className="text-sm font-semibold tabular-nums text-ink">{money(s.balanceDuePaise)}</span>
+                  <Button variant="tint" size="sm" onClick={() => setPaying(s.vendorId)}>
+                    Pay
+                  </Button>
+                </li>
+              ))
+            )}
+          </ul>
+          <dl className="mt-auto grid grid-cols-2 gap-3 pt-4 text-sm">
+            <div>
+              <dt className="text-ink-3">Shops earned</dt>
+              <dd className="mt-0.5 font-semibold tabular-nums text-ink">{money(r.payablePaise)}</dd>
             </div>
             <div>
-              <dt className="text-ink-3">Refunded to diners</dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink">{money(r.refundsPaise)}</dd>
+              <dt className="text-ink-3">Paid this period</dt>
+              <dd className="mt-0.5 font-semibold tabular-nums text-ink">{money(r.paidOutPaise)}</dd>
             </div>
           </dl>
-        </KpiTile>
-        <KpiTile
-          label="Paid orders"
-          value={String(r.paidOrders)}
-          icon={IndianRupee}
-          tone="ready"
-          hint={r.paidOrders > 0 ? `Average ${money(r.averageOrderPaise)}` : 'Online orders in this period'}
-        />
-        <KpiTile label="Shops' share" value={money(r.payablePaise)} icon={Store} tone="prep" hint="Earned by shops in this period" />
-        <KpiTile label="Paid to shops" value={money(r.paidOutPaise)} icon={ArrowDownLeft} tone="neutral" hint="Payouts dated in this period" />
-        <KpiTile
-          label="Still owed to shops"
-          value={money(Math.max(0, r.balanceDuePaise))}
-          icon={Wallet}
-          tone={r.balanceDuePaise > 0 ? 'danger' : 'neutral'}
-          hint="All time, across every shop"
-        />
-      </dl>
+        </section>
+      </div>
 
       {r.counterOrders > 0 && (
         <p className="mt-4 flex items-start gap-2.5 rounded-card bg-surface px-4 py-3 text-sm text-ink-2 ring-1 ring-inset ring-line">
@@ -80,7 +126,11 @@ export function Overview({ range, report: { report, loading, error, reload } }: 
         </p>
       )}
 
-      <section aria-labelledby="shops-title" className="mt-8 overflow-hidden rounded-sheet bg-surface shadow-card ring-1 ring-inset ring-line/70">
+      <div className="mt-4">
+        <ShopCompare shops={r.shops} compare={cmp} />
+      </div>
+
+      <section aria-labelledby="shops-title" className="mt-4 overflow-hidden rounded-sheet bg-surface shadow-card ring-1 ring-inset ring-line/70">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
           <div>
             <h2 id="shops-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -195,13 +245,16 @@ function Td({ children, muted, strong }: { children: ReactNode; muted?: boolean;
 function OverviewSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading figures">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Skeleton className="h-[260px] rounded-sheet md:col-span-2 xl:row-span-2" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-[122px] rounded-sheet" />
+          <Skeleton key={i} className="h-[132px] rounded-sheet" />
         ))}
       </div>
-      <Skeleton className="mt-8 h-64 rounded-sheet" />
+      <div className="mt-4 grid gap-4 xl:grid-cols-3">
+        <Skeleton className="h-[340px] rounded-sheet xl:col-span-2" />
+        <Skeleton className="h-[340px] rounded-sheet" />
+      </div>
+      <Skeleton className="mt-4 h-56 rounded-sheet" />
     </div>
   );
 }

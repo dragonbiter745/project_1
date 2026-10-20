@@ -1,6 +1,6 @@
-import { getIstDateKey } from '@foodcourt/shared';
+import { addDays, daysInRange, getIstDateKey } from '@foodcourt/shared';
 
-export type Preset = 'today' | 'yesterday' | 'week' | 'month' | 'lastMonth' | 'custom';
+export type Preset = 'today' | 'yesterday' | 'week' | 'month' | 'custom';
 
 export interface Range {
   preset: Preset;
@@ -8,15 +8,9 @@ export interface Range {
   to: string;
 }
 
-/** Shifts a YYYY-MM-DD day by n days without touching time zones. */
-export function addDays(key: string, n: number): string {
-  const d = new Date(`${key}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
+export { addDays };
 
 export function presetRange(preset: Exclude<Preset, 'custom'>, today = getIstDateKey()): Range {
-  const monthStart = `${today.slice(0, 8)}01`;
   switch (preset) {
     case 'today':
       return { preset, from: today, to: today };
@@ -25,11 +19,7 @@ export function presetRange(preset: Exclude<Preset, 'custom'>, today = getIstDat
     case 'week':
       return { preset, from: addDays(today, -6), to: today };
     case 'month':
-      return { preset, from: monthStart, to: today };
-    case 'lastMonth': {
-      const end = addDays(monthStart, -1);
-      return { preset, from: `${end.slice(0, 8)}01`, to: end };
-    }
+      return { preset, from: addDays(today, -29), to: today };
   }
 }
 
@@ -37,8 +27,7 @@ export const PRESETS: Array<{ key: Exclude<Preset, 'custom'>; label: string }> =
   { key: 'today', label: 'Today' },
   { key: 'yesterday', label: 'Yesterday' },
   { key: 'week', label: 'Last 7 days' },
-  { key: 'month', label: 'This month' },
-  { key: 'lastMonth', label: 'Last month' },
+  { key: 'month', label: 'Last 30 days' },
 ];
 
 const dayFormat = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -46,4 +35,12 @@ export const formatDay = (key: string) => dayFormat.format(new Date(`${key}T00:0
 
 export function rangeLabel(r: Range): string {
   return r.from === r.to ? formatDay(r.from) : `${formatDay(r.from)} – ${formatDay(r.to)}`;
+}
+
+/** What the comparison is against, in words: "vs yesterday", "vs previous 7 days". */
+export function compareLabel(r: Range): string {
+  if (r.preset === 'today') return 'vs yesterday';
+  if (r.preset === 'yesterday') return 'vs the day before';
+  const n = daysInRange(r.from, r.to);
+  return n === 1 ? 'vs previous day' : `vs previous ${n} days`;
 }

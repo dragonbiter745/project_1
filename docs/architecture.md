@@ -106,5 +106,8 @@
   read its own tickets and payouts only, never orders (other shops' items, diner phones).
 - **Money rules:** shop share = online sales of non-failed tickets − commission on online and
   counter tickets (the shop already holds counter cash). Balance due = all-time share − payouts.
+- **Trends and comparison:** both reports return a series (IST hours for one day, days up to 62
+  days, weeks beyond) and the same totals for the previous period of equal length. Each bucket is
+  four aggregation queries; charts are hand-drawn SVG in the saffron accent (palette validated).
 - **Not built (kept simple on purpose):** Cashfree settlement and fee reconciliation, GST
   returns, expense tracking, double-entry journals. Gateway fees appear on Cashfree settlements.
