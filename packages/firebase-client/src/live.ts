@@ -1,5 +1,5 @@
-import { collection, doc, documentId, getDocs, limit, onSnapshot, orderBy, query, where, type DocumentData, type Query, type Unsubscribe } from 'firebase/firestore';
-import { getIstDateKey, type GlobalConfig, type Order, type SubOrder, type Table, type UserProfile, type Vendor, type VendorAvailability, type VendorMenu } from '@foodcourt/shared';
+import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, type DocumentData, type Query, type Unsubscribe } from 'firebase/firestore';
+import { getIstDateKey, type CustomerRecord, type GlobalConfig, type Order, type SubOrder, type Table, type UserProfile, type Vendor, type VendorAvailability, type VendorMenu } from '@foodcourt/shared';
 import { getDb } from './db';
 import { liveStore, type LiveStore } from './liveStore';
 
@@ -168,6 +168,12 @@ export async function fetchOrdersBefore(uid: string, beforeMs: number, pageSize 
     for (const r of snap.docs) d.orders[r.id] = withId<Order>(r);
   });
   return snap.size;
+}
+
+/** A diner's own visit and spend summary (kept by the server), for their account page. */
+export async function fetchMySummary(uid: string): Promise<CustomerRecord | null> {
+  const snap = await getDoc(doc(getDb(), 'customers', uid));
+  return snap.exists() ? ({ ...(snap.data() as CustomerRecord), uid } as CustomerRecord) : null;
 }
 
 /** Every kitchen ticket of one past order, for its receipt. */

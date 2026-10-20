@@ -101,6 +101,23 @@ describe('firestore.rules', () => {
     await assertFails(setDoc(doc(master(), 'founderLedger/f2'), { kind: 'DRAWING', amountPaise: 1 }));
   });
 
+  it('shows customer analytics to the court manager and a diner only their own summary', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'customers/alice'), { uid: 'alice', visits: 3, orders: 2, lastSeenAt: 1 });
+      await setDoc(doc(ctx.firestore(), 'visits/alice_2026-10-20'), { uid: 'alice', dateKey: '2026-10-20', first: true });
+    });
+    await assertSucceeds(getDoc(doc(master(), 'customers/alice')));
+    await assertSucceeds(getDocs(collection(master(), 'customers')));
+    await assertSucceeds(getDoc(doc(diner(), 'customers/alice')));
+    await assertFails(getDoc(doc(diner('bob'), 'customers/alice')));
+    await assertFails(getDocs(collection(diner(), 'customers')));
+    await assertFails(getDoc(doc(staff(), 'customers/alice')));
+    await assertFails(setDoc(doc(diner(), 'customers/alice'), { visits: 999 }));
+    await assertFails(setDoc(doc(master(), 'customers/alice'), { visits: 999 }));
+    await assertSucceeds(getDoc(doc(master(), 'visits/alice_2026-10-20')));
+    await assertFails(getDoc(doc(diner(), 'visits/alice_2026-10-20')));
+  });
+
   it('keeps menus and global config master-only', async () => {
     await assertFails(setDoc(doc(staff(), 'menus/v-rm'), { categories: [] }));
     await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), 'config/global')));

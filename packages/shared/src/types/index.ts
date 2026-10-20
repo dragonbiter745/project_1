@@ -134,6 +134,8 @@ export interface CartItem {
 export interface OrderItemRecord {
   itemId: string;
   vendorId: string;
+  /** The menu category the dish was in when ordered (for analytics and category coupons). */
+  categoryId?: string;
   name: string;
   pricePaise: number;
   veg: boolean;

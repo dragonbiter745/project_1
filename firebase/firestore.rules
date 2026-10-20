@@ -98,6 +98,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Customer analytics, kept by the server: a diner may see their own summary, the court manager all.
+    match /customers/{uid} {
+      allow read: if isOwner(uid) || isMaster();
+      allow write: if false;
+    }
+    match /visits/{id} {
+      allow read: if isMaster();
+      allow write: if false;
+    }
+
     match /pointsLedger/{id} {
       allow read: if isOwner(resource.data.uid) || isMaster();
       allow write: if false;

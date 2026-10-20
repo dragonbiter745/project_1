@@ -5,7 +5,18 @@ import { FieldValue, type DocumentReference } from 'firebase-admin/firestore';
 import { AccountActionSchema, MAX_FAVOURITES, favouriteKey, type UserProfile } from '@foodcourt/shared';
 import { REGION } from '../config';
 import { app, db } from '../db';
+import { customerRef, mergeCustomer } from '../lib/customers';
 import { limitShared, requireUid } from '../lib/guard';
+
+/** The master console's customer list shows who a member is; guests stay anonymous there. */
+async function mirrorToCustomer(uid: string, p: Partial<UserProfile>, now: number): Promise<void> {
+  const ref = customerRef(uid);
+  if (!(await ref.get()).exists) return;
+  await ref.set(
+    { member: true, name: p.name ?? null, email: p.email ?? null, photoURL: p.photoURL ?? null, ...(p.phone ? { phone: p.phone } : {}), updatedAt: now },
+    { merge: true }
+  );
+}
 
 const FORMER_DINER = 'Former diner';
 
@@ -46,15 +57,17 @@ export async function mergeGuest(from: string, to: string): Promise<{ orders: nu
   await updateInChunks(orders.docs.map((d) => d.ref), { uid: to, mergedFrom: from });
   await updateInChunks([...tickets.docs, ...ledger.docs].map((d) => d.ref), { uid: to });
 
-  // Points and spend move once: the guest record is marked merged in the same transaction.
+  // Points, spend and visit counts move once: the guest records are marked merged (or removed) in the same transaction.
   const fromRef = db.collection('users').doc(from);
   const toRef = db.collection('users').doc(to);
   await db.runTransaction(async (tx) => {
-    const snap = await tx.get(fromRef);
+    const [snap, guestCustomer, memberCustomer] = await Promise.all([tx.get(fromRef), tx.get(customerRef(from)), tx.get(customerRef(to))]);
+    const now = Date.now();
+    mergeCustomer(tx, guestCustomer, memberCustomer, now);
     const guest = snap.data() as Partial<UserProfile> | undefined;
     if (!guest || guest.mergedInto) return;
     tx.set(toRef, { pointsBalance: FieldValue.increment(guest.pointsBalance ?? 0), lifetimeSpendPaise: FieldValue.increment(guest.lifetimeSpendPaise ?? 0) }, { merge: true });
-    tx.set(fromRef, { mergedInto: to, pointsBalance: 0, lifetimeSpendPaise: 0, updatedAt: Date.now() }, { merge: true });
+    tx.set(fromRef, { mergedInto: to, pointsBalance: 0, lifetimeSpendPaise: 0, updatedAt: now }, { merge: true });
   });
   return { orders: orders.size };
 }
@@ -119,7 +132,7 @@ export const accountAction = onCall({ region: REGION, maxInstances: 50, concurre
       tx.set(ref, next, { merge: true });
       return { profile: { ...existing, ...next }, firstSignIn: !existing.member };
     });
-    await renameSession(uid, input.sessionId, profile.name);
+    await Promise.all([renameSession(uid, input.sessionId, profile.name), mirrorToCustomer(uid, profile, now)]);
     return { profile: publicProfile(uid, profile), merged, firstSignIn };
   }
 
@@ -129,8 +142,9 @@ export const accountAction = onCall({ region: REGION, maxInstances: 50, concurre
     if (input.phone !== undefined) changes.phone = input.phone || FieldValue.delete();
     if (input.studentId !== undefined) changes.studentId = input.studentId.toUpperCase() || FieldValue.delete();
     await ref.set(changes, { merge: true });
-    await renameSession(uid, input.sessionId, input.name);
-    return { profile: publicProfile(uid, ((await ref.get()).data() ?? {}) as Partial<UserProfile>) };
+    const saved = ((await ref.get()).data() ?? {}) as Partial<UserProfile>;
+    await Promise.all([renameSession(uid, input.sessionId, input.name), mirrorToCustomer(uid, saved, now)]);
+    return { profile: publicProfile(uid, saved) };
   }
 
   if (input.action === 'SET_PREFS') {
@@ -160,7 +174,7 @@ export const accountAction = onCall({ region: REGION, maxInstances: 50, concurre
   ]);
   await updateInChunks(orders.docs.map((d) => d.ref), { customerPhone: FieldValue.delete(), displayName: FORMER_DINER, accountDeletedAt: now });
   await updateInChunks(tickets.docs.map((d) => d.ref), { customerDisplay: FORMER_DINER });
-  await ref.delete();
+  await Promise.all([ref.delete(), customerRef(uid).delete()]);
   await db.collection('auditLogs').add({ at: now, by: uid, area: 'account', action: 'DELETE_ACCOUNT', orders: orders.size });
   try {
     await getAuth(app).deleteUser(uid);

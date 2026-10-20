@@ -1,6 +1,7 @@
 import { FieldValue, type DocumentReference, type DocumentSnapshot, type Transaction } from 'firebase-admin/firestore';
 import { commissionFor, deriveParentOrderStatus, formatVendorToken, type Order, type SubOrder, type Vendor } from '@foodcourt/shared';
 import { db } from '../db';
+import { writeCustomerOrder } from './customers';
 
 /** One ticket per shop per order; the id is deterministic so retries never duplicate tickets. */
 export const subOrderId = (orderId: string, vendorId: string) => `${orderId}__${vendorId}`;
@@ -92,6 +93,7 @@ export async function materializePaidOrder(orderId: string, payment: { amountPai
       updatedAt: now,
     });
     writeTickets(tx, orderId, order, reads, now, 'ONLINE');
+    writeCustomerOrder(tx, order, now);
     return 'created';
   });
 }

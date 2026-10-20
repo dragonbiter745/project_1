@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BellRing, CircleHelp, Gift, Heart, LockKeyhole, LogOut, Radio, ReceiptText, TicketPercent, UserRound, Wallet } from 'lucide-react';
-import { formatPaise } from '@foodcourt/shared';
+import { formatPaise, type CustomerRecord } from '@foodcourt/shared';
 import { Button, lockScroll, unlockScroll } from '@foodcourt/ui';
 import { useAuth } from '../../lib/authStore';
 import { useLocal } from '../../lib/store';
@@ -128,14 +128,29 @@ function Home() {
   const showLogin = useUi((s) => s.showLogin);
   const [signingOut, setSigningOut] = useState(false);
 
+  // The server's summary counts every order ever; the loaded orders are the fallback.
+  const [summary, setSummary] = useState<CustomerRecord | null>(null);
+  useEffect(() => {
+    if (!user?.uid) return;
+    let live = true;
+    void import('@foodcourt/firebase-client/live')
+      .then((l) => l.fetchMySummary(user.uid))
+      .then((s) => live && setSummary(s))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [user?.uid]);
   const paid = useMemo(() => orders.filter(isPaid), [orders]);
-  const spent = paid.reduce((n, o) => n + o.totals.totalPaise, 0);
+  const orderCount = Math.max(summary?.orders ?? 0, paid.length);
+  const spent = summary && summary.orders >= paid.length ? summary.spendPaise : paid.reduce((n, o) => n + o.totals.totalPaise, 0);
   const usual = useMemo(() => {
     const count = new Map<string, number>();
-    for (const o of paid) for (const i of o.items) count.set(i.vendorId, (count.get(i.vendorId) ?? 0) + i.qty);
+    if (summary?.byVendor) for (const [v, s] of Object.entries(summary.byVendor)) count.set(v, s.orders);
+    else for (const o of paid) for (const i of o.items) count.set(i.vendorId, (count.get(i.vendorId) ?? 0) + 1);
     const top = [...count.entries()].sort((a, b) => b[1] - a[1])[0];
     return top ? names[top[0]] ?? null : null;
-  }, [paid, names]);
+  }, [summary, paid, names]);
   const active = orders.find((o) => isLive(o));
   const name = profile?.name || details?.name || user?.name || 'Guest';
 
@@ -173,9 +188,9 @@ function Home() {
         </section>
       )}
 
-      {paid.length > 0 && (
+      {orderCount > 0 && (
         <dl className="enter-up mt-3 grid grid-cols-3 gap-2" style={{ ['--i' as string]: 1 }}>
-          <Stat label="Orders" value={String(paid.length)} />
+          <Stat label={summary && summary.visits > 1 ? `Orders · ${summary.visits} visits` : 'Orders'} value={String(orderCount)} />
           <Stat label="Spent" value={formatPaise(spent)} />
           <Stat label="Your usual" value={usual ?? '—'} small />
         </dl>

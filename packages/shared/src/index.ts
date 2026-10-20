@@ -9,3 +9,4 @@ export * from './tables';
 export * from './kitchenStats';
 export * from './finance';
 export * from './founders';
+export * from './customers';

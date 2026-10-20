@@ -15,6 +15,7 @@ import { CASHFREE_SECRETS, CUSTOMER_URL, PAYMENT_WINDOW_MS, REGION } from '../co
 import { db } from '../db';
 import { CashfreeError, createOrder, isProduction } from '../lib/cashfree';
 import { clientIp, limitLocal, limitShared, requireUid } from '../lib/guard';
+import { writeCustomerOrder } from '../lib/customers';
 import { readForTickets, writeTickets } from '../lib/orders';
 
 const FALLBACK_CONFIG: GlobalConfig = {
@@ -72,10 +73,11 @@ export const createCheckout = onCall(
       if (!menu || !vendor || vendor.status !== 'active') throw new HttpsError('failed-precondition', 'One of the shops in your cart is closed right now.');
       const paused = !vendor.acceptingOrders || (vendor.pausedUntil && Date.parse(vendor.pausedUntil) > now);
       if (paused) throw new HttpsError('failed-precondition', `${vendor.name} is not taking orders right now.`);
-      const item = menu.categories.flatMap((c) => c.items).find((i) => i.id === line.itemId);
-      if (!item) throw new HttpsError('not-found', `"${line.name}" is no longer on the menu.`);
+      const category = menu.categories.find((c) => c.items.some((i) => i.id === line.itemId));
+      const item = category?.items.find((i) => i.id === line.itemId);
+      if (!category || !item) throw new HttpsError('not-found', `"${line.name}" is no longer on the menu.`);
       if (stock?.unavailable?.[item.id]) throw new HttpsError('failed-precondition', `"${item.name}" just sold out. Please update your cart.`);
-      return { itemId: item.id, vendorId: line.vendorId, name: item.name, pricePaise: item.pricePaise, veg: item.veg, qty: line.qty, ...(line.note ? { note: line.note } : {}) };
+      return { itemId: item.id, vendorId: line.vendorId, categoryId: category.id, name: item.name, pricePaise: item.pricePaise, veg: item.veg, qty: line.qty, ...(line.note ? { note: line.note } : {}) };
     });
 
     const totals = computeOrderTotals({ items: verified, config });
@@ -102,6 +104,7 @@ export const createCheckout = onCall(
         const reads = await readForTickets(tx, orderId, base);
         tx.set(orderRef, { ...base, status: 'PAID', payment: { status: 'PENDING', mode: 'COUNTER' } });
         writeTickets(tx, orderId, base, reads, now, 'COUNTER');
+        writeCustomerOrder(tx, base, now);
       });
       return { orderId, status: 'PAID', paymentSessionId: null, cashfreeMode: null, totalPaise: totals.totalPaise };
     }
