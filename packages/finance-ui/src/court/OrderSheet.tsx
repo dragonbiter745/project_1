@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { orderTickets, type LedgerOrder } from '@foodcourt/firebase-client/finance';
 import { formatPaise, type SubOrder } from '@foodcourt/shared';
 import { Sheet, Skeleton, cx } from '@foodcourt/ui';
-import { ORDER_STATUS, formatTime, methodLabel } from '../../lib/orderStatus';
+import { ORDER_STATUS, formatTime, methodLabel } from '../lib/orderStatus';
 
 const REFUND: Record<string, string> = { PENDING: 'Refund in progress', PROCESSED: 'Refunded', FAILED: 'Refund failed', NOT_REQUIRED: 'No refund needed' };
 

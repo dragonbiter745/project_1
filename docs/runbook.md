@@ -96,11 +96,15 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
   scheduled for 7 days from 2026-10-20. Ask Firebase support for a permanent increase (they ask
   for two weeks' notice) or re-schedule the temporary quota before it lapses.
 
-### Finance console
-- URL: https://reva-nest-finance.web.app. Login `finance@revafoodcourt.staff` (role `finance`);
-  the master account also works. Create more finance logins with the role claim `{"role":"finance"}`.
-- **Paying shops:** transfer the money from the bank or UPI as usual, then press **Pay** on the
-  shop (Overview) or **Record a payout** (Payouts) and enter the amount and UTR. A wrong entry is
-  voided with a reason, never deleted.
-- **Commission:** click the rate under a shop's name on Overview. It applies to new orders only.
-- Every figure is in IST days. Exports are CSV with rupee amounts (two decimals).
+### Finance
+- **Court (our income):** master console → **Finance**. Commission income, what each shop is
+  owed, the payment ledger, payouts and commission rates. Master login only.
+- **Each shop:** https://reva-nest-finance.web.app with that shop's finance login, e.g.
+  `roll-me-finance@revafoodcourt.staff` (role `vendorFinance`, `vendorId` of the shop). It is a
+  separate login from the kitchen one and shows only that shop. New shop → create a login with
+  claims `{"role":"vendorFinance","vendorId":"<vendor id>"}`.
+- **Paying shops:** transfer from the bank or UPI as usual, then press **Pay** on the shop
+  (Finance → Income and shops) or **Record a payout** (Finance → Payouts) with the amount and
+  UTR. The shop sees it under "Payments from the court". A wrong entry is voided with a reason.
+- **Commission:** click the rate under a shop's name. It applies to new orders only.
+- Figures are in IST days. Exports are CSV with rupee amounts (two decimals).

@@ -245,6 +245,9 @@ importers:
       '@fontsource-variable/geist-mono':
         specifier: ^5.3.0
         version: 5.3.0
+      '@foodcourt/finance-ui':
+        specifier: workspace:*
+        version: link:../../packages/finance-ui
       '@foodcourt/firebase-client':
         specifier: workspace:*
         version: link:../../packages/firebase-client
@@ -370,6 +373,9 @@ importers:
       '@fontsource-variable/geist-mono':
         specifier: ^5.3.0
         version: 5.3.0
+      '@foodcourt/finance-ui':
+        specifier: workspace:*
+        version: link:../../packages/finance-ui
       '@foodcourt/firebase-client':
         specifier: workspace:*
         version: link:../../packages/firebase-client
@@ -502,6 +508,37 @@ importers:
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/node@20.19.43)(jiti@1.21.7)
+
+  packages/finance-ui:
+    dependencies:
+      '@foodcourt/firebase-client':
+        specifier: workspace:*
+        version: link:../firebase-client
+      '@foodcourt/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@foodcourt/ui':
+        specifier: workspace:*
+        version: link:../ui
+      lucide-react:
+        specifier: ^1.16.0
+        version: 1.58.0(@types/react@19.3.0)(react@19.3.1)
+      react:
+        specifier: ^19.0.0
+        version: 19.3.1
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.3.1(react@19.3.1)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.8
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.0.3
+        version: 19.3.0(@types/react@19.3.0)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
 
   packages/firebase-client:
     dependencies:
@@ -1101,7 +1138,7 @@ packages:
     resolution: {integrity: sha512-j0m+vLQuG5XAYoHtGCVu0spvlGreR3EzpECUVzkFmI1mTVnAO38l/NEPDCFgZ177JxzYJCLSmTQibIiYPilGrA==}
 
   '@foodcourt/shared@file:functions/foodcourt-shared-0.1.0.tgz':
-    resolution: {integrity: sha512-4gOw4P6OsQVUvMywGvPRzGFjVQAROzoRCgLU+i/kDQcI350DNx2FRzdC8DhQz1xJR6fAfaBS4QeL+SS2pfbPaQ==, tarball: file:functions/foodcourt-shared-0.1.0.tgz}
+    resolution: {integrity: sha512-M9VQMGrA/rnUSQGgPwGTlTtZc33bXaLyzEfkt9UwjDYBvdJJ4SEs0HDbjy/GUiXyqeSBRSY64GUDsrrmq4kLIA==, tarball: file:functions/foodcourt-shared-0.1.0.tgz}
     version: 0.1.0
 
   '@google-cloud/firestore@7.11.6':

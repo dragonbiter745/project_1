@@ -1,11 +1,11 @@
 import { collection, doc, getDoc, getDocs, limit, orderBy, query, startAfter, where, type QueryConstraint, type QueryDocumentSnapshot } from 'firebase/firestore';
-import { istDayStartMs, type FinanceReport, type Order, type OrderStatus, type Payout, type SubOrder } from '@foodcourt/shared';
+import { istDayStartMs, type FinanceReport, type Order, type OrderStatus, type Payout, type ShopFinance, type SubOrder } from '@foodcourt/shared';
 import { getDb } from './db';
 import { getFunctionsClient, httpsCallable } from './functions';
 import { ActionError } from './ops';
 
-// Finance console data. Totals come from the financeReport function (aggregation queries);
-// the transaction list pages through orders directly, which the rules open to finance staff only.
+// Finance data. Court totals (master) come from financeReport, one shop's from shopReport; both use
+// aggregation queries. Lists page through Firestore directly, scoped by the rules to who may see them.
 
 export type LedgerOrder = Order & { customerPhone?: string; displayName?: string };
 export type LedgerFilter = 'all' | 'paid' | 'pending' | 'failed' | 'refunded';
@@ -107,5 +107,49 @@ export const orderTickets = (orderId: string) =>
 export const listPayouts = (max = 500) =>
   guarded(async () => {
     const snap = await getDocs(query(collection(getDb(), 'payouts'), orderBy('createdAt', 'desc'), limit(max)));
+    return snap.docs.map((d) => ({ ...(d.data() as Payout), id: d.id }));
+  });
+
+// ─── One shop (its own finance login, or the master previewing a shop) ──────
+
+export const getShopReport = (from: string, to: string, vendorId?: string) =>
+  guarded(async () => (await httpsCallable<unknown, ShopFinance>(getFunctionsClient(), 'shopReport')({ from, to, ...(vendorId ? { vendorId } : {}) })).data);
+
+export interface TicketPage {
+  rows: SubOrder[];
+  cursor: QueryDocumentSnapshot | null;
+}
+
+/** One shop's tickets between two IST days (inclusive), newest first. */
+export function listShopTickets(vendorId: string, from: string, to: string, after: QueryDocumentSnapshot | null = null, size = 50): Promise<TicketPage> {
+  const constraints: QueryConstraint[] = [
+    where('vendorId', '==', vendorId),
+    where('dateKey', '>=', from),
+    where('dateKey', '<=', to),
+    orderBy('dateKey', 'desc'),
+    orderBy('ts.placed', 'desc'),
+    limit(size),
+  ];
+  if (after) constraints.push(startAfter(after));
+  return guarded(async () => {
+    const snap = await getDocs(query(collection(getDb(), 'subOrders'), ...constraints));
+    return { rows: snap.docs.map((d) => ({ ...(d.data() as SubOrder), id: d.id })), cursor: snap.size === size ? snap.docs[snap.size - 1]! : null };
+  });
+}
+
+export async function allShopTickets(vendorId: string, from: string, to: string, cap = 10_000): Promise<SubOrder[]> {
+  const out: SubOrder[] = [];
+  let cursor: QueryDocumentSnapshot | null = null;
+  do {
+    const page: TicketPage = await listShopTickets(vendorId, from, to, cursor, 500);
+    out.push(...page.rows);
+    cursor = page.cursor;
+  } while (cursor && out.length < cap);
+  return out;
+}
+
+export const listShopPayouts = (vendorId: string, max = 200) =>
+  guarded(async () => {
+    const snap = await getDocs(query(collection(getDb(), 'payouts'), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'), limit(max)));
     return snap.docs.map((d) => ({ ...(d.data() as Payout), id: d.id }));
   });

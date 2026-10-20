@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { setCommission } from '@foodcourt/firebase-client/finance';
 import { MAX_COMMISSION_PCT, commissionFor, formatPaise, type ShopFinance } from '@foodcourt/shared';
 import { Button, Sheet } from '@foodcourt/ui';
-import { Field, FormError, inputClass, parseRupees } from '../../components/Field';
+import { Field, FormError, inputClass, parseRupees } from '../components/Field';
 
 /** The court's cut of a shop's sales. New rates apply to orders placed after saving; past orders keep theirs. */
 export function CommissionSheet({ shop, onClose, onSaved }: { shop: ShopFinance | null; onClose: () => void; onSaved: () => void }) {

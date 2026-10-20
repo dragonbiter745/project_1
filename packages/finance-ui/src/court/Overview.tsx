@@ -2,11 +2,12 @@ import { useState, type ReactNode } from 'react';
 import { ArrowDownLeft, Banknote, Download, HandCoins, IndianRupee, Percent, RefreshCw, RotateCcw, Store, Wallet } from 'lucide-react';
 import { formatPaise, type ShopFinance } from '@foodcourt/shared';
 import { Button, Monogram, Skeleton, cx } from '@foodcourt/ui';
-import type { PageProps } from '../../App';
-import { KpiTile } from '../../components/KpiTile';
-import { PayoutSheet } from '../../components/PayoutSheet';
-import { downloadCsv, rupees } from '../../lib/csv';
+import type { PageProps } from '../types';
+import { KpiTile } from '../components/KpiTile';
+import { PayoutSheet } from '../components/PayoutSheet';
+import { downloadCsv, rupees } from '../lib/csv';
 import { CommissionSheet } from './CommissionSheet';
+import { LoadError } from '../components/LoadError';
 
 const money = (p: number) => formatPaise(p, p % 100 !== 0);
 const rate = (s: ShopFinance) => [s.feePct ? `${s.feePct}%` : '', s.perOrderFeePaise ? `${formatPaise(s.perOrderFeePaise)}/order` : ''].filter(Boolean).join(' + ') || 'No commission';
@@ -34,28 +35,34 @@ export function Overview({ range, report: { report, loading, error, reload } }: 
         <KpiTile
           feature
           className="md:col-span-2 xl:row-span-2"
-          label="Collected online"
-          value={money(r.collectedPaise)}
-          icon={IndianRupee}
+          label="Court income"
+          value={money(r.commissionPaise)}
+          icon={Percent}
           tone="accent"
-          hint={`${r.paidOrders} paid ${r.paidOrders === 1 ? 'order' : 'orders'} · average ${money(r.averageOrderPaise)}`}
+          hint="Commission earned on every shop's orders in this period"
         >
           <dl className="grid grid-cols-2 gap-3 border-t border-accent-line/70 pt-4 text-sm">
+            <div>
+              <dt className="text-ink-3">Collected online</dt>
+              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink">{money(r.collectedPaise)}</dd>
+            </div>
             <div>
               <dt className="text-ink-3">Refunded to diners</dt>
               <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink">{money(r.refundsPaise)}</dd>
             </div>
-            <div>
-              <dt className="text-ink-3">Kept after refunds</dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink">{money(r.netPaise)}</dd>
-            </div>
           </dl>
         </KpiTile>
-        <KpiTile label="Court commission" value={money(r.commissionPaise)} icon={Percent} tone="ready" hint="Earned on orders in this period" />
-        <KpiTile label="Owed to shops" value={money(r.payablePaise)} icon={Store} tone="prep" hint="Shop share of this period's sales" />
-        <KpiTile label="Paid out" value={money(r.paidOutPaise)} icon={ArrowDownLeft} tone="neutral" hint="Payouts dated in this period" />
         <KpiTile
-          label="Balance due now"
+          label="Paid orders"
+          value={String(r.paidOrders)}
+          icon={IndianRupee}
+          tone="ready"
+          hint={r.paidOrders > 0 ? `Average ${money(r.averageOrderPaise)}` : 'Online orders in this period'}
+        />
+        <KpiTile label="Shops' share" value={money(r.payablePaise)} icon={Store} tone="prep" hint="Earned by shops in this period" />
+        <KpiTile label="Paid to shops" value={money(r.paidOutPaise)} icon={ArrowDownLeft} tone="neutral" hint="Payouts dated in this period" />
+        <KpiTile
+          label="Still owed to shops"
           value={money(Math.max(0, r.balanceDuePaise))}
           icon={Wallet}
           tone={r.balanceDuePaise > 0 ? 'danger' : 'neutral'}
@@ -183,17 +190,6 @@ function Th({ children }: { children: ReactNode }) {
 
 function Td({ children, muted, strong }: { children: ReactNode; muted?: boolean; strong?: boolean }) {
   return <td className={cx('px-3 py-3.5 text-right tabular-nums', muted ? 'text-ink-3' : strong ? 'font-semibold text-ink' : 'text-ink-2')}>{children}</td>;
-}
-
-export function LoadError({ text, onRetry, compact }: { text: string; onRetry: () => void; compact?: boolean }) {
-  return (
-    <div role="alert" className={cx('flex flex-wrap items-center gap-3 rounded-card bg-danger-tint px-4 py-3 text-sm text-danger ring-1 ring-inset ring-danger/20', compact ? 'mb-4' : '')}>
-      <span className="flex-1 font-medium">Couldn't load the figures. {text}</span>
-      <Button variant="outline" size="sm" onClick={onRetry} icon={<RefreshCw className="h-4 w-4" />}>
-        Try again
-      </Button>
-    </div>
-  );
 }
 
 function OverviewSkeleton() {

@@ -90,17 +90,20 @@
   and ticket ids for idempotency; a one-minute sweeper and a refund trigger.
 - **Testing:** 25 emulator tests (callables, webhook replay, sweeper, refunds, rules) run in CI.
 
-## ADR 012: Finance console (apps/finance)
+## ADR 012: Finance: court income in master, a finance page per shop
 - **Context:** the court collects every online payment in one Cashfree account and owes each shop
-  its share. Finance staff need one place, for all shops, to see collections and refunds, what
-  each shop is owed, and to record the transfers they make.
-- **Decisions:** a separate app and site (`reva-nest-finance`) with its own `finance` role claim;
-  the court manager can open it too. Each ticket stores `paymentMode` and `commissionPaise` when
-  it is created, so a rate change only affects later orders. Totals come from the
-  `financeReport` callable using Firestore aggregation queries (count/sum, one read per 1,000
-  tickets), never by downloading tickets. Payouts are written only by `financeAction`
-  (idempotent via a per-form request key), never deleted, only voided with a reason; every
-  finance write adds an `auditLogs` entry.
+  its share. The court needs its income and payouts; each shop needs its own earnings, privately.
+- **Decisions:** court finance (commission income, every shop's balance, payouts, commission
+  rates, payment ledger) is a **Finance** page in the master console, master-only. Each shop has
+  a separate finance login (role `vendorFinance` + `vendorId`) on `reva-nest-finance`, distinct
+  from the kitchen login, that shows only that shop: earnings, commission, payments received,
+  its orders. Both screens live in `packages/finance-ui`.
+- **Data:** each ticket stores `paymentMode` and `commissionPaise` when it is created, so a rate
+  change only affects later orders. Totals come from aggregation queries in the `financeReport`
+  (master) and `shopReport` (own shop from the token's vendorId) callables. Payouts are written
+  only by `financeAction` (master, idempotent via a per-form request key), never deleted, only
+  voided with a reason; each write adds an `auditLogs` entry. Rules let a shop's finance login
+  read its own tickets and payouts only, never orders (other shops' items, diner phones).
 - **Money rules:** shop share = online sales of non-failed tickets − commission on online and
   counter tickets (the shop already holds counter cash). Balance due = all-time share − payouts.
 - **Not built (kept simple on purpose):** Cashfree settlement and fee reconciliation, GST

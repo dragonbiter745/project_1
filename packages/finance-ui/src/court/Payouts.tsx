@@ -3,13 +3,13 @@ import { Ban, Download, HandCoins, Landmark, RefreshCw } from 'lucide-react';
 import { listPayouts, voidPayout } from '@foodcourt/firebase-client/finance';
 import { formatPaise, type Payout } from '@foodcourt/shared';
 import { Button, Sheet, Skeleton, cx } from '@foodcourt/ui';
-import type { PageProps } from '../../App';
-import { Field, FormError, inputClass } from '../../components/Field';
-import { PayoutSheet } from '../../components/PayoutSheet';
-import { downloadCsv, rupees } from '../../lib/csv';
-import { formatDay } from '../../lib/range';
-import { formatTime } from '../../lib/orderStatus';
-import { LoadError } from '../overview/Overview';
+import type { PageProps } from '../types';
+import { Field, FormError, inputClass } from '../components/Field';
+import { PayoutSheet } from '../components/PayoutSheet';
+import { downloadCsv, rupees } from '../lib/csv';
+import { formatDay } from '../lib/range';
+import { formatTime } from '../lib/orderStatus';
+import { LoadError } from '../components/LoadError';
 
 export function Payouts({ range, report: { report, reload: reloadReport } }: PageProps) {
   const [payouts, setPayouts] = useState<Payout[] | null>(null);

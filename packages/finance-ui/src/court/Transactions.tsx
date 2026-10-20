@@ -3,10 +3,10 @@ import { Download, Inbox, Search, X } from 'lucide-react';
 import { allOrders, listOrders, searchOrders, type LedgerFilter, type LedgerOrder, type LedgerPage } from '@foodcourt/firebase-client/finance';
 import { formatPaise } from '@foodcourt/shared';
 import { Button, Skeleton, cx, run } from '@foodcourt/ui';
-import type { PageProps } from '../../App';
-import { downloadCsv, rupees } from '../../lib/csv';
-import { ORDER_STATUS, formatTime, maskPhone, methodLabel } from '../../lib/orderStatus';
-import { LoadError } from '../overview/Overview';
+import type { PageProps } from '../types';
+import { downloadCsv, rupees } from '../lib/csv';
+import { ORDER_STATUS, formatTime, maskPhone, methodLabel } from '../lib/orderStatus';
+import { LoadError } from '../components/LoadError';
 import { OrderSheet } from './OrderSheet';
 
 const FILTERS: Array<{ key: LedgerFilter; label: string }> = [

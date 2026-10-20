@@ -3,11 +3,12 @@ import { getIstDateKey } from '@foodcourt/shared';
 import { db } from '../src/db';
 import { startSession } from '../src/callable/startSession';
 import { createCheckout } from '../src/callable/createCheckout';
-import { buildFinanceReport, financeAction, financeReport } from '../src/callable/finance';
+import { buildFinanceReport, financeAction, financeReport, shopReport } from '../src/callable/finance';
 import { materializePaidOrder } from '../src/lib/orders';
 import { call, fakeCashfree, resetDb, seed, sessionFor, uniqueUid } from './helpers';
 
-const finance = { role: 'finance', email: 'finance@example.test' };
+const finance = { role: 'master', email: 'boss@example.test' };
+const rmFinance = { role: 'vendorFinance', vendorId: 'v-rm' };
 const today = getIstDateKey();
 const line = (itemId: string, vendorId: string, qty = 1) => ({ itemId, vendorId, name: itemId, pricePaise: 1, veg: true, qty });
 
@@ -65,7 +66,7 @@ describe('finance', () => {
     await call(financeAction, { action: 'VOID_PAYOUT', payoutId: first.payoutId, reason: 'Wrong shop' }, staff, finance);
     rm = (await buildFinanceReport(today, today)).shops.find((s) => s.vendorId === 'v-rm')!;
     expect(rm.balanceDuePaise).toBe(10800);
-    expect((await db.doc(`payouts/${first.payoutId}`).get()).data()).toMatchObject({ status: 'VOID', voidReason: 'Wrong shop', voidedBy: 'finance@example.test' });
+    expect((await db.doc(`payouts/${first.payoutId}`).get()).data()).toMatchObject({ status: 'VOID', voidReason: 'Wrong shop', voidedBy: 'boss@example.test' });
   });
 
   it('applies a new commission rate only to orders placed after the change', async () => {
@@ -76,7 +77,22 @@ describe('finance', () => {
     expect(rm.commissionPaise).toBe(1200 + 600 + 200);
   });
 
-  it('is open to finance and the court manager only, and checks its input', async () => {
+  it("gives a shop's finance login its own shop only, and nothing court-wide", async () => {
+    await paidOnline([line('rm-1', 'v-rm', 2), line('sv-1', 'v-sv')], 31000);
+    const range = { from: today, to: today };
+    const mine = await call(shopReport, { ...range, vendorId: 'v-sv' }, uniqueUid(), rmFinance);
+    expect(mine).toMatchObject({ vendorId: 'v-rm', orders: 1, salesPaise: 24000, commissionPaise: 2400, payablePaise: 21600, balanceDuePaise: 21600 });
+    expect(mine).not.toHaveProperty('shops');
+    await expect(call(shopReport, { ...range, vendorId: 'v-sv' }, uniqueUid(), { role: 'master' })).resolves.toMatchObject({ vendorId: 'v-sv', salesPaise: 7000 });
+    await expect(call(shopReport, range, uniqueUid(), { role: 'vendorAdmin', vendorId: 'v-rm' })).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(call(financeReport, range, uniqueUid(), rmFinance)).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(
+      call(financeAction, { action: 'RECORD_PAYOUT', requestKey: 'form-0009', vendorId: 'v-rm', amountPaise: 5000, paidOn: today, reference: 'UTR9' }, uniqueUid(), rmFinance)
+    ).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(call(financeAction, { action: 'SET_COMMISSION', vendorId: 'v-rm', feePct: 0, perOrderFeePaise: 0 }, uniqueUid(), rmFinance)).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+
+  it('keeps court figures to the court manager, and checks its input', async () => {
     const range = { from: today, to: today };
     await expect(call(financeReport, range)).rejects.toMatchObject({ code: 'unauthenticated' });
     await expect(call(financeReport, range, uniqueUid())).rejects.toMatchObject({ code: 'permission-denied' });

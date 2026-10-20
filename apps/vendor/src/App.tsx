@@ -45,7 +45,9 @@ export default function App() {
 
   if (staff === undefined) return <div className="grain ambient min-h-[100dvh]" aria-busy="true" />;
   if (!staff) return <StaffLogin title="Kitchen sign-in" subtitle="Use the login for your shop. Orders for your kitchen appear the moment diners pay." onSubmit={staffSignIn} />;
-  if (staff.role !== 'master' && !staff.vendorId) return <NoAccess email={staff.email} />;
+  // Kitchen roles only: a shop's finance login has a vendorId too but must not run the kitchen.
+  const kitchen = staff.role === 'master' || ((staff.role === 'vendorAdmin' || staff.role === 'vendorStaff') && staff.vendorId);
+  if (!kitchen) return <NoAccess email={staff.email} />;
   return <Kitchen staff={staff} />;
 }
 

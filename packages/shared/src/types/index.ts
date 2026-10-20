@@ -26,7 +26,7 @@ export type PaymentStatus =
   | 'USER_DROPPED'
   | 'REFUNDED';
 
-export type UserRole = 'master' | 'finance' | 'vendorAdmin' | 'vendorStaff' | 'customer';
+export type UserRole = 'master' | 'vendorFinance' | 'vendorAdmin' | 'vendorStaff' | 'customer';
 
 // Venue & Vendor
 export interface Venue {

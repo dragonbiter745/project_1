@@ -17,10 +17,10 @@ import { limitShared, requireUid, roleOf } from '../lib/guard';
 
 const FAILED = [...REFUNDABLE_STATUSES];
 
-function requireFinance(req: CallableRequest): string {
+/** Court income and payouts: the court manager only. */
+function requireCourt(req: CallableRequest): string {
   const uid = requireUid(req);
-  const { role } = roleOf(req);
-  if (role !== 'finance' && role !== 'master') throw new HttpsError('permission-denied', 'Only finance staff can open this.');
+  if (roleOf(req).role !== 'master') throw new HttpsError('permission-denied', 'Only the court manager can open this.');
   return uid;
 }
 
@@ -65,6 +65,57 @@ async function ticketTotals(vendorId: string, mode: 'ONLINE' | 'COUNTER', from =
   };
 }
 
+type PayoutRow = Pick<Payout, 'vendorId' | 'amountPaise' | 'paidOn'>;
+
+function sumPayouts(rows: PayoutRow[], from: string, to: string): Map<string, { all: number; range: number }> {
+  const out = new Map<string, { all: number; range: number }>();
+  for (const p of rows) {
+    const e = out.get(p.vendorId) ?? { all: 0, range: 0 };
+    e.all += p.amountPaise;
+    if (p.paidOn >= from && p.paidOn <= to) e.range += p.amountPaise;
+    out.set(p.vendorId, e);
+  }
+  return out;
+}
+
+async function shopFinance(vendorId: string, v: Partial<Vendor>, from: string, to: string, paid = { all: 0, range: 0 }): Promise<ShopFinance> {
+  const [online, counter, onlineEver, counterEver] = await Promise.all([
+    ticketTotals(vendorId, 'ONLINE', from, to),
+    ticketTotals(vendorId, 'COUNTER', from, to),
+    ticketTotals(vendorId, 'ONLINE'),
+    ticketTotals(vendorId, 'COUNTER'),
+  ]);
+  // The shop already holds counter money, so commission on it comes off what the court pays out.
+  const owed = (o: TicketTotals, c: TicketTotals) => o.salesPaise - o.commissionPaise - c.commissionPaise;
+  return {
+    vendorId,
+    name: v.name ?? vendorId,
+    code: v.code ?? '',
+    feePct: v.feePct ?? 0,
+    perOrderFeePaise: v.perOrderFeePaise ?? 0,
+    orders: online.orders,
+    salesPaise: online.salesPaise,
+    refundsPaise: online.refundsPaise,
+    commissionPaise: online.commissionPaise + counter.commissionPaise,
+    payablePaise: owed(online, counter),
+    counterOrders: counter.orders,
+    counterSalesPaise: counter.salesPaise,
+    paidOutPaise: paid.range,
+    balanceDuePaise: owed(onlineEver, counterEver) - paid.all,
+  };
+}
+
+/** One shop's figures, for that shop's own finance login. Nothing about other shops or the court total. */
+export async function buildShopReport(vendorId: string, from: string, to: string): Promise<ShopFinance> {
+  const [vendor, payouts] = await Promise.all([
+    db.collection('vendors').doc(vendorId).get(),
+    db.collection('payouts').where('vendorId', '==', vendorId).where('status', '==', 'RECORDED').select('vendorId', 'amountPaise', 'paidOn').get(),
+  ]);
+  if (!vendor.exists) throw new HttpsError('not-found', 'This shop is not set up.');
+  const paid = sumPayouts(payouts.docs.map((d) => d.data() as PayoutRow), from, to).get(vendorId);
+  return shopFinance(vendorId, vendor.data() as Partial<Vendor>, from, to, paid);
+}
+
 export async function buildFinanceReport(from: string, to: string): Promise<FinanceReport> {
   const [vendorSnap, payoutSnap, collected] = await Promise.all([
     db.collection('vendors').get(),
@@ -79,45 +130,8 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
       .get(),
   ]);
 
-  const paidOut = new Map<string, { all: number; range: number }>();
-  for (const d of payoutSnap.docs) {
-    const p = d.data() as Pick<Payout, 'vendorId' | 'amountPaise' | 'paidOn'>;
-    const e = paidOut.get(p.vendorId) ?? { all: 0, range: 0 };
-    e.all += p.amountPaise;
-    if (p.paidOn >= from && p.paidOn <= to) e.range += p.amountPaise;
-    paidOut.set(p.vendorId, e);
-  }
-
-  const shops: ShopFinance[] = await Promise.all(
-    vendorSnap.docs.map(async (d) => {
-      const v = d.data() as Partial<Vendor>;
-      const [online, counter, onlineEver, counterEver] = await Promise.all([
-        ticketTotals(d.id, 'ONLINE', from, to),
-        ticketTotals(d.id, 'COUNTER', from, to),
-        ticketTotals(d.id, 'ONLINE'),
-        ticketTotals(d.id, 'COUNTER'),
-      ]);
-      const paid = paidOut.get(d.id) ?? { all: 0, range: 0 };
-      // The shop already holds counter money, so commission on it comes off what the court pays out.
-      const owed = (o: TicketTotals, c: TicketTotals) => o.salesPaise - o.commissionPaise - c.commissionPaise;
-      return {
-        vendorId: d.id,
-        name: v.name ?? d.id,
-        code: v.code ?? '',
-        feePct: v.feePct ?? 0,
-        perOrderFeePaise: v.perOrderFeePaise ?? 0,
-        orders: online.orders,
-        salesPaise: online.salesPaise,
-        refundsPaise: online.refundsPaise,
-        commissionPaise: online.commissionPaise + counter.commissionPaise,
-        payablePaise: owed(online, counter),
-        counterOrders: counter.orders,
-        counterSalesPaise: counter.salesPaise,
-        paidOutPaise: paid.range,
-        balanceDuePaise: owed(onlineEver, counterEver) - paid.all,
-      };
-    })
-  );
+  const paidOut = sumPayouts(payoutSnap.docs.map((d) => d.data() as PayoutRow), from, to);
+  const shops = await Promise.all(vendorSnap.docs.map((d) => shopFinance(d.id, d.data() as Partial<Vendor>, from, to, paidOut.get(d.id))));
   shops.sort((a, b) => b.salesPaise - a.salesPaise || a.name.localeCompare(b.name));
 
   const c = collected.data();
@@ -143,8 +157,21 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
   };
 }
 
+/** A shop's finance login sees its own shop; the court manager may open any shop's view. */
+export const shopReport = onCall({ region: REGION, maxInstances: 20, timeoutSeconds: 60 }, async (req) => {
+  const uid = requireUid(req);
+  const { role, vendorId: own } = roleOf(req);
+  const asked = typeof (req.data as { vendorId?: unknown })?.vendorId === 'string' ? (req.data as { vendorId: string }).vendorId : null;
+  const vendorId = role === 'vendorFinance' ? own : role === 'master' ? asked : null;
+  if (!vendorId) throw new HttpsError('permission-denied', "Only the shop's finance login can open this.");
+  await limitShared(`shop-report:${uid}`, 30, 60);
+  const parsed = FinanceReportSchema.safeParse(req.data);
+  if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid date range.');
+  return buildShopReport(vendorId, parsed.data.from, parsed.data.to);
+});
+
 export const financeReport = onCall({ region: REGION, maxInstances: 10, timeoutSeconds: 60 }, async (req) => {
-  const uid = requireFinance(req);
+  const uid = requireCourt(req);
   await limitShared(`finance-report:${uid}`, 30, 60);
   const parsed = FinanceReportSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid date range.');
@@ -152,7 +179,7 @@ export const financeReport = onCall({ region: REGION, maxInstances: 10, timeoutS
 });
 
 export const financeAction = onCall({ region: REGION, maxInstances: 10, timeoutSeconds: 30 }, async (req) => {
-  const uid = requireFinance(req);
+  const uid = requireCourt(req);
   await limitShared(`finance-action:${uid}`, 60, 300);
   const parsed = FinanceActionSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid request.');

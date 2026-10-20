@@ -1,5 +1,6 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { BarChart3, LogOut, QrCode, Radio, Settings2, ShieldAlert, Store } from 'lucide-react';
+import { BarChart3, LogOut, QrCode, Radio, Settings2, ShieldAlert, Store, Wallet } from 'lucide-react';
+import { CourtFinance } from '@foodcourt/finance-ui';
 import { ActionToast, BrandMark, Button, StaffLogin, cx, useNow } from '@foodcourt/ui';
 import { connectMaster } from '@foodcourt/firebase-client/live';
 import { staffSignIn, staffSignOut, watchStaff, type StaffUser } from '@foodcourt/firebase-client/staff';
@@ -10,7 +11,7 @@ import { Shops } from './features/shops/Shops';
 import { TablesQr } from './features/tables/TablesQr';
 import { jsonEqual, useLocal } from './lib/store';
 
-type Page = 'live' | 'shops' | 'tables' | 'insights' | 'settings';
+type Page = 'live' | 'shops' | 'tables' | 'insights' | 'finance' | 'settings';
 
 const PAGES: Array<{ key: Page; label: string; blurb: string; icon: typeof Radio; component: ComponentType }> = [
   { key: 'live', label: 'Live orders', blurb: 'Every ticket in every kitchen, as it happens.', icon: Radio, component: LiveOrders },
