@@ -41,8 +41,15 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
 
 /** Fetches shops, menus, stock and flags in two requests and writes them into the store. */
 export async function loadCatalog(store: LiveStore = liveStore): Promise<void> {
-  const list = await getJson<{ documents?: RestDoc[] }>(`${DOCS}/vendors?pageSize=100&${KEY}`);
-  const vendors = (list.documents ?? [])
+  // A structured query, not the list-documents endpoint: Firestore refuses unfiltered lists of a
+  // named database's collection for public callers, while the same read as a query is allowed.
+  const rows = await getJson<Array<{ document?: RestDoc }>>(`${DOCS}:runQuery?${KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'vendors' }], limit: 100 } }),
+  });
+  const vendors = rows
+    .flatMap((r) => (r.document ? [r.document] : []))
     .map((d) => ({ id: idOf(d), ...decodeFields(d.fields ?? {}) }) as Vendor)
     .filter((v) => v.status === 'active');
   const names = [
