@@ -41,7 +41,7 @@ export function Nav() {
           ))}
         </ul>
         <a href={orderAtTable()} className="pressable inline-flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-semibold text-white transition-colors hover:bg-black">
-          Order now
+          How to order
           <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
         </a>
       </nav>

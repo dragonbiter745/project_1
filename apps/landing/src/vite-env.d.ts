@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** Customer ordering app, where "Order now" sends diners. */
+  /** Customer ordering app (reached from the table QR codes). */
   readonly VITE_CUSTOMER_URL?: string;
 }

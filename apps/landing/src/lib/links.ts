@@ -1,3 +1,8 @@
-/** The real diner app. QR plates on each table open `${CUSTOMER_URL}/t/<table>`. */
+/** The real diner app. Diners reach it only by scanning the secure QR on their table. */
 export const CUSTOMER_URL = (import.meta.env.VITE_CUSTOMER_URL ?? 'https://reva-nest-foodcourt.web.app').replace(/\/$/, '');
-export const orderAtTable = (table = 'T14') => `${CUSTOMER_URL}/t/${table}`;
+
+/**
+ * Every table's QR carries an unguessable token, so there is no public "order here" link to share.
+ * Ordering CTAs lead to the explanation of how to order: scan the QR on any table.
+ */
+export const orderAtTable = () => '#story';

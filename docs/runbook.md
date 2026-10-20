@@ -62,3 +62,36 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
 - Frontends: merge to `main`; each changed app deploys itself.
 - Functions / rules: merge to `main`, then approve the pending deployment in the Actions run.
 - Hosting rollback: Firebase console → Hosting → site → Release history → Roll back, or revert the commit.
+
+## 6. Launch operations (added with the launch-hardening release)
+
+### Staff accounts
+- Kitchen and manager logins are Firebase Auth email/password accounts with custom claims:
+  `{ role: 'master' }` or `{ role: 'vendorAdmin' | 'vendorStaff', vendorId }`.
+- The kitchen display binds a kitchen account to its own shop; only `master` can pick a shop.
+- New shop: create its account with the claim for the new `vendors/{id}`; a password reset is a
+  new password set by the master (Identity Toolkit `accounts:update`).
+
+### Table QR codes
+- QR links are `https://<customer-site>/t/<qrToken>`, a 128-bit random token per table; the short
+  table code is printed for humans but is never accepted on its own. Tables are master-only in rules.
+- Master console → Tables and QR: "Generate secure codes" fills any missing tokens; the refresh
+  button on a card replaces that table's token (the old sticker stops working at once).
+- After the first generation, print and replace every sticker: old `/t/T14` links no longer work.
+
+### Payments (Cashfree)
+- Keys live in Secret Manager: `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`. Mode is the
+  `CASHFREE_ENV` param in `functions/.env.reva-nest-foodcourt` (`SANDBOX` or `PRODUCTION`).
+- Go live: `firebase functions:secrets:set CASHFREE_APP_ID` and `CASHFREE_SECRET_KEY` with the
+  production keys, set `CASHFREE_ENV=PRODUCTION`, redeploy functions, and whitelist the customer
+  domain in the Cashfree dashboard. The webhook URL is sent with every order (`cashfreeWebhook`).
+- Pay at counter: Settings → turn off online payments; orders go straight to the kitchens.
+- The `sweeper` function (every minute) times out unaccepted tickets, reconciles payments whose
+  webhook was lost, expires unpaid orders and polls pending refunds; `onTicketFailed` refunds a
+  rejected, cancelled or timed-out ticket's share of an online payment.
+
+### Auth sign-up quota (campus Wi-Fi)
+- Firebase allows 100 new accounts per IP per hour by default; every diner gets an anonymous
+  account, and a campus shares a handful of public IPs. A temporary 5,000/hour per-IP quota was
+  scheduled for 7 days from 2026-10-20. Ask Firebase support for a permanent increase (they ask
+  for two weeks' notice) or re-schedule the temporary quota before it lapses.

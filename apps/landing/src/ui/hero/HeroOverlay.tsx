@@ -45,7 +45,7 @@ export function HeroOverlay() {
               className="pressable glass inline-flex h-14 items-center gap-2.5 rounded-full px-6 text-base font-semibold text-ink transition-colors hover:bg-white/90"
             >
               <QrCode className="h-5 w-5 text-accent-ink" strokeWidth={2} />
-              Order from your table
+              How to order
             </a>
           </div>
 

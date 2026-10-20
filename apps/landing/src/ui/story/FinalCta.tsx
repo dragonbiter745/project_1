@@ -17,7 +17,7 @@ export function FinalCta() {
           <p className="mx-auto mt-5 max-w-[46ch] text-lg text-white/75">Scan the QR on any table at REVA Food Court, or open the menu here and pick your table.</p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             <a href={orderAtTable()} className="pressable inline-flex h-14 items-center gap-2 rounded-full bg-white px-7 text-base font-semibold text-ink shadow-float hover:bg-white/90">
-              Order now
+              How to order
               <ArrowUpRight className="h-5 w-5" strokeWidth={2.25} />
             </a>
             <button

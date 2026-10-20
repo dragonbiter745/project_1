@@ -413,7 +413,7 @@ function TrackStep({ onAgain }: { onAgain: () => void }) {
               Place another demo order
             </button>
             <a href={orderAtTable()} className="pressable grid h-12 place-items-center rounded-full bg-white text-sm font-semibold text-accent-ink ring-1 ring-inset ring-accent-line">
-              Order for real at REVA
+              Scan a table QR at REVA to order
             </a>
           </div>
         </div>

@@ -18,7 +18,7 @@ export function Footer() {
             3D preview
           </a>
           <a href={orderAtTable()} className="hover:text-ink">
-            Order now
+            How to order
           </a>
         </nav>
       </div>

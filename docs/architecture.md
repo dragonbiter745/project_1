@@ -77,3 +77,15 @@
 - **Rendering budget:** static pieces merge into one mesh per material, and people are one instanced mesh per body part, so draw calls stay well under 250. Textures are generated on canvases. Quality presets step automatically with `PerformanceMonitor`. The canvas stops rendering when scrolled away, and the sim keeps ticking for the dashboard section.
 - **Loading:** React, vendor and page code load first so the text paints immediately. The three and R3F chunks load with the lazily imported `World`.
 - **Not built:** the Walk (WASD) camera from the original brief. Orbit, Follow and Cinematic cover the demo.
+
+## ADR 011: Launch hardening (backend security, Firestore-backed apps)
+- **Context:** an audit before launch found the three apps still on the browser-only demo store,
+  Auth never initialised, forgeable payment webhooks, an open payment endpoint, multi-shop orders
+  failing after payment (transaction reads after writes), and a dev bypass on kitchen actions.
+- **Decisions:** apps read a Firestore-backed live store with the old shape (REST for the diner's
+  catalog to keep the 150 KB budget, scoped listeners elsewhere) and write only through callables
+  or rule-checked documents; sessions start from per-table 128-bit QR tokens; every callable is
+  rate-limited (shared per-user windows in Firestore, generous per-instance IP limits for campus
+  NAT); Cashfree keys in Secret Manager; signed webhooks with amount checks; deterministic order
+  and ticket ids for idempotency; a one-minute sweeper and a refund trigger.
+- **Testing:** 25 emulator tests (callables, webhook replay, sweeper, refunds, rules) run in CI.
