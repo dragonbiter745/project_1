@@ -252,6 +252,8 @@ export async function createMoneyScene(canvas: HTMLCanvasElement, card: () => HT
   // Follows the card every frame, so the hiding stays exact through its entrance and shake.
   const syncCard = () => {
     const el = card();
+    // As a page backdrop there is no card: nothing hides the money, the page's own cards sit above the canvas.
+    occluder.visible = !!el;
     if (!el) return;
     const r = el.getBoundingClientRect();
     if (Math.abs(r.width - cardSize.w) > 0.5 || Math.abs(r.height - cardSize.h) > 0.5) {
