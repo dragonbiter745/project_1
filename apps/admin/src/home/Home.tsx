@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ChevronRight, CookingPot, PackageX, ReceiptText, Store, Wallet } from 'lucide-react';
+import { ChevronRight, CookingPot, PackageX, Store, Wallet } from 'lucide-react';
 import { getShopReport } from '@foodcourt/firebase-client/finance';
 import { formatPaise, getIstDateKey, type ShopReport } from '@foodcourt/shared';
 import { Skeleton, cx } from '@foodcourt/ui';
@@ -70,10 +70,9 @@ export function Home({ vendorId, onOpenMoney, onOpenMenu }: { vendorId: string; 
       <section aria-labelledby="todo-h">
         <h2 id="todo-h" className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-3">Good to know</h2>
         <ul className="space-y-2">
-          <Row icon={<Wallet className="h-5 w-5" />} tone="bg-accent-tint text-accent-ink" title="Money" hint={today ? `${formatPaise(today.balanceDuePaise)} still to receive from the court` : 'See sales, payouts and what you are owed'} onClick={onOpenMoney} />
+          <Row icon={<Wallet className="h-5 w-5" />} tone="bg-accent-tint text-accent-ink" title="Money" hint={today ? `${formatPaise(today.balanceDuePaise)} still to receive from the court` : 'Sales, past orders, payouts and what you are owed'} onClick={onOpenMoney} />
           <Row icon={<PackageX className="h-5 w-5" />} tone={soldOut ? 'bg-danger-tint text-danger' : 'bg-surface-2 text-ink-2'} title={soldOut ? `${soldOut} ${soldOut === 1 ? 'dish is' : 'dishes are'} sold out` : 'Everything is in stock'} hint="Mark dishes sold out from the order screen" />
           <Row icon={<CookingPot className="h-5 w-5" />} tone="bg-surface-2 text-ink-2" title="Menu" hint="Change dishes, prices and photos" onClick={onOpenMenu} />
-          <Row icon={<ReceiptText className="h-5 w-5" />} tone="bg-surface-2 text-ink-2" title="Order history" hint="Past orders and refunds — coming next" />
         </ul>
       </section>
     </div>

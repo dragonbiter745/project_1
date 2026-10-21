@@ -48,7 +48,7 @@ export function Shell({ staff, vendorId }: { staff: StaffUser; vendorId: string 
   if (tab === 'home') page = <Home vendorId={vendorId} onOpenMoney={() => go('finance')} onOpenMenu={() => go('menu')} />;
   else if (tab === 'menu') page = <Menu vendorId={vendorId} />;
   else if (tab === 'finance') page = <Suspense fallback={<Skeleton className="h-64 w-full rounded-sheet" />}><Finance vendorId={vendorId} /></Suspense>;
-  else page = <More staff={staff} />;
+  else page = <More staff={staff} vendorId={vendorId} />;
 
   return (
     <div className="grain ambient min-h-[100dvh]">

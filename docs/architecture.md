@@ -178,3 +178,27 @@
   comes, it reuses the same audiences with Brevo through the Trigger Email extension.
 - **Setup needed:** a Web Push key pair in the Firebase console (`VITE_FIREBASE_VAPID_KEY`).
   Without it, push stays off and messages still reach the inbox.
+
+## ADR 018: Shop Admin replaces the shop finance site
+- **Context:** each shop has two sites: the kitchen order screen (`apps/vendor`) and a money-only
+  finance site. Owners also need to change their menu and shop details without asking the court.
+- **Decisions:** `apps/finance` is now `apps/admin` (Hosting target `admin`, same site id
+  `reva-nest-finance`). One owner login (the existing `vendorFinance` claim + `vendorId`) opens
+  Home, Menu, Money and More; the kitchen keeps its own `vendorAdmin`/`vendorStaff` login. The
+  claim name is unchanged for now to avoid re-provisioning accounts.
+- **Menu and settings:** dishes, prices, sections, order, photos, hours, prep time, pickup/table
+  service and the kitchen password go through one callable, `shopAdmin`. Clients still never write
+  `menus` or `vendors` (rules unchanged, covered by a rules test). The server takes the shop from
+  the token, bounds prices to ₹1–₹5,000 integer paise, accepts only that shop's own Storage
+  images, caps the menu at 300 dishes, writes `menus/{id}` in a transaction (version +1), clears the
+  sold-out flag of a removed dish and adds an `auditLogs` entry (area `shop-admin`). Dish and
+  section ids come from the form's `requestKey`, so a double tap lands once. Price changes need no
+  approval (`menu.priceEditRequiresApproval` stays unused); they apply to new orders only because
+  checkout re-reads the menu.
+- **Photos:** shrunk to ≤1000px JPEG on the phone, uploaded to `menus/{vendorId}/…`. Storage rules
+  allow only that shop's `vendorFinance` login (or master), images under 1 MB.
+- **Kitchen password:** `SET_KITCHEN_PASSWORD` looks the account up by email and only changes it
+  when its claims say kitchen role + this shop; every miss returns the same message. The password is
+  never logged. The admin login's own password change (by email) is deferred.
+- **Money:** the Money tab is the old earnings page (ShopFinance) under a hero that reuses the login's
+  3D rupees (`moneyScene`), lazy-loaded and skipped for reduced motion or no WebGL.
