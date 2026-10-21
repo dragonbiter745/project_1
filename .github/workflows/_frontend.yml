@@ -6,7 +6,7 @@ on:
   workflow_call:
     inputs:
       app:
-        description: customer | vendor | master | finance | landing (also the Firebase Hosting target)
+        description: customer | vendor | master | admin | landing (also the Firebase Hosting target)
         type: string
         required: true
       bundle-budget-kb:

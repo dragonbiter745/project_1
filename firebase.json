@@ -160,8 +160,8 @@
       ]
     },
     {
-      "target": "finance",
-      "public": "apps/finance/dist",
+      "target": "admin",
+      "public": "apps/admin/dist",
       "ignore": [
         "firebase.json",
         "**/.*",

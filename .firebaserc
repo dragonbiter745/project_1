@@ -19,7 +19,7 @@
         "landing": [
           "reva-nest-landing"
         ],
-        "finance": [
+        "admin": [
           "reva-nest-finance"
         ]
       }
