@@ -6,7 +6,7 @@ import type { MoneyScene } from './moneyScene';
 import { playFailure, playLaunch, playSuccess, setSoundOn, soundOn } from './sound';
 
 /**
- * The shop finance sign-in with 3D rupees around the card. `onHold(true)` keeps this screen up
+ * The shop admin sign-in with 3D rupees around the card. `onHold(true)` keeps this screen up
  * after Firebase signs in, so the money can finish flying out before the earnings page appears.
  */
 export default function MoneyLogin({ onHold }: { onHold: (holding: boolean) => void }) {
@@ -67,8 +67,8 @@ export default function MoneyLogin({ onHold }: { onHold: (holding: boolean) => v
 
   return (
     <StaffLogin
-      title="Shop finance"
-      subtitle="Your shop's earnings, the court's commission and payments received. Use your shop's finance login."
+      title="Shop admin"
+      subtitle="Manage your menu, shop details and earnings. Use your shop's admin login, not the kitchen one."
       onSubmit={submit}
       exiting={exiting}
       corner={

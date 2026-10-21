@@ -44,6 +44,10 @@ export function Shell({ staff, vendorId }: { staff: StaffUser; vendorId: string 
     scrollTo({ top: 0 });
   };
 
+  // On Money the 3D rupees sit behind the whole page, so the side rail and bars turn to frosted glass
+  // and let them show through; everywhere else they stay solid enough to read.
+  const glass = tab === 'finance' ? 'bg-surface/40 backdrop-blur-md' : 'bg-surface/85 backdrop-blur-xl';
+
   let page: ReactNode;
   if (tab === 'home') page = <Home vendorId={vendorId} onOpenMoney={() => go('finance')} onOpenMenu={() => go('menu')} />;
   else if (tab === 'menu') page = <Menu vendorId={vendorId} />;
@@ -52,7 +56,7 @@ export function Shell({ staff, vendorId }: { staff: StaffUser; vendorId: string 
 
   return (
     <div className="grain ambient min-h-[100dvh]">
-      <aside className="fixed inset-y-0 left-0 z-header hidden w-60 flex-col border-r border-line/70 bg-surface/80 p-4 backdrop-blur-xl lg:flex">
+      <aside className={cx('fixed inset-y-0 left-0 z-header hidden w-60 flex-col overflow-y-auto border-r border-line/70 p-4 md:flex', glass)}>
         <ShopTitle name={vendor?.name} code={vendor?.code} />
         <nav className="mt-8 space-y-1" aria-label="Shop admin">
           {TABS.map((t) => (
@@ -72,19 +76,19 @@ export function Shell({ staff, vendorId }: { staff: StaffUser; vendorId: string 
         </nav>
       </aside>
 
-      <header className="sticky top-0 z-header border-b border-line/70 bg-bg/85 backdrop-blur-xl lg:hidden">
+      <header className={cx('sticky top-0 z-header border-b border-line/70 md:hidden', glass)}>
         <div className="px-4 py-3">
           <ShopTitle name={vendor?.name} code={vendor?.code} />
         </div>
       </header>
 
-      <main className="px-4 pb-28 pt-5 lg:ml-60 lg:px-10 lg:pb-16 lg:pt-8">
+      <main className="px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-16 md:pt-8">
         <div className="mx-auto max-w-[920px]">{page}</div>
       </main>
 
       <nav
         aria-label="Shop admin"
-        className="fixed inset-x-0 bottom-0 z-header border-t border-line/70 bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+        className={cx('fixed inset-x-0 bottom-0 z-header border-t border-line/70 pb-[env(safe-area-inset-bottom)] md:hidden', glass)}
       >
         <ul className="mx-auto grid max-w-md grid-cols-4">
           {TABS.map((t) => (

@@ -191,7 +191,7 @@ export function drawNoteBack(d: Denomination): HTMLCanvasElement {
   g.font = `600 18px ${SANS}`;
   g.textAlign = 'center';
   g.globalAlpha = 0.8;
-  g.fillText('SHOP FINANCE  ·  2026', w * 0.5, h - 44);
+  g.fillText('SHOP ADMIN  ·  2026', w * 0.5, h - 44);
   g.font = `500 22px ${DEVANAGARI}`;
   g.fillText(d.words, w * 0.5, 50);
   return c;
