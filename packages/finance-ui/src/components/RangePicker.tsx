@@ -25,30 +25,32 @@ export function RangePicker({ value, onChange }: { value: Range; onChange: (r: R
           </button>
         ))}
       </div>
-      <label className="sr-only" htmlFor="range-from">
-        From
-      </label>
-      <input
-        id="range-from"
-        type="date"
-        value={value.from}
-        max={value.to}
-        onChange={(e) => e.target.value && onChange({ preset: 'custom', from: e.target.value, to: value.to })}
-        className={input}
-      />
-      <span className="text-sm text-ink-3">to</span>
-      <label className="sr-only" htmlFor="range-to">
-        To
-      </label>
-      <input
-        id="range-to"
-        type="date"
-        value={value.to}
-        min={value.from}
-        max={today}
-        onChange={(e) => e.target.value && onChange({ preset: 'custom', from: value.from, to: e.target.value })}
-        className={input}
-      />
+      <div className="flex min-w-0 items-center gap-2">
+        <label className="sr-only" htmlFor="range-from">
+          From
+        </label>
+        <input
+          id="range-from"
+          type="date"
+          value={value.from}
+          max={value.to}
+          onChange={(e) => e.target.value && onChange({ preset: 'custom', from: e.target.value, to: value.to })}
+          className={input}
+        />
+        <span className="text-sm text-ink-3">to</span>
+        <label className="sr-only" htmlFor="range-to">
+          To
+        </label>
+        <input
+          id="range-to"
+          type="date"
+          value={value.to}
+          min={value.from}
+          max={today}
+          onChange={(e) => e.target.value && onChange({ preset: 'custom', from: value.from, to: e.target.value })}
+          className={input}
+        />
+      </div>
     </div>
   );
 }

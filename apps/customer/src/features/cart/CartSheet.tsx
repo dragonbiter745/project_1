@@ -66,8 +66,8 @@ export function CartSheet({ session }: { session: TableSession }) {
       : null;
 
   useEffect(() => {
-    if (open) preloadCheckout();
-  }, [open]);
+    if (open) preloadCheckout(config.flags.paymentsEnabled);
+  }, [open, config.flags.paymentsEnabled]);
 
   const close = () => hide('cart');
 

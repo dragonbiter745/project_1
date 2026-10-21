@@ -41,8 +41,8 @@ function loadCashfree(): Promise<Window['Cashfree']> {
   return cashfreeLoader;
 }
 
-export function preloadCheckout(): void {
-  void loadCashfree();
+export function preloadCheckout(paysOnline: boolean): void {
+  if (paysOnline) void loadCashfree();
   void import('@foodcourt/firebase-client/functions');
   ensureAnonymousUser().catch(() => {});
 }

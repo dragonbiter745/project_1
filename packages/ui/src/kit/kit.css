@@ -16,6 +16,11 @@
   scrollbar-width: none;
 }
 
+/* A horizontal rail that scrolls: fade the right edge so a cut-off pill reads as "more". */
+.scroll-fade {
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+
 .safe-bottom {
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }

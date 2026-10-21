@@ -89,6 +89,7 @@ export const TicketCard = memo(function TicketCard({ sub, now, compact, onAccept
           <li>
             <button
               type="button"
+              aria-expanded={false}
               onClick={() => setExpanded(true)}
               className="pressable h-8 rounded-full bg-surface-2 px-3 text-sm font-semibold text-ink-2 transition-colors hover:bg-line/60"
             >

@@ -33,7 +33,7 @@ export function CourtFinance() {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3" data-print="hide">
-        <div role="tablist" aria-label="Finance" className="no-scrollbar flex max-w-full gap-1 overflow-x-auto">
+        <div role="tablist" aria-label="Finance" className="no-scrollbar scroll-fade flex max-w-full gap-1 overflow-x-auto pr-6 md:pr-0 md:[mask-image:none]">
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}

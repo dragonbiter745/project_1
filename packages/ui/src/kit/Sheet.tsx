@@ -103,7 +103,8 @@ export function Sheet({ open, onClose, title, description, children, footer }: S
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-sheet">
+    // Taps pass through while the sheet animates away, so the next button works at once.
+    <div className={open ? 'fixed inset-0 z-sheet' : 'pointer-events-none fixed inset-0 z-sheet'}>
       <div
         ref={backdropRef}
         data-visible={visible}

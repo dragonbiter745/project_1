@@ -70,10 +70,11 @@ export function Messages() {
   const cancel = async (c: Campaign) => {
     try {
       await cancelCampaign(c.id);
-      load();
     } catch (err) {
+      // Usually the message went out moments ago; the reload below shows it as sent.
       showActionError((err as Error).message);
     }
+    load();
   };
 
   const recent = campaigns?.filter((c) => c.status === 'SENT' && (c.sentAt ?? 0) > Date.now() - 30 * DAY) ?? [];
