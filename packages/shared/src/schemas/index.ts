@@ -237,3 +237,65 @@ export const PushActionSchema = z.object({
   action: z.enum(['REGISTER', 'UNREGISTER']),
   token: z.string().min(20).max(4096),
 });
+
+// ─── Shop admin (the owner edits their own menu and settings) ───────────────
+
+const SHOP_ID = z.string().min(1).max(100);
+const REQUEST_KEY = z.string().min(8).max(80);
+const CLOCK = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use 24-hour time like 09:30');
+/** Rupees in the form, paise on the wire: ₹1 to ₹5,000 a dish. */
+export const MENU_PRICE_MIN_PAISE = 100;
+export const MENU_PRICE_MAX_PAISE = 500_000;
+
+export const ShopAdminActionSchema = z.discriminatedUnion('action', [
+  // Adds a dish, or edits one when itemId is given. Without an itemId the id comes from requestKey,
+  // so a double tap on "Add dish" lands once.
+  z.object({
+    action: z.literal('SAVE_ITEM'),
+    vendorId: SHOP_ID.optional(),
+    requestKey: REQUEST_KEY,
+    categoryId: z.string().min(1).max(100),
+    itemId: z.string().min(1).max(100).optional(),
+    name: z.string().trim().min(2, 'Give the dish a name').max(60, 'Keep the name under 60 letters'),
+    pricePaise: z.number().int().min(MENU_PRICE_MIN_PAISE, 'The price must be at least ₹1').max(MENU_PRICE_MAX_PAISE, 'The price cannot be more than ₹5,000'),
+    veg: z.boolean(),
+    desc: z.string().trim().max(200, 'Keep the description under 200 letters').nullish(),
+    imageUrl: z.string().url().max(600).nullish(),
+    prepMin: z.number().int().min(1).max(120).nullish(),
+  }),
+  z.object({ action: z.literal('DELETE_ITEM'), vendorId: SHOP_ID.optional(), itemId: z.string().min(1).max(100) }),
+  z.object({
+    action: z.literal('SAVE_CATEGORY'),
+    vendorId: SHOP_ID.optional(),
+    requestKey: REQUEST_KEY,
+    categoryId: z.string().min(1).max(100).optional(),
+    name: z.string().trim().min(2, 'Give the section a name').max(40, 'Keep the name under 40 letters'),
+  }),
+  // A section can only be removed once it has no dishes, so a tap never wipes a menu.
+  z.object({ action: z.literal('DELETE_CATEGORY'), vendorId: SHOP_ID.optional(), categoryId: z.string().min(1).max(100) }),
+  // The new order of sections, or of one section's dishes.
+  z.object({
+    action: z.literal('REORDER'),
+    vendorId: SHOP_ID.optional(),
+    categoryId: z.string().min(1).max(100).optional(),
+    ids: z.array(z.string().min(1).max(100)).min(1).max(300),
+  }),
+  z.object({
+    action: z.literal('UPDATE_SETTINGS'),
+    vendorId: SHOP_ID.optional(),
+    open: CLOCK,
+    close: CLOCK,
+    defaultPrepMin: z.number().int().min(1).max(120),
+    fulfilmentMode: z.enum(['pickup', 'table_service']),
+    logoUrl: z.string().url().max(600).nullish(),
+  }),
+  // The owner sets the password of the shop's kitchen (order screen) login.
+  z.object({
+    action: z.literal('SET_KITCHEN_PASSWORD'),
+    vendorId: SHOP_ID.optional(),
+    kitchenEmail: z.string().trim().toLowerCase().email('Enter the email the kitchen signs in with'),
+    password: z.string().min(8, 'Use at least 8 characters').max(64, 'Use at most 64 characters'),
+  }),
+]);
+
+export type ShopAdminInput = z.infer<typeof ShopAdminActionSchema>;

@@ -19,6 +19,7 @@
     "./ops": "./src/ops.ts",
     "./staff": "./src/staff.ts",
     "./finance": "./src/finance.ts",
+    "./shop-admin": "./src/shopAdmin.ts",
     "./customers": "./src/customers.ts",
     "./coupons": "./src/coupons.ts",
     "./messaging": "./src/messaging.ts",

@@ -7,10 +7,18 @@ service firebase.storage {
       allow write: if request.auth != null && (request.auth.token.role == 'master' || request.auth.token.role == 'vendorAdmin');
     }
     
-    // Vendor menu item photos
-    match /menus/{vendorId}/{allPaths=**} {
+    // A shop's dish photos and logo: its own admin login (or the court manager) uploads small images only.
+    // The kitchen login and other shops cannot write here.
+    match /menus/{vendorId}/{file} {
       allow read: if true;
-      allow write: if request.auth != null && (request.auth.token.role == 'master' || request.auth.token.vendorId == vendorId);
+      allow write: if request.auth != null
+        && (request.auth.token.role == 'master'
+            || (request.auth.token.role == 'vendorFinance' && request.auth.token.vendorId == vendorId))
+        && request.resource.size < 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow delete: if request.auth != null
+        && (request.auth.token.role == 'master'
+            || (request.auth.token.role == 'vendorFinance' && request.auth.token.vendorId == vendorId));
     }
   }
 }

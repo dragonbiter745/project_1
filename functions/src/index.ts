@@ -6,6 +6,7 @@ setGlobalOptions({ region: REGION, maxInstances: 100 });
 export { startSession } from './callable/startSession';
 export { createCheckout } from './callable/createCheckout';
 export { vendorAction } from './callable/vendorAction';
+export { shopAdmin } from './callable/shopAdmin';
 export { reportIssue } from './callable/reportIssue';
 export { adminAction } from './callable/adminAction';
 export { accountAction } from './callable/account';

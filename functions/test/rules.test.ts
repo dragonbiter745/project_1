@@ -159,6 +159,11 @@ describe('firestore.rules', () => {
 
   it('keeps menus and global config master-only', async () => {
     await assertFails(setDoc(doc(staff(), 'menus/v-rm'), { categories: [] }));
+    // The shop admin login edits its menu and settings only through the shopAdmin callable.
+    const owner = env.authenticatedContext('fin-rm', { role: 'vendorFinance', vendorId: 'v-rm' }).firestore();
+    await assertFails(setDoc(doc(owner, 'menus/v-rm'), { categories: [] }));
+    await assertFails(updateDoc(doc(owner, 'vendors/v-rm'), { defaultPrepMin: 5 }));
+    await assertFails(updateDoc(doc(owner, 'availability/v-rm'), { unavailable: {} }));
     await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), 'config/global')));
     await assertFails(updateDoc(doc(staff(), 'config/global'), { 'flags.maintenance': true }));
     await assertSucceeds(updateDoc(doc(master(), 'config/global'), { 'flags.maintenance': true }));
