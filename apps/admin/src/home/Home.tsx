@@ -9,7 +9,7 @@ import { useLocal } from '../lib/store';
  * The first screen: is the shop taking orders, how is today going, and is anything waiting for
  * the owner. Plain words, a few big numbers, nothing to configure.
  */
-export function Home({ vendorId, onOpenMoney }: { vendorId: string; onOpenMoney: () => void }) {
+export function Home({ vendorId, onOpenMoney, onOpenMenu }: { vendorId: string; onOpenMoney: () => void; onOpenMenu: () => void }) {
   const vendor = useLocal((s) => s.vendors.find((v) => v.id === vendorId) ?? null);
   const soldOut = useLocal((s) => Object.values(s.availability[vendorId]?.unavailable ?? {}).filter(Boolean).length);
   const kitchen = useLocal(
@@ -72,7 +72,7 @@ export function Home({ vendorId, onOpenMoney }: { vendorId: string; onOpenMoney:
         <ul className="space-y-2">
           <Row icon={<Wallet className="h-5 w-5" />} tone="bg-accent-tint text-accent-ink" title="Money" hint={today ? `${formatPaise(today.balanceDuePaise)} still to receive from the court` : 'See sales, payouts and what you are owed'} onClick={onOpenMoney} />
           <Row icon={<PackageX className="h-5 w-5" />} tone={soldOut ? 'bg-danger-tint text-danger' : 'bg-surface-2 text-ink-2'} title={soldOut ? `${soldOut} ${soldOut === 1 ? 'dish is' : 'dishes are'} sold out` : 'Everything is in stock'} hint="Mark dishes sold out from the order screen" />
-          <Row icon={<CookingPot className="h-5 w-5" />} tone="bg-surface-2 text-ink-2" title="Menu editing" hint="Change dishes, prices and photos — coming next" />
+          <Row icon={<CookingPot className="h-5 w-5" />} tone="bg-surface-2 text-ink-2" title="Menu" hint="Change dishes, prices and photos" onClick={onOpenMenu} />
           <Row icon={<ReceiptText className="h-5 w-5" />} tone="bg-surface-2 text-ink-2" title="Order history" hint="Past orders and refunds — coming next" />
         </ul>
       </section>

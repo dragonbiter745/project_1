@@ -1,18 +1,20 @@
 import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
-import { House, Settings2, Wallet, type LucideIcon } from 'lucide-react';
+import { House, Settings2, UtensilsCrossed, Wallet, type LucideIcon } from 'lucide-react';
 import { connectVendor } from '@foodcourt/firebase-client/live';
 import type { StaffUser } from '@foodcourt/firebase-client/staff';
 import { BrandMark, Monogram, Skeleton, cx } from '@foodcourt/ui';
 import { useLocal } from '../lib/store';
 import { Home } from '../home/Home';
 import { More } from '../more/More';
+import { Menu } from '../menu/Menu';
 
 const Finance = lazy(() => import('../finance/Finance'));
 
-type Tab = 'home' | 'finance' | 'more';
+type Tab = 'home' | 'menu' | 'finance' | 'more';
 
 const TABS: Array<{ key: Tab; label: string; icon: LucideIcon }> = [
   { key: 'home', label: 'Home', icon: House },
+  { key: 'menu', label: 'Menu', icon: UtensilsCrossed },
   { key: 'finance', label: 'Money', icon: Wallet },
   { key: 'more', label: 'More', icon: Settings2 },
 ];
@@ -43,7 +45,8 @@ export function Shell({ staff, vendorId }: { staff: StaffUser; vendorId: string 
   };
 
   let page: ReactNode;
-  if (tab === 'home') page = <Home vendorId={vendorId} onOpenMoney={() => go('finance')} />;
+  if (tab === 'home') page = <Home vendorId={vendorId} onOpenMoney={() => go('finance')} onOpenMenu={() => go('menu')} />;
+  else if (tab === 'menu') page = <Menu vendorId={vendorId} />;
   else if (tab === 'finance') page = <Suspense fallback={<Skeleton className="h-64 w-full rounded-sheet" />}><Finance vendorId={vendorId} /></Suspense>;
   else page = <More staff={staff} />;
 
@@ -83,7 +86,7 @@ export function Shell({ staff, vendorId }: { staff: StaffUser; vendorId: string 
         aria-label="Shop admin"
         className="fixed inset-x-0 bottom-0 z-header border-t border-line/70 bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
-        <ul className="mx-auto grid max-w-md grid-cols-3">
+        <ul className="mx-auto grid max-w-md grid-cols-4">
           {TABS.map((t) => (
             <li key={t.key}>
               <button
