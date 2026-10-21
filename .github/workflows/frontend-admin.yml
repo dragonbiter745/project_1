@@ -52,5 +52,5 @@ jobs:
     uses: ./.github/workflows/_frontend.yml
     with:
       app: admin
-      live-url: https://reva-nest-finance.web.app
+      live-url: https://reva-nest-admin.web.app
     secrets: inherit
