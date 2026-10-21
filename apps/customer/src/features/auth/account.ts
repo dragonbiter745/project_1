@@ -2,6 +2,7 @@ import type { AccountActionInput, UserPrefs } from '@foodcourt/shared';
 import { useAuth } from '../../lib/authStore';
 import { ensureAnonymousUser, getCallable } from '../../lib/firebase';
 import { liveStore } from '../../lib/store';
+import { renameTableSession } from '../session/useTableSession';
 import { useProfile } from './profileStore';
 
 export interface AccountProfile {
@@ -83,6 +84,7 @@ export async function signInWithGoogle(sessionId?: string): Promise<{ firstSignI
     ...(guestToken ? { guestToken } : {}),
   });
   rememberDetails(result.profile);
+  renameTableSession(result.profile.name);
   return result;
 }
 

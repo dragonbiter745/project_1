@@ -9,6 +9,9 @@ interface UiState {
   loginReason: string | null;
   /** The account page to open straight to (a notification tap opens the inbox). */
   hubStart: 'inbox' | null;
+  /** `welcome` straight after Google sign-in, `checkout` when paying needs a mobile number. */
+  detailsMode: 'welcome' | 'checkout';
+  showDetails: (mode: 'welcome' | 'checkout') => void;
   show: (sheet: SheetName) => void;
   hide: (sheet: SheetName) => void;
   showLogin: (reason?: string) => void;
@@ -19,6 +22,8 @@ export const useUi = create<UiState>()((set) => ({
   open: { cart: false, tracking: false, login: false, details: false, account: false, coupons: false },
   loginReason: null,
   hubStart: null,
+  detailsMode: 'checkout',
+  showDetails: (mode) => set((s) => ({ detailsMode: mode, open: { ...s.open, details: true } })),
   show: (sheet) => set((s) => ({ open: { ...s.open, [sheet]: true } })),
   hide: (sheet) => set((s) => ({ open: { ...s.open, [sheet]: false } })),
   showLogin: (reason) => set((s) => ({ loginReason: reason ?? null, open: { ...s.open, login: true } })),

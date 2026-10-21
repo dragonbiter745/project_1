@@ -44,10 +44,12 @@ export const startSession = onCall({ region: REGION, minInstances: 1, maxInstanc
     const [existing, counter, customer] = await Promise.all([tx.get(sessionRef), tx.get(counterRef), tx.get(customerRef(uid))]);
     const member = Boolean(provider && provider !== 'anonymous');
     if (existing.exists && (existing.data()!.expiresAt as number) > now) {
-      tx.update(sessionRef, { lastActiveAt: now, expiresAt: now + SESSION_TTL_MS, expireAt: Timestamp.fromMillis(now + SESSION_TTL_MS + 86_400_000) });
       const s = existing.data()!;
-      writeVisit(tx, customer, { uid, dateKey, now, displayName: s.displayName as string, member });
-      return { sessionId: sessionRef.id, tableId: tableDoc.id, tableLabel: s.tableLabel, displayName: s.displayName, dailyNo: s.dailyNo };
+      // A diner who signed in after scanning is called by their own name from now on.
+      const displayName = memberName || (s.displayName as string);
+      tx.update(sessionRef, { lastActiveAt: now, expiresAt: now + SESSION_TTL_MS, expireAt: Timestamp.fromMillis(now + SESSION_TTL_MS + 86_400_000), displayName });
+      writeVisit(tx, customer, { uid, dateKey, now, displayName, member });
+      return { sessionId: sessionRef.id, tableId: tableDoc.id, tableLabel: s.tableLabel, displayName, dailyNo: s.dailyNo };
     }
     // Per-table daily number (a few diners a day per table, so no contention).
     const dailyNo = ((counter.data()?.count as number | undefined) ?? 0) + 1;

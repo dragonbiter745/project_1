@@ -40,6 +40,14 @@ function readCache(token: string): TableSession | null {
   }
 }
 
+const renamers = new Set<(name: string) => void>();
+
+/** Sign-in and profile edits rename this table's session on the server; show the new name here too. */
+export function renameTableSession(name: string | null | undefined): void {
+  const clean = name?.trim();
+  if (clean) for (const fn of renamers) fn(clean);
+}
+
 export function useTableSession(): TableSessionState {
   const [token] = useState(readQrToken);
   const [state, setState] = useState<TableSessionState>(() => {
@@ -49,6 +57,24 @@ export function useTableSession(): TableSessionState {
   });
   const [attempt, setAttempt] = useState(0);
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  useEffect(() => {
+    const rename = (displayName: string) =>
+      setState((s) => {
+        if (s.status !== 'ready' || s.session.displayName === displayName) return s;
+        const session = { ...s.session, displayName };
+        try {
+          sessionStorage.setItem(cacheKey(token), JSON.stringify(session));
+        } catch {
+          // storage blocked: the name still updates on screen
+        }
+        return { ...s, session };
+      });
+    renamers.add(rename);
+    return () => {
+      renamers.delete(rename);
+    };
+  }, [token]);
 
   useEffect(() => {
     if (!QR_TOKEN_PATTERN.test(token)) return;

@@ -7,6 +7,7 @@ import { cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
 import { notify, notifyError } from '../../lib/toast';
 import { accountCall, rememberDetails, signOutToGuest, type AccountProfile } from '../auth/account';
+import { renameTableSession } from '../session/useTableSession';
 import { CouponTicket, applyPreview, couponTerms, useScopeText } from '../coupons/CouponSheet';
 import { previewCoupon, walletCoupons, type WalletCoupon } from '../coupons/couponStore';
 import { ItemRow } from '../menu/ItemRow';
@@ -489,6 +490,7 @@ export function ProfileScreen() {
       const { profile: saved } = await accountCall<{ profile: AccountProfile }>({ action: 'UPDATE_PROFILE', sessionId: session.id, name: name.trim(), phone, studentId: studentId.trim() });
       if (vegOnly !== (profile?.prefs?.vegOnly === true)) await accountCall({ action: 'SET_PREFS', vegOnly });
       rememberDetails(saved);
+      renameTableSession(saved.name);
       notify('Profile saved');
       back();
     } catch (err) {

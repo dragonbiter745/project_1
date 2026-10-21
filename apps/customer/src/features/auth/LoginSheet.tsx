@@ -46,6 +46,12 @@ export function LoginSheet({ session }: { session: TableSession }) {
       close();
       const first = profile.name?.split(' ')[0];
       void celebrate();
+      if (!profile.phone || !profile.name) {
+        // Ask for the name on tokens and a mobile number once, as soon as the sign-in sheet is away
+        // (opening it in the same tick races the sign-in sheet's history entry).
+        setTimeout(() => useUi.getState().showDetails('welcome'), 320);
+        return;
+      }
       notify(first ? `You're in, ${first}` : "You're in", {
         description: firstSignIn
           ? 'Coupons you get will show up in your account.'
