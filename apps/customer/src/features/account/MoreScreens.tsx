@@ -487,7 +487,7 @@ export function ProfileScreen() {
     setError(null);
     setPending(true);
     try {
-      const { profile: saved } = await accountCall<{ profile: AccountProfile }>({ action: 'UPDATE_PROFILE', sessionId: session.id, name: name.trim(), phone, studentId: studentId.trim() });
+      const { profile: saved } = await accountCall<{ profile: AccountProfile }>({ action: 'UPDATE_PROFILE', ...(session ? { sessionId: session.id } : {}), name: name.trim(), phone, studentId: studentId.trim() });
       if (vegOnly !== (profile?.prefs?.vegOnly === true)) await accountCall({ action: 'SET_PREFS', vegOnly });
       rememberDetails(saved);
       renameTableSession(saved.name);

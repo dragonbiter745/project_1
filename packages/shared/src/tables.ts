@@ -5,6 +5,11 @@ export const QR_TOKEN_PATTERN = /^[A-Za-z0-9_-]{22,64}$/;
 export const PICKUP_TABLE_ID = 'pickup';
 export const PICKUP_TABLE_LABEL = 'Pickup';
 
+/** "Table T-14", or "Pickup" for a website order. */
+export function placeName(o: { tableId?: string; tableLabel: string }): string {
+  return o.tableId === PICKUP_TABLE_ID || o.tableLabel === PICKUP_TABLE_LABEL ? PICKUP_TABLE_LABEL : `Table ${o.tableLabel}`;
+}
+
 import type { Table } from './types';
 
 /**

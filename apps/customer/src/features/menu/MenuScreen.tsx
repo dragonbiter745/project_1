@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
-import { Store, UserRound, UtensilsCrossed } from 'lucide-react';
-import { formatDailyCustomerNo } from '@foodcourt/shared';
+import { ArrowLeft, Store, UserRound, UtensilsCrossed } from 'lucide-react';
+import { formatDailyCustomerNo, placeName } from '@foodcourt/shared';
 import { useAuth } from '../../lib/authStore';
 import { cleanLabel, cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
@@ -20,9 +20,18 @@ import { Button, Skeleton } from '@foodcourt/ui';
 const NONE_UNAVAILABLE: Record<string, boolean> = {};
 let entrancePlayed = false;
 
-export function MenuScreen({ session }: { session: TableSession }) {
+interface MenuScreenProps {
+  /** Null on the website: browsing needs no session. */
+  session: TableSession | null;
+  /** The shop picked on the website's restaurant list. */
+  initialVendorId?: string;
+  /** Website only: back to the restaurant list. */
+  onBack?: () => void;
+}
+
+export function MenuScreen({ session, initialVendorId, onBack }: MenuScreenProps) {
   const vendors = useLocal((s) => s.vendors, jsonEqual);
-  const [vendorId, setVendorId] = useState(() => vendors[0]?.id ?? '');
+  const [vendorId, setVendorId] = useState(() => initialVendorId ?? vendors[0]?.id ?? '');
   const [vegOnly, setVegOnly] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [playEntrance] = useState(() => !entrancePlayed);
@@ -97,7 +106,7 @@ export function MenuScreen({ session }: { session: TableSession }) {
 
   return (
     <>
-      <IdentityRow ref={identityRef} session={session} />
+      <IdentityRow ref={identityRef} session={session} onBack={onBack} />
 
       <header
         ref={headerRef}
@@ -195,22 +204,42 @@ export function MenuScreen({ session }: { session: TableSession }) {
   );
 }
 
-function IdentityRow({ session, ref }: { session: TableSession; ref: React.Ref<HTMLDivElement> }) {
+interface IdentityRowProps {
+  session: TableSession | null;
+  onBack?: () => void;
+  ref: React.Ref<HTMLDivElement>;
+}
+
+function IdentityRow({ session, onBack, ref }: IdentityRowProps) {
   const profile = useProfile((s) => s.profile);
   const user = useAuth((s) => s.user);
   const show = useUi((s) => s.show);
   const showLogin = useUi((s) => s.showLogin);
   const member = Boolean(user?.member);
-  const name = (member ? profile?.name || user?.name : null) ?? session.displayName;
+  const name = (member ? profile?.name || user?.name : null) ?? session?.displayName ?? 'Guest';
   const unread = useLocal((s) => Object.values(s.inbox).filter((m) => m.uid === user?.uid && !m.readAt).length);
   return (
     <div ref={ref} className="flex h-16 items-center justify-between gap-3 pl-4 pr-2 pt-1">
-      <div className="min-w-0">
-        <p className="truncate text-lg font-semibold tracking-tight text-ink">{name}</p>
-        <p className="text-sm tabular-nums text-ink-3">
-          {formatDailyCustomerNo(session.dailyNo)} · Table {session.tableLabel}
-        </p>
-      </div>
+      {onBack ? (
+        <div className="flex min-w-0 items-center gap-1">
+          <button type="button" onClick={onBack} aria-label="All restaurants" className="pressable -ml-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink hover-surface">
+            <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <div className="min-w-0">
+            <p className="truncate text-lg font-semibold tracking-tight text-ink">REVA Food Court</p>
+            <p className="truncate text-sm text-ink-3">Order online · Pickup at the counter</p>
+          </div>
+        </div>
+      ) : (
+        <div className="min-w-0">
+          <p className="truncate text-lg font-semibold tracking-tight text-ink">{name}</p>
+          {session && (
+            <p className="text-sm tabular-nums text-ink-3">
+              {formatDailyCustomerNo(session.dailyNo)} · {placeName(session)}
+            </p>
+          )}
+        </div>
+      )}
       <div className="flex shrink-0 items-center">
         {!member && (
           <Button variant="quiet" size="sm" onClick={() => showLogin()}>

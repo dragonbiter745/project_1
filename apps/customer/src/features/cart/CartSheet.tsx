@@ -10,13 +10,14 @@ import { useOnline } from '../../lib/useOnline';
 import { selectMember, useAuth } from '../../lib/authStore';
 import { SignInNudge } from '../auth/SignInNudge';
 import { preloadCheckout, useCheckout } from '../checkout/useCheckout';
-import type { TableSession } from '../session/useTableSession';
+import { isWebMode } from '../session/orderMode';
+import { placeLabel, type TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 import { useCart } from './cartStore';
 
 type Blocked = 'sold-out' | 'paused';
 
-export function CartSheet({ session }: { session: TableSession }) {
+export function CartSheet({ session }: { session: TableSession | null }) {
   const open = useUi((s) => s.open.cart);
   const hide = useUi((s) => s.hide);
   const show = useUi((s) => s.show);
@@ -59,6 +60,8 @@ export function CartSheet({ session }: { session: TableSession }) {
   const hasBlocked = list.some((i) => blockedReason(i) !== null);
   const payBlocker = config.flags.maintenance
     ? 'Ordering is paused for a few minutes. Please try again shortly.'
+    : isWebMode && !config.flags.paymentsEnabled
+    ? 'Online orders are paused. Scan the QR on a table at the court to order.'
     : !online
     ? "You're offline. Reconnect to pay."
     : hasBlocked
@@ -88,7 +91,7 @@ export function CartSheet({ session }: { session: TableSession }) {
       open={open}
       onClose={close}
       title="Your order"
-      description={`Table ${session.tableLabel} · One payment for every shop`}
+      description={`${placeLabel(session)} · One payment for every shop`}
       footer={
         list.length > 0 ? (
           <div>
@@ -104,9 +107,18 @@ export function CartSheet({ session }: { session: TableSession }) {
               disabled={payBlocker !== null}
               onClick={() => checkout(list, payable, discountPaise > 0 ? coupon?.coupon.code : undefined)}
             >
-              Pay {formatPaise(payable.totalPaise)}
-              {discountPaise > 0 && <span className="ml-1 text-sm font-medium line-through opacity-60">{formatPaise(totals.totalPaise)}</span>}
+              {isWebMode && !member ? (
+                `Sign in to order · ${formatPaise(payable.totalPaise)}`
+              ) : (
+                <>
+                  Pay {formatPaise(payable.totalPaise)}
+                  {discountPaise > 0 && <span className="ml-1 text-sm font-medium line-through opacity-60">{formatPaise(totals.totalPaise)}</span>}
+                </>
+              )}
             </Button>
+            {isWebMode && (
+              <p className="mt-2 text-center text-xs text-ink-3">Collect at the shop counter when your token is ready.</p>
+            )}
           </div>
         ) : undefined
       }
@@ -196,7 +208,7 @@ export function CartSheet({ session }: { session: TableSession }) {
               You'll earn {points} REVA points when you collect.
             </p>
           )}
-          <SignInNudge place="cart" className="mt-4" />
+          {!isWebMode && <SignInNudge place="cart" className="mt-4" />}
         </>
       )}
     </Sheet>

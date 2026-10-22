@@ -6,7 +6,8 @@ import { jsonEqual, useLocal } from '../../lib/store';
 import { SignInNudge } from '../auth/SignInNudge';
 import { PushPrompt } from '../notifications/PushPrompt';
 import { useCart } from '../cart/cartStore';
-import type { TableSession } from '../session/useTableSession';
+import { useProfile } from '../auth/profileStore';
+import { placeLabel, type TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 import { ReportProblemSheet, type ReportTarget } from './ReportProblemSheet';
 import { TokenSpotlight, type Spotlight } from './TokenSpotlight';
@@ -15,9 +16,12 @@ import { Button, Sheet, useNow, useWakeLock } from '@foodcourt/ui';
 
 const MINUTE = 60_000;
 
-export function TrackingSheet({ session }: { session: TableSession }) {
+export function TrackingSheet({ session }: { session: TableSession | null }) {
   const open = useUi((s) => s.open.tracking);
   const hide = useUi((s) => s.hide);
+  // Back from paying on the website, the pickup session may still be loading.
+  const profileName = useProfile((s) => s.profile?.name);
+  const displayName = session?.displayName ?? profileName ?? 'You';
   const setActiveOrder = useCart((s) => s.setActiveOrder);
   const { orderId, order, subOrders } = useActiveOrder();
   const prepMinutes = useLocal(
@@ -42,7 +46,7 @@ export function TrackingSheet({ session }: { session: TableSession }) {
         open={open && Boolean(orderId)}
         onClose={close}
         title={orderId ? `Order #${orderId.slice(-4).toUpperCase()}` : 'Your order'}
-        description={`Table ${session.tableLabel} · ${session.displayName}`}
+        description={`${placeLabel(session)} · ${displayName}`}
         footer={
           finished ? (
             <Button
@@ -70,16 +74,16 @@ export function TrackingSheet({ session }: { session: TableSession }) {
               <SubOrderCard
                 key={sub.id}
                 sub={sub}
-                displayName={session.displayName}
+                displayName={displayName}
                 prepMin={prepMinutes[sub.vendorId] ?? 10}
                 now={now}
                 onShowToken={() =>
                   setSpotlight({
                     token: sub.token,
                     vendorName: sub.vendorName,
-                    displayName: session.displayName,
-                    dailyNo: session.dailyNo,
-                    tableLabel: session.tableLabel,
+                    displayName,
+                    dailyNo: session?.dailyNo ?? 0,
+                    tableLabel: session?.tableLabel ?? sub.tableLabel,
                     ready: sub.status === 'READY',
                   })
                 }

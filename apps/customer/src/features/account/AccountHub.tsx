@@ -72,7 +72,7 @@ interface Entry {
 }
 
 /** The account hub: a stack of full-screen pages over the menu, like a native app's account tab. */
-export default function AccountHub({ session }: { session: TableSession }) {
+export default function AccountHub({ session }: { session: TableSession | null }) {
   const open = useUi((s) => s.open.account);
   const hide = useUi((s) => s.hide);
   const [stack, setStack] = useState<Entry[]>([]);

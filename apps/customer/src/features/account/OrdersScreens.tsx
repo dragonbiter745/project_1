@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Copy, MessageSquareWarning, Printer, Radio, ReceiptText, RotateCcw, Share2, ShoppingBag } from 'lucide-react';
-import { formatPaise, type Order, type SubOrder, type SubOrderStatus } from '@foodcourt/shared';
+import { formatPaise, placeName, type Order, type SubOrder, type SubOrderStatus } from '@foodcourt/shared';
 import { Button } from '@foodcourt/ui';
 import { useAuth } from '../../lib/authStore';
 import { cx } from '../../lib/format';
@@ -207,7 +207,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
           <div>
             <p className="text-2xl font-semibold tabular-nums tracking-tight text-ink">{formatPaise(order.totals.totalPaise)}</p>
             <p className="mt-0.5 text-sm text-ink-3">
-              {dayFormat.format(order.createdAt)}, {timeFormat.format(order.createdAt)} · Table {order.tableLabel}
+              {dayFormat.format(order.createdAt)}, {timeFormat.format(order.createdAt)} · {placeName(order)}
             </p>
           </div>
           <Pill tone={status.tone}>{status.label}</Pill>
@@ -331,7 +331,7 @@ export function ReceiptScreen({ id }: { id: string }) {
   const share = async () => {
     const lines = [
       `REVA Food Court · Receipt ${shortOrderNo(order.id)}`,
-      `${dayFormat.format(order.createdAt)}, ${timeFormat.format(order.createdAt)} · Table ${order.tableLabel}`,
+      `${dayFormat.format(order.createdAt)}, ${timeFormat.format(order.createdAt)} · ${placeName(order)}`,
       ...order.items.map((i) => `${i.qty} × ${i.name}  ${formatPaise(i.pricePaise * i.qty)}`),
       `Total ${formatPaise(order.totals.totalPaise)} (GST included)`,
     ];
@@ -362,7 +362,7 @@ export function ReceiptScreen({ id }: { id: string }) {
           <p className="text-lg font-semibold tracking-tight text-ink">REVA Food Court</p>
           <p className="text-sm text-ink-3">Receipt {shortOrderNo(order.id)}</p>
           <p className="mt-1 text-sm tabular-nums text-ink-3">
-            {dayFormat.format(order.createdAt)}, {timeFormat.format(order.createdAt)} · Table {order.tableLabel}
+            {dayFormat.format(order.createdAt)}, {timeFormat.format(order.createdAt)} · {placeName(order)}
           </p>
         </header>
         {tickets.length > 0 ? (

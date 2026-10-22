@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { formatDailyCustomerNo } from '@foodcourt/shared';
+import { formatDailyCustomerNo, placeName } from '@foodcourt/shared';
 import { Button, lockScroll, unlockScroll, useBackDismiss } from '@foodcourt/ui';
 
 export interface Spotlight {
@@ -54,7 +54,7 @@ export function TokenSpotlight({ spot, onClose }: { spot: Spotlight | null; onCl
       <p className="mt-8 text-xl font-semibold text-ink">
         {spot.displayName} · {formatDailyCustomerNo(spot.dailyNo)}
       </p>
-      <p className="mt-1 text-base text-ink-3">Table {spot.tableLabel}</p>
+      <p className="mt-1 text-base text-ink-3">{placeName(spot)}</p>
       {spot.ready && (
         <p className="mt-6 rounded-full bg-ready-tint px-4 py-2 text-base font-semibold text-ready">Ready to collect</p>
       )}

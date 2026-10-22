@@ -17,7 +17,7 @@ const fieldClass =
  * Opens once straight after a sign-in that left them missing, and at checkout if the number is still missing.
  * Guests keep these on this phone; signed-in diners save them to their account.
  */
-export function DetailsSheet({ session }: { session: TableSession }) {
+export function DetailsSheet({ session }: { session: TableSession | null }) {
   const open = useUi((s) => s.open.details);
   const welcome = useUi((s) => s.detailsMode === 'welcome');
   const hide = useUi((s) => s.hide);
@@ -52,7 +52,7 @@ export function DetailsSheet({ session }: { session: TableSession }) {
     setPending(true);
     try {
       if (member) {
-        const { profile } = await accountCall<{ profile: AccountProfile }>({ action: 'UPDATE_PROFILE', sessionId: session.id, phone, name: displayName });
+        const { profile } = await accountCall<{ profile: AccountProfile }>({ action: 'UPDATE_PROFILE', ...(session ? { sessionId: session.id } : {}), phone, name: displayName });
         rememberDetails(profile);
         renameTableSession(profile.name);
       } else {

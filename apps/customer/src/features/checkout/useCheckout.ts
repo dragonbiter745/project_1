@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { notify, notifyError } from '../../lib/toast';
 import { getIstDateKey, type CartItem, type Order, type OrderTotals } from '@foodcourt/shared';
+import { useAuth } from '../../lib/authStore';
 import { ensureAnonymousUser, getCallable } from '../../lib/firebase';
 import { liveStore } from '../../lib/store';
 import { useProfile } from '../auth/profileStore';
 import { useCart } from '../cart/cartStore';
 import { useCoupon } from '../coupons/couponStore';
 import { useOrderHistory } from '../history/orderHistory';
+import { isWebMode } from '../session/orderMode';
+import { ensurePickupSession } from '../session/usePickupSession';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 
@@ -77,12 +80,22 @@ interface CashfreeResult {
   redirect?: boolean;
 }
 
-export function useCheckout(session: TableSession) {
+/** On the website `tableSession` is null; checkout opens the signed-in diner's pickup session itself. */
+export function useCheckout(tableSession: TableSession | null) {
   const [pending, setPending] = useState(false);
 
   const checkout = async (items: CartItem[], totals: OrderTotals, couponCode?: string) => {
     if (items.length === 0 || pending) return;
     const paymentsOn = liveStore.getState().config.flags.paymentsEnabled;
+    // Website orders need an account and are paid online (the server checks both again).
+    if (isWebMode && !useAuth.getState().user?.member) {
+      useUi.getState().showLogin('Sign in to place your order. You collect it at the counter with your token.', { required: true });
+      return;
+    }
+    if (isWebMode && !paymentsOn) {
+      notifyError('Online orders are paused', { description: 'Scan the QR on a table at the court to order there.' });
+      return;
+    }
     const phone = useProfile.getState().profile?.phone;
     // Cashfree needs a real mobile number for online payments; the details sheet collects it.
     if (paymentsOn && !phone) {
@@ -91,6 +104,17 @@ export function useCheckout(session: TableSession) {
       return;
     }
     setPending(true);
+    let session: TableSession;
+    try {
+      const opened = isWebMode ? await ensurePickupSession(true) : tableSession;
+      if (!opened) throw new Error('No session');
+      session = opened;
+    } catch (err) {
+      console.error('Could not open the order session', err);
+      setPending(false);
+      notifyError("Couldn't start your order", { description: navigator.onLine ? 'Please try again.' : 'Check your connection. Your cart is saved.' });
+      return;
+    }
 
     // A fresh key per attempt: the same key always maps to the same server order.
     const checkoutKey = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `ck_${Date.now()}_${Math.random().toString(36).slice(2)}`;

@@ -25,7 +25,8 @@ export type Route =
   | { name: 'privacy' };
 
 export interface Hub {
-  session: TableSession;
+  /** Null on the website before a pickup session exists. */
+  session: TableSession | null;
   push: (route: Route) => void;
   back: () => void;
   closeHub: () => void;

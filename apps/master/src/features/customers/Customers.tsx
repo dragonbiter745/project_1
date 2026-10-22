@@ -5,6 +5,7 @@ import {
   customerTags,
   formatPaise,
   maskPhone,
+  placeName,
   type CustomerInsights,
   type CustomerRecord,
   type CustomerSegment,
@@ -602,7 +603,7 @@ export function CustomerDrawer({ customer: c, names, onClose }: { customer: Cust
                     <span className="text-sm font-semibold tabular-nums text-ink">{formatPaise(o.totals.totalPaise)}</span>
                   </div>
                   <p className="mt-0.5 truncate text-xs text-ink-3">
-                    {ORDER_LABEL[o.status] ?? o.status} · Table {o.tableLabel} · {o.items.map((i) => `${i.qty}× ${i.name}`).join(', ')}
+                    {ORDER_LABEL[o.status] ?? o.status} · {placeName(o)} · {o.items.map((i) => `${i.qty}× ${i.name}`).join(', ')}
                   </p>
                 </li>
               ))}

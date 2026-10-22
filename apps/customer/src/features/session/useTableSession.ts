@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { QR_TOKEN_PATTERN } from '@foodcourt/shared';
 import { ensureAnonymousUser, getCallable } from '../../lib/firebase';
+import { forgetTable, rememberTable } from './orderMode';
 
 export interface TableSession {
   id: string;
@@ -8,6 +9,13 @@ export interface TableSession {
   tableLabel: string;
   displayName: string;
   dailyNo: number;
+  /** `pickup` sessions come from the website and have no table. */
+  kind: 'table' | 'pickup';
+}
+
+/** Where the food goes, as shown under sheet titles. */
+export function placeLabel(session: TableSession | null): string {
+  return !session || session.kind === 'pickup' ? 'Pickup at the counter' : `Table ${session.tableLabel}`;
 }
 
 export type TableSessionState =
@@ -85,14 +93,14 @@ export function useTableSession(): TableSessionState {
       .then((fn) => fn({ qrToken: token }))
       .then(({ data }) => {
         if (!live) return;
-        const session: TableSession = { id: data.sessionId, tableId: data.tableId, tableLabel: data.tableLabel, displayName: data.displayName, dailyNo: data.dailyNo };
+        const session: TableSession = { id: data.sessionId, tableId: data.tableId, tableLabel: data.tableLabel, displayName: data.displayName, dailyNo: data.dailyNo, kind: 'table' };
         try {
           sessionStorage.setItem(cacheKey(token), JSON.stringify(session));
-          // A home-screen launch or a notification tap reopens this table.
-          localStorage.setItem('fc_last_table', token);
         } catch {
           // storage blocked: the session simply is not cached
         }
+        // A home-screen launch or a notification tap in the next few hours reopens this table.
+        rememberTable(token);
         setState({ status: 'ready', session, qrToken: token });
       })
       .catch((err: { code?: string }) => {
@@ -100,10 +108,10 @@ export function useTableSession(): TableSessionState {
         if (err?.code === 'functions/not-found' || err?.code === 'functions/invalid-argument') {
           try {
             sessionStorage.removeItem(cacheKey(token));
-            if (localStorage.getItem('fc_last_table') === token) localStorage.removeItem('fc_last_table');
           } catch {
             // ignore
           }
+          forgetTable(token);
           setState({ status: 'unknown-table', code: '' });
         } else {
           setState((s) => (s.status === 'ready' ? s : { status: 'error', retry }));
