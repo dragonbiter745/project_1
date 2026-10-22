@@ -80,6 +80,18 @@ export const ItemRow = memo(function ItemRow({ item, vendorId, soldOut, paused }
 
   return (
     <li className="flex items-start gap-3 px-4 py-3.5">
+      {/* Shops add photos from Shop admin; rows without one stay text-first. */}
+      {item.imageUrl && (
+        <img
+          src={item.imageUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          width={76}
+          height={76}
+          className={cx('h-[76px] w-[76px] shrink-0 rounded-[14px] bg-surface-2 object-cover', soldOut && 'opacity-60 grayscale')}
+        />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2.5">
           <VegDot veg={item.veg} size="sm" className="mt-[3px] shrink-0" />

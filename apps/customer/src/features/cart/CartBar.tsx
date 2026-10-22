@@ -51,7 +51,7 @@ export function CartBar() {
               </span>
             </span>
           </span>
-          <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-ink">
+          <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-on-accent">
             View cart
             <ArrowRight className="h-4 w-4" strokeWidth={2.25} />
           </span>

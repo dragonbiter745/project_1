@@ -594,7 +594,7 @@ function Preview({ title, body, couponCode, kitchens }: { title: string; body: s
   }
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <div className="rounded-[22px] bg-[linear-gradient(160deg,#4a1442,#2a0a26)] p-3" aria-label="Phone notification preview">
+      <div className="rounded-[22px] bg-[linear-gradient(160deg,#4a514c,#2b302d)] p-3" aria-label="Phone notification preview">
         <div className="rounded-[16px] bg-white/90 p-3">
           <div className="flex items-center gap-2">
             <span className="grid h-5 w-5 place-items-center rounded-[6px] bg-accent-ink text-on-accent">

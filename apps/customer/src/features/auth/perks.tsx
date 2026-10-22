@@ -19,7 +19,7 @@ export const PERKS: Perk[] = [
 
 export function SoonTag() {
   return (
-    <span className="ml-1.5 inline-flex h-5 items-center rounded-full bg-accent px-2 align-middle text-2xs font-semibold text-ink">
+    <span className="ml-1.5 inline-flex h-5 items-center rounded-full bg-accent px-2 align-middle text-2xs font-semibold text-on-accent">
       Coming soon
     </span>
   );

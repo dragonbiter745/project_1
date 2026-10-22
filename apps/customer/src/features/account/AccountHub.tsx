@@ -190,10 +190,9 @@ function Home() {
         </section>
       ) : (
         <section className="enter-up relative overflow-hidden rounded-card bg-ink p-5 text-surface shadow-float">
-          <span aria-hidden className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-accent/70 blur-3xl" />
-          <p className="relative text-xl font-semibold tracking-tight">You're ordering as a guest</p>
+                    <p className="relative text-xl font-semibold tracking-tight">You're ordering as a guest</p>
           <p className="relative mt-1 text-sm text-surface/75">Sign in to keep your orders on any phone, save favourites, and get member-only coupons.</p>
-          <button type="button" onClick={() => showLogin()} className="pressable relative mt-4 inline-flex h-11 items-center rounded-full bg-accent px-5 text-base font-semibold text-ink">
+          <button type="button" onClick={() => showLogin()} className="pressable relative mt-4 inline-flex h-11 items-center rounded-full bg-accent px-5 text-base font-semibold text-on-accent">
             Sign in or create account
           </button>
         </section>
@@ -229,7 +228,7 @@ function Home() {
             icon={Inbox}
             label="Inbox"
             detail={inbox.length === 0 ? 'Offers and news from the court' : inbox[0]!.title}
-            badge={unread > 0 ? <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent px-1.5 text-xs font-semibold tabular-nums text-ink">{unread}</span> : undefined}
+            badge={unread > 0 ? <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent px-1.5 text-xs font-semibold tabular-nums text-on-accent">{unread}</span> : undefined}
             onClick={() => push({ name: 'inbox' })}
           />
         </Group>

@@ -36,7 +36,7 @@ export function GoogleMark() {
 async function celebrate() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const { default: confetti } = await import('canvas-confetti');
-  void confetti({ particleCount: 70, spread: 70, startVelocity: 32, origin: { y: 0.75 }, colors: ['#3A0F34', '#F6A609', '#DDE3E8', '#FFFFFF'], disableForReducedMotion: true });
+  void confetti({ particleCount: 70, spread: 70, startVelocity: 32, origin: { y: 0.75 }, colors: ['#343A36', '#B95C3C', '#8B9A78', '#FAF9F6'], disableForReducedMotion: true });
 }
 
 /** What every successful sign-in does next: say hello, and ask for a missing name or number once. */

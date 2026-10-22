@@ -37,7 +37,7 @@ export function couponTerms(c: PublicCoupon, scopeText: (s: CouponScope) => stri
 async function sparkle() {
   if (prefersReducedMotion()) return;
   const { default: confetti } = await import('canvas-confetti');
-  void confetti({ particleCount: 40, spread: 55, startVelocity: 26, origin: { y: 0.8 }, colors: ['#3A0F34', '#F6A609', '#DDE3E8'], disableForReducedMotion: true });
+  void confetti({ particleCount: 40, spread: 55, startVelocity: 26, origin: { y: 0.8 }, colors: ['#343A36', '#B95C3C', '#8B9A78'], disableForReducedMotion: true });
 }
 
 /** Applies a coupon to the cart, telling the diner the saving straight away (or what is missing). */

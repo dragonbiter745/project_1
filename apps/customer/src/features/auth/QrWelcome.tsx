@@ -89,11 +89,11 @@ export function QrWelcome({ session }: { session: TableSession }) {
         </div>
       }
     >
-      <div className="relative overflow-hidden rounded-card bg-ink px-5 py-5 text-surface">
-        <span aria-hidden className="absolute -right-10 -top-12 h-36 w-36 rounded-full bg-accent/80 blur-2xl" />
-        <p className="relative text-xs font-semibold uppercase tracking-[0.14em] text-accent">Members get more</p>
-        <p className="relative mt-1.5 max-w-[17rem] text-2xl font-semibold leading-tight tracking-tight">Coupons and rewards, kept in your account.</p>
-        <p className="relative mt-2 text-sm text-surface/75">Guests can order and pay exactly the same way.</p>
+      <div className="rounded-[24px] bg-ink px-5 py-5 text-surface">
+        <p className="max-w-[16ch] font-display text-[30px] font-bold leading-[0.98]">
+          Members get <span className="text-accent-tint">more.</span>
+        </p>
+        <p className="mt-2 text-sm text-surface/75">Coupons and rewards kept in your account. Guests can order and pay exactly the same way.</p>
       </div>
       <PerkList className="mt-5" />
     </Sheet>

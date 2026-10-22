@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
 import { ArrowLeft, Store, UserRound, UtensilsCrossed } from 'lucide-react';
-import { formatDailyCustomerNo, placeName } from '@foodcourt/shared';
+import { formatDailyCustomerNo, placeName, type Vendor } from '@foodcourt/shared';
 import { useAuth } from '../../lib/authStore';
 import { cleanLabel, cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
@@ -106,7 +106,11 @@ export function MenuScreen({ session, initialVendorId, onBack }: MenuScreenProps
 
   return (
     <>
-      <IdentityRow ref={identityRef} session={session} onBack={onBack} />
+      {/* Everything above the sticky header is measured as one block for the pin-on-switch logic. */}
+      <div ref={identityRef}>
+        <IdentityRow session={session} onBack={onBack} />
+        {onBack && vendor && <ShopBanner vendor={vendor} index={Math.max(0, vendors.findIndex((v) => v.id === vendor.id))} paused={paused} />}
+      </div>
 
       <header
         ref={headerRef}
@@ -171,7 +175,7 @@ export function MenuScreen({ session, initialVendorId, onBack }: MenuScreenProps
               style={{ '--i': index } as CSSProperties}
             >
               <div className="flex items-baseline justify-between px-1 pb-2.5 pt-6">
-                <h2 id={`cat-${cat.id}`} className="text-lg font-semibold tracking-tight text-ink">
+                <h2 id={`cat-${cat.id}`} className="font-display text-xl font-bold text-ink">
                   {cleanLabel(cat.name)}
                 </h2>
                 <span className="text-sm tabular-nums text-ink-3">{cat.items.length}</span>
@@ -207,10 +211,23 @@ export function MenuScreen({ session, initialVendorId, onBack }: MenuScreenProps
 interface IdentityRowProps {
   session: TableSession | null;
   onBack?: () => void;
-  ref: React.Ref<HTMLDivElement>;
 }
 
-function IdentityRow({ session, onBack, ref }: IdentityRowProps) {
+/** The shop's counter sign at the top of its menu on the website, in the same stall colour as the home page. */
+function ShopBanner({ vendor, index, paused }: { vendor: Vendor; index: number; paused: boolean }) {
+  return (
+    <div className="px-4 pb-3 pt-1">
+      <div key={vendor.id} className={cx('stall-bg enter-up relative overflow-hidden rounded-[24px] px-5 py-5', `stall-${index % 3}`)}>
+        <h1 className="max-w-[16ch] font-display text-[clamp(30px,8vw,44px)] font-bold leading-[0.95]">{vendor.name}</h1>
+        <p className="mt-2 text-sm text-bg/75">
+          About {vendor.defaultPrepMin} min. {paused ? 'Not taking orders right now.' : 'Taking orders.'}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function IdentityRow({ session, onBack }: IdentityRowProps) {
   const profile = useProfile((s) => s.profile);
   const user = useAuth((s) => s.user);
   const show = useUi((s) => s.show);
@@ -219,14 +236,14 @@ function IdentityRow({ session, onBack, ref }: IdentityRowProps) {
   const name = (member ? profile?.name || user?.name : null) ?? session?.displayName ?? 'Guest';
   const unread = useLocal((s) => Object.values(s.inbox).filter((m) => m.uid === user?.uid && !m.readAt).length);
   return (
-    <div ref={ref} className="flex h-16 items-center justify-between gap-3 pl-4 pr-2 pt-1">
+    <div className="flex h-16 items-center justify-between gap-3 pl-4 pr-2 pt-1">
       {onBack ? (
         <div className="flex min-w-0 items-center gap-1">
           <button type="button" onClick={onBack} aria-label="All restaurants" className="pressable -ml-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink hover-surface">
             <ArrowLeft className="h-5 w-5" strokeWidth={2} />
           </button>
           <div className="min-w-0">
-            <p className="truncate text-lg font-semibold tracking-tight text-ink">REVA Food Court</p>
+            <p className="truncate font-display text-xl font-extrabold text-ink">REVA</p>
             <p className="truncate text-sm text-ink-3">Order online · Pickup at the counter</p>
           </div>
         </div>

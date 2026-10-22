@@ -1,52 +1,14 @@
 @import '@fontsource-variable/geist/wght.css';
 @import '@fontsource-variable/geist-mono/wght.css';
+@import '@fontsource-variable/bricolage-grotesque/wght.css';
 @import '../../../../packages/ui/src/kit/kit.css';
+@import '../../../../packages/design/tokens.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Same light palette as the customer app; the kitchen display relies on scale and weight for contrast. */
-:root {
-  color-scheme: light;
-
-  /* Palette: Ice Silver #DDE3E8, Deep Aubergine #3A0F34, Marigold #F6A609 (same as the customer app). */
-
-  --bg: 221 227 232;
-  --surface: 251 252 253;
-  --surface-2: 236 240 243;
-  --line: 207 214 221;
-  --line-strong: 178 187 197;
-
-  --ink: 58 15 52;
-  --ink-2: 86 64 83;
-  --ink-3: 101 87 101;
-
-  --accent: 246 166 9;
-  --accent-ink: 74 20 66;
-  --accent-tint: 254 243 216;
-  --accent-line: 245 208 130;
-  --scrim: 34 8 30;
-  --on-accent: 255 255 255;
-
-  --veg: 21 128 61;
-  --nonveg: 185 28 28;
-  --ready: 21 128 61;
-  --ready-tint: 232 247 238;
-  --prep: 156 86 0;
-  --prep-tint: 255 245 224;
-  --danger: 185 28 45;
-  --danger-tint: 253 238 240;
-
-  --shadow-float: 0 14px 34px -12px rgb(58 15 52 / 0.38), 0 2px 6px rgb(58 15 52 / 0.1);
-  --shadow-sheet: 0 -10px 40px rgb(58 15 52 / 0.16);
-  --shadow-card: 0 1px 2px rgb(58 15 52 / 0.05), 0 8px 24px -10px rgb(58 15 52 / 0.16);
-  --shadow-thumb: 0 1px 2px rgb(58 15 52 / 0.1), 0 2px 8px rgb(58 15 52 / 0.08);
-
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-}
 
 @layer base {
   html {
