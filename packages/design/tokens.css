@@ -77,21 +77,6 @@
   letter-spacing: -0.035em;
 }
 
-/* Stall colours: each shop gets a solid "counter sign" by its position in the list. */
-.stall-0 {
-  --stall: 52 58 54;
-}
-.stall-1 {
-  --stall: 105 116 91;
-}
-.stall-2 {
-  --stall: 158 75 47;
-}
-.stall-bg {
-  background-color: rgb(var(--stall));
-  color: rgb(250 249 246);
-}
-
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-fast: 0ms;

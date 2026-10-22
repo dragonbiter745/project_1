@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
-import { ArrowLeft, Store, UserRound, UtensilsCrossed } from 'lucide-react';
-import { formatDailyCustomerNo, placeName, type Vendor } from '@foodcourt/shared';
+import { Store, UserRound, UtensilsCrossed } from 'lucide-react';
+import { formatDailyCustomerNo, placeName } from '@foodcourt/shared';
 import { useAuth } from '../../lib/authStore';
 import { cleanLabel, cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
@@ -9,6 +9,7 @@ import { Avatar } from '../account/Avatar';
 import { useProfile } from '../auth/profileStore';
 import { SignInNudge } from '../auth/SignInNudge';
 import { SearchOverlay } from '../search/SearchOverlay';
+import { LANDING_URL } from '../session/orderMode';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 import { CategoryRail } from './CategoryRail';
@@ -23,15 +24,13 @@ let entrancePlayed = false;
 interface MenuScreenProps {
   /** Null on the website: browsing needs no session. */
   session: TableSession | null;
-  /** The shop picked on the website's restaurant list. */
-  initialVendorId?: string;
-  /** Website only: back to the restaurant list. */
-  onBack?: () => void;
+  /** The website: the header shows the court instead of a table, and links to the landing page. */
+  web?: boolean;
 }
 
-export function MenuScreen({ session, initialVendorId, onBack }: MenuScreenProps) {
+export function MenuScreen({ session, web }: MenuScreenProps) {
   const vendors = useLocal((s) => s.vendors, jsonEqual);
-  const [vendorId, setVendorId] = useState(() => initialVendorId ?? vendors[0]?.id ?? '');
+  const [vendorId, setVendorId] = useState(() => vendors[0]?.id ?? '');
   const [vegOnly, setVegOnly] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [playEntrance] = useState(() => !entrancePlayed);
@@ -108,8 +107,7 @@ export function MenuScreen({ session, initialVendorId, onBack }: MenuScreenProps
     <>
       {/* Everything above the sticky header is measured as one block for the pin-on-switch logic. */}
       <div ref={identityRef}>
-        <IdentityRow session={session} onBack={onBack} />
-        {onBack && vendor && <ShopBanner vendor={vendor} index={Math.max(0, vendors.findIndex((v) => v.id === vendor.id))} paused={paused} />}
+        <IdentityRow session={session} web={web} />
       </div>
 
       <header
@@ -210,24 +208,10 @@ export function MenuScreen({ session, initialVendorId, onBack }: MenuScreenProps
 
 interface IdentityRowProps {
   session: TableSession | null;
-  onBack?: () => void;
+  web?: boolean;
 }
 
-/** The shop's counter sign at the top of its menu on the website, in the same stall colour as the home page. */
-function ShopBanner({ vendor, index, paused }: { vendor: Vendor; index: number; paused: boolean }) {
-  return (
-    <div className="px-4 pb-3 pt-1">
-      <div key={vendor.id} className={cx('stall-bg enter-up relative overflow-hidden rounded-[24px] px-5 py-5', `stall-${index % 3}`)}>
-        <h1 className="max-w-[16ch] font-display text-[clamp(30px,8vw,44px)] font-bold leading-[0.95]">{vendor.name}</h1>
-        <p className="mt-2 text-sm text-bg/75">
-          About {vendor.defaultPrepMin} min. {paused ? 'Not taking orders right now.' : 'Taking orders.'}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function IdentityRow({ session, onBack }: IdentityRowProps) {
+function IdentityRow({ session, web }: IdentityRowProps) {
   const profile = useProfile((s) => s.profile);
   const user = useAuth((s) => s.user);
   const show = useUi((s) => s.show);
@@ -237,15 +221,12 @@ function IdentityRow({ session, onBack }: IdentityRowProps) {
   const unread = useLocal((s) => Object.values(s.inbox).filter((m) => m.uid === user?.uid && !m.readAt).length);
   return (
     <div className="flex h-16 items-center justify-between gap-3 pl-4 pr-2 pt-1">
-      {onBack ? (
-        <div className="flex min-w-0 items-center gap-1">
-          <button type="button" onClick={onBack} aria-label="All restaurants" className="pressable -ml-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink hover-surface">
-            <ArrowLeft className="h-5 w-5" strokeWidth={2} />
-          </button>
-          <div className="min-w-0">
-            <p className="truncate font-display text-xl font-extrabold text-ink">REVA</p>
-            <p className="truncate text-sm text-ink-3">Order online · Pickup at the counter</p>
-          </div>
+      {web ? (
+        <div className="min-w-0">
+          <a href={LANDING_URL} className="block truncate font-display text-xl font-extrabold text-ink" aria-label="REVA Food Court, about the court">
+            REVA
+          </a>
+          <p className="truncate text-sm text-ink-3">Order online. Pickup at the counter.</p>
         </div>
       ) : (
         <div className="min-w-0">

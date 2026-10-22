@@ -9,6 +9,9 @@ export const ORDER_MODE: OrderMode = window.location.pathname.startsWith('/t/') 
 
 export const isWebMode = ORDER_MODE === 'web';
 
+/** The landing page with the 3D court; the website's REVA mark links back to it. */
+export const LANDING_URL = ((import.meta.env.VITE_LANDING_URL as string | undefined) ?? 'https://reva-nest-landing.web.app').replace(/\/$/, '');
+
 const LAST_TABLE_KEY = 'fc_last_table';
 // A table is "yours" for about as long as a session lasts; after that the site opens as the website.
 const LAST_TABLE_MS = 3 * 60 * 60 * 1000;

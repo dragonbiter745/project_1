@@ -1,6 +1,5 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { QrCode, WifiOff } from 'lucide-react';
-import { useBackDismiss } from '@foodcourt/ui';
 import { warmAuthWhenIdle } from './lib/firebase';
 import { DetailsSheet } from './features/auth/DetailsSheet';
 import { LoginSheet } from './features/auth/LoginSheet';
@@ -20,7 +19,6 @@ import { TrackingSheet } from './features/tracking/TrackingSheet';
 import { AppToaster } from './features/ui/AppToaster';
 import { OfflineBanner } from './features/ui/OfflineBanner';
 import { useUi } from './features/ui/uiStore';
-import { WebHome } from './features/web/WebHome';
 
 // The account hub is its own chunk: it loads the first time a diner opens their account.
 const AccountHub = lazy(() => import('./features/account/AccountHub'));
@@ -80,32 +78,14 @@ function TableApp() {
   );
 }
 
-/** The website: restaurants first, then a shop's menu; ordering needs an account. */
+/** The website: straight to the menu, with every shop one tab away; ordering needs an account. */
 function WebApp() {
   const session = usePickupSession();
-  const [shopId, setShopId] = useState<string | null>(null);
-  const wasOpen = useRef(false);
-
-  // The back gesture returns to the restaurant list instead of leaving the site.
-  useBackDismiss(shopId !== null, () => setShopId(null));
-
-  useEffect(() => {
-    if (shopId) window.scrollTo({ top: 0, behavior: 'instant' });
-    else if (wasOpen.current) document.getElementById('restaurants')?.scrollIntoView({ block: 'start', behavior: 'instant' });
-    wasOpen.current = shopId !== null;
-  }, [shopId]);
-
   return (
-    <>
-      {shopId ? (
-        <div className="mx-auto min-h-[100dvh] max-w-2xl md:border-x md:border-line">
-          <MenuScreen key={shopId} session={session} initialVendorId={shopId} onBack={() => setShopId(null)} />
-        </div>
-      ) : (
-        <WebHome onOpenShop={setShopId} />
-      )}
+    <div className="mx-auto min-h-[100dvh] max-w-2xl md:border-x md:border-line">
+      <MenuScreen session={session} web />
       <Layers session={session} />
-    </>
+    </div>
   );
 }
 
