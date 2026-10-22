@@ -349,7 +349,7 @@ foodcourt/
 
 **Phase 2 (after pilot evidence):** points redemption, Easy Split auto‑settlement, push notifications at scale, tiers/offers, reorder favourites, Kannada/Hindi, thermal‑printer bridge.
 
-**Brought forward (Oct 2026, founders' decision):** Google sign-in with a full account area, customer analytics in master, court-paid coupons (online payments only), web push and in-app messages. Phone OTP is dropped for cost; email is paused. Decisions in `docs/architecture.md` ADR 014–017. Website pickup ordering: ADR 019.
+**Brought forward (Oct 2026, founders' decision):** Google sign-in with a full account area, customer analytics in master, court-paid coupons (online payments only), web push and in-app messages. Phone OTP is dropped for cost; email is paused. Decisions in `docs/architecture.md` ADR 014–017. Website pickup ordering: ADR 019. Email and password accounts and the table welcome sheet: ADR 020.
 
 ---
 

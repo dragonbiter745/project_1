@@ -1,20 +1,28 @@
-import { useState } from 'react';
-import { BellRing, Heart, ReceiptText, TicketPercent } from 'lucide-react';
+import { useEffect, useId, useState, type FormEvent } from 'react';
+import { ArrowLeft, Mail } from 'lucide-react';
 import { notify, notifyError } from '../../lib/toast';
 import type { TableSession } from '../session/useTableSession';
-import { useUi } from '../ui/uiStore';
-import { SignInCancelled, signInErrorMessage, signInWithGoogle } from './account';
+import { useUi, type LoginMode } from '../ui/uiStore';
+import {
+  SignInCancelled,
+  logInWithEmail,
+  sendPasswordReset,
+  signInErrorMessage,
+  signInWithGoogle,
+  signUpWithEmail,
+  type SignInResult,
+} from './account';
+import { PerkList } from './perks';
+import { TextField } from './TextField';
 import { Button, Sheet } from '@foodcourt/ui';
 
-const PERKS = [
-  { icon: ReceiptText, title: 'Every order, on any phone', text: 'Receipts, refunds and one-tap reorder.' },
-  { icon: Heart, title: 'Your favourite dishes', text: 'Save them once, find them at every visit.' },
-  { icon: TicketPercent, title: 'Coupons as they launch', text: 'Signed-in diners hear about offers first.' },
-  { icon: BellRing, title: 'Know when food is ready', text: 'Order updates on this phone.' },
-];
+type Mode = LoginMode | 'reset';
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PHONE = /^[6-9]\d{9}$/;
 
 /** Google's mark, drawn to their brand guidelines (it cannot come from an icon set). */
-function GoogleMark() {
+export function GoogleMark() {
   return (
     <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden>
       <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.4-.4-3.5z" />
@@ -28,86 +36,349 @@ function GoogleMark() {
 async function celebrate() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const { default: confetti } = await import('canvas-confetti');
-  void confetti({ particleCount: 70, spread: 70, startVelocity: 32, origin: { y: 0.75 }, colors: ['#E4570F', '#F9D6C2', '#15803D', '#FFFFFF'], disableForReducedMotion: true });
+  void confetti({ particleCount: 70, spread: 70, startVelocity: 32, origin: { y: 0.75 }, colors: ['#3A0F34', '#F9A602', '#DDE3E8', '#FFFFFF'], disableForReducedMotion: true });
 }
 
-export function LoginSheet({ session }: { session: TableSession }) {
+/** What every successful sign-in does next: say hello, and ask for a missing name or number once. */
+export function welcomeBack({ firstSignIn, merged, profile }: SignInResult, close: () => void) {
+  close();
+  void celebrate();
+  const first = profile.name?.split(' ')[0];
+  if (!profile.phone || !profile.name) {
+    // Opening the details sheet in the same tick races the sign-in sheet's history entry.
+    setTimeout(() => useUi.getState().showDetails('welcome'), 320);
+    return;
+  }
+  notify(first ? `You're in, ${first}` : "You're in", {
+    description: firstSignIn
+      ? 'Coupons you get will show up in your account.'
+      : merged > 0
+        ? `${merged === 1 ? 'Your order from this phone is' : `${merged} orders from this phone are`} now in your account.`
+        : 'Your orders and favourites are here.',
+  });
+}
+
+const TITLES: Record<Mode, string> = {
+  choose: 'Sign in to REVA',
+  signup: 'Create your account',
+  login: 'Welcome back',
+  reset: 'Reset your password',
+};
+
+export function LoginSheet({ session }: { session: TableSession | null }) {
   const open = useUi((s) => s.open.login);
   const reason = useUi((s) => s.loginReason);
+  const startMode = useUi((s) => s.loginMode);
+  const required = useUi((s) => s.loginRequired);
   const hide = useUi((s) => s.hide);
-  const [pending, setPending] = useState(false);
+  const [mode, setMode] = useState<Mode>(startMode);
+  const [googlePending, setGooglePending] = useState(false);
   const close = () => hide('login');
 
-  const signIn = async () => {
-    if (pending) return;
-    setPending(true);
+  useEffect(() => {
+    if (open) setMode(startMode);
+  }, [open, startMode]);
+
+  const google = async () => {
+    if (googlePending) return;
+    setGooglePending(true);
     try {
-      const { firstSignIn, merged, profile } = await signInWithGoogle(session.id);
-      close();
-      const first = profile.name?.split(' ')[0];
-      void celebrate();
-      if (!profile.phone || !profile.name) {
-        // Ask for the name on tokens and a mobile number once, as soon as the sign-in sheet is away
-        // (opening it in the same tick races the sign-in sheet's history entry).
-        setTimeout(() => useUi.getState().showDetails('welcome'), 320);
-        return;
-      }
-      notify(first ? `You're in, ${first}` : "You're in", {
-        description: firstSignIn
-          ? 'Coupons you get will show up in your account.'
-          : merged > 0
-            ? `${merged === 1 ? 'Your order from this phone is' : `${merged} orders from this phone are`} now in your account.`
-            : 'Your orders and favourites are here.',
-      });
+      welcomeBack(await signInWithGoogle(session?.id), close);
     } catch (err) {
       if (err instanceof SignInCancelled) return;
       console.error('Google sign-in failed', err);
       notifyError("Couldn't sign you in", { description: signInErrorMessage(err) });
+    } finally {
+      setGooglePending(false);
+    }
+  };
+
+  const description =
+    mode === 'choose'
+      ? (reason ?? (required ? 'An account is needed to order online for pickup.' : 'Optional. Ordering as a guest still works.'))
+      : mode === 'signup'
+        ? 'Your name goes on your food token at the counter.'
+        : mode === 'login'
+          ? 'Log in with the email you signed up with.'
+          : "We'll email you a link to choose a new password.";
+
+  return (
+    <Sheet
+      open={open}
+      onClose={close}
+      title={TITLES[mode]}
+      description={description}
+      footer={
+        mode === 'choose' ? (
+          <ChooseFooter
+            required={required}
+            googlePending={googlePending}
+            onGoogle={() => void google()}
+            onEmail={() => setMode('signup')}
+            onLogin={() => setMode('login')}
+            onGuest={close}
+          />
+        ) : undefined
+      }
+    >
+      {mode === 'choose' ? (
+        <div className="rounded-card bg-bg p-4 ring-1 ring-inset ring-line">
+          <p className="mb-3.5 text-xs font-semibold uppercase tracking-[0.08em] text-ink-3">Why have an account</p>
+          <PerkList />
+        </div>
+      ) : mode === 'reset' ? (
+        <ResetForm onBack={() => setMode('login')} />
+      ) : (
+        <EmailForm
+          key={mode}
+          mode={mode}
+          session={session}
+          googlePending={googlePending}
+          onGoogle={() => void google()}
+          onSwitch={setMode}
+          onDone={(r) => welcomeBack(r, close)}
+        />
+      )}
+      {mode !== 'reset' && (
+        <p className="mt-5 text-xs text-ink-3">
+          We use your name, email and mobile number for your account and receipts, nothing else. You can delete your account any
+          time from Privacy in your account.
+        </p>
+      )}
+    </Sheet>
+  );
+}
+
+interface ChooseFooterProps {
+  required: boolean;
+  googlePending: boolean;
+  onGoogle: () => void;
+  onEmail: () => void;
+  onLogin: () => void;
+  onGuest: () => void;
+}
+
+function ChooseFooter({ required, googlePending, onGoogle, onEmail, onLogin, onGuest }: ChooseFooterProps) {
+  return (
+    <div className="space-y-2 pb-1">
+      <Button size="lg" variant="outline" block loading={googlePending} onClick={onGoogle} icon={<GoogleMark />}>
+        Continue with Google
+      </Button>
+      <Button size="lg" block onClick={onEmail} icon={<Mail className="h-[18px] w-[18px]" strokeWidth={1.75} />}>
+        Sign up with email
+      </Button>
+      <div className="flex items-center justify-center gap-1 text-sm text-ink-3">
+        Already have an account?
+        <TextLink onClick={onLogin}>Log in</TextLink>
+      </div>
+      {!required && (
+        <Button variant="ghost" block onClick={onGuest}>
+          Continue as guest
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function TextLink({ onClick, children }: { onClick: () => void; children: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="pressable h-11 px-1 text-sm font-semibold text-ink underline decoration-accent decoration-2 underline-offset-4"
+    >
+      {children}
+    </button>
+  );
+}
+
+interface EmailFormProps {
+  mode: 'signup' | 'login';
+  session: TableSession | null;
+  googlePending: boolean;
+  onGoogle: () => void;
+  onSwitch: (mode: Mode) => void;
+  onDone: (result: SignInResult) => void;
+}
+
+function EmailForm({ mode, session, googlePending, onGoogle, onSwitch, onDone }: EmailFormProps) {
+  const signup = mode === 'signup';
+  const formId = useId();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [pending, setPending] = useState(false);
+
+  const field = (key: string, set: (v: string) => void) => (v: string) => {
+    set(v);
+    if (errors[key]) setErrors(({ [key]: _cleared, ...rest }) => rest);
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (pending) return;
+    const next: Record<string, string> = {};
+    if (signup && name.trim().length < 2) next.name = 'Enter your name, at least 2 letters.';
+    if (!EMAIL.test(email.trim())) next.email = 'Enter a valid email address.';
+    if (signup && !PHONE.test(phone)) next.phone = 'Enter a 10-digit mobile number.';
+    if (signup ? password.length < 8 : password.length === 0) next.password = signup ? 'Use at least 8 characters.' : 'Enter your password.';
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
+    setPending(true);
+    try {
+      const result = signup
+        ? await signUpWithEmail({ name, email, phone, password }, session?.id)
+        : await logInWithEmail(email, password, session?.id);
+      onDone(result);
+    } catch (err) {
+      console.error(signup ? 'Email sign-up failed' : 'Email log-in failed', err);
+      const code = (err as { code?: string }).code ?? '';
+      const message = signInErrorMessage(err);
+      if (code === 'auth/email-already-in-use' || code === 'auth/credential-already-in-use' || code === 'auth/invalid-email') setErrors({ email: message });
+      else if (code === 'auth/weak-password') setErrors({ password: message });
+      else notifyError(signup ? "Couldn't create your account" : "Couldn't log you in", { description: message });
     } finally {
       setPending(false);
     }
   };
 
   return (
-    <Sheet
-      open={open}
-      onClose={close}
-      title="Sign in"
-      description={reason ?? 'Optional. Ordering as a guest still works.'}
-      footer={
-        <div className="space-y-1">
-          <Button size="lg" variant="outline" block loading={pending} onClick={() => void signIn()} icon={<GoogleMark />}>
-            Continue with Google
-          </Button>
-          <Button variant="ghost" block onClick={close}>
-            Not now
-          </Button>
-        </div>
-      }
-    >
-      <div className="overflow-hidden rounded-card bg-accent-tint ring-1 ring-inset ring-accent-line">
-        <div className="px-4 pb-3 pt-4">
-          <p className="text-lg font-semibold tracking-tight text-ink">Your REVA account</p>
-          <p className="mt-0.5 text-sm text-ink-2">One tap with Google. This table, your cart and today's orders stay as they are.</p>
-        </div>
-        <ul className="divide-y divide-accent-line/60 border-t border-accent-line/60 bg-surface/70">
-          {PERKS.map(({ icon: Icon, title, text }, i) => (
-            <li key={title} className="enter-up flex items-start gap-3 px-4 py-3" style={{ ['--i' as string]: i }}>
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-accent-ink ring-1 ring-inset ring-accent-line">
-                <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-base font-medium text-ink">{title}</span>
-                <span className="block text-sm text-ink-3">{text}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+    <div className="step-forward">
+      <Button size="lg" variant="outline" block loading={googlePending} onClick={onGoogle} icon={<GoogleMark />}>
+        Continue with Google
+      </Button>
+      <div className="my-5 flex items-center gap-3 text-xs font-medium uppercase tracking-[0.1em] text-ink-3" aria-hidden>
+        <span className="h-px flex-1 bg-line" />
+        or with email
+        <span className="h-px flex-1 bg-line" />
       </div>
-      <p className="mt-4 text-xs text-ink-3">
-        We use your Google name, email and photo for your account and nothing else. You can delete your account any time
-        from Privacy in your account.
-      </p>
-    </Sheet>
+      <form id={formId} onSubmit={(e) => void submit(e)} noValidate className="space-y-4">
+        {signup && (
+          <TextField
+            label="Full name"
+            value={name}
+            onChange={field('name', setName)}
+            error={errors.name}
+            autoComplete="name"
+            maxLength={40}
+            placeholder="Ananya Rao"
+          />
+        )}
+        <TextField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={field('email', setEmail)}
+          error={errors.email}
+          autoComplete="email"
+          inputMode="email"
+          placeholder="you@example.com"
+        />
+        {signup && (
+          <TextField
+            label="Mobile number"
+            type="tel"
+            prefix="+91"
+            value={phone}
+            onChange={field('phone', (v) => setPhone(v.replace(/\D/g, '').slice(0, 10)))}
+            error={errors.phone}
+            help="For payment receipts. We don't call or text you."
+            autoComplete="tel-national"
+            inputMode="numeric"
+            placeholder="98765 43210"
+          />
+        )}
+        <TextField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={field('password', setPassword)}
+          error={errors.password}
+          help={signup ? 'At least 8 characters.' : undefined}
+          autoComplete={signup ? 'new-password' : 'current-password'}
+        />
+        {!signup && (
+          <div className="-mt-2">
+            <TextLink onClick={() => onSwitch('reset')}>Forgot password?</TextLink>
+          </div>
+        )}
+        <Button type="submit" size="lg" block loading={pending}>
+          {signup ? 'Create account' : 'Log in'}
+        </Button>
+      </form>
+      <div className="mt-2 flex items-center justify-center gap-1 text-sm text-ink-3">
+        {signup ? 'Already have an account?' : 'New to REVA?'}
+        <TextLink onClick={() => onSwitch(signup ? 'login' : 'signup')}>{signup ? 'Log in' : 'Create an account'}</TextLink>
+      </div>
+      <BackLink onClick={() => onSwitch('choose')}>All sign-in options</BackLink>
+    </div>
+  );
+}
+
+function BackLink({ onClick, children }: { onClick: () => void; children: string }) {
+  return (
+    <button type="button" onClick={onClick} className="pressable mx-auto flex h-11 items-center gap-1.5 text-sm font-medium text-ink-3 hover:text-ink">
+      <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+      {children}
+    </button>
+  );
+}
+
+function ResetForm({ onBack }: { onBack: () => void }) {
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!EMAIL.test(email.trim())) {
+      setError('Enter a valid email address.');
+      return;
+    }
+    setPending(true);
+    try {
+      await sendPasswordReset(email);
+      setSent(true);
+    } catch (err) {
+      notifyError("Couldn't send the email", { description: signInErrorMessage(err) });
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <div className="step-forward">
+      {sent ? (
+        <div role="status" className="rounded-card bg-ready-tint p-4 text-sm text-ink-2 ring-1 ring-inset ring-ready/25">
+          <span className="block font-semibold text-ink">Check your inbox</span>
+          If {email.trim()} has a REVA account, a reset link is on its way. It can take a minute.
+        </div>
+      ) : (
+        <form onSubmit={(e) => void submit(e)} noValidate className="space-y-4">
+          <TextField
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(v) => {
+              setEmail(v);
+              if (error) setError('');
+            }}
+            error={error}
+            autoComplete="email"
+            inputMode="email"
+            placeholder="you@example.com"
+          />
+          <Button type="submit" size="lg" block loading={pending}>
+            Send reset link
+          </Button>
+        </form>
+      )}
+      <div className="mt-2">
+        <BackLink onClick={onBack}>Back to log in</BackLink>
+      </div>
+    </div>
   );
 }

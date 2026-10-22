@@ -21,7 +21,12 @@ export {
   onAuthStateChanged,
   GoogleAuthProvider,
   linkWithPopup,
+  linkWithCredential,
   signInWithCredential,
+  EmailAuthProvider,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   signOut,
   type User,
 } from 'firebase/auth';

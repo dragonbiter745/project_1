@@ -215,3 +215,19 @@
 - **Load:** the per-day pickup counter (`counters/{dateKey}_pickup`) moves only when a member opens
   their first website session of the day, far below the 1 write/s limit.
 
+## ADR 020: Email accounts and the table welcome sheet
+- **Context:** website orders need an account (ADR 019), and not every diner wants to use Google.
+  Diners who scan a table should see their choices up front without being forced to sign in.
+- **Decisions:** Firebase Email/Password sign-in sits next to Google (both free). Sign-up collects
+  name, email, mobile and password and upgrades the anonymous guest in place with
+  `linkWithCredential`, so the uid, cart and table session stay; the name and mobile then go
+  through `accountAction UPDATE_PROFILE`. Log-in to an existing email account sends the guest's ID
+  token to `accountAction SYNC`, which merges the guest's orders exactly as for Google. Password
+  reset uses Firebase's email and never says whether an address has an account. The server treats
+  any non-anonymous provider as a member, so no function changed.
+- **Table welcome:** after a scan, a guest sees one sheet per day with Continue with Google,
+  Log in or sign up, and Continue as guest. Members never see it. Perks copy promises nothing that
+  does not exist: member-only coupons (`audience: MEMBERS`), offers when shops run them, and loyalty
+  points marked "Coming soon".
+- **Ops:** the Email/Password provider must be enabled in Firebase Authentication.
+

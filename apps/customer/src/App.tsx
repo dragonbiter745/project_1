@@ -3,6 +3,7 @@ import { QrCode, WifiOff } from 'lucide-react';
 import { warmAuthWhenIdle } from './lib/firebase';
 import { DetailsSheet } from './features/auth/DetailsSheet';
 import { LoginSheet } from './features/auth/LoginSheet';
+import { QrWelcome } from './features/auth/QrWelcome';
 import { CartBar } from './features/cart/CartBar';
 import { CartSheet } from './features/cart/CartSheet';
 import { CouponSheet } from './features/coupons/CouponSheet';
@@ -69,6 +70,7 @@ export default function App() {
       <CartSheet session={session} />
       <TrackingSheet session={session} />
       <LoginSheet session={session} />
+      <QrWelcome session={session} />
       <DetailsSheet session={session} />
       <CouponSheet />
       <LazyAccountHub session={session} />
