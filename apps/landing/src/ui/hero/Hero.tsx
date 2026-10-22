@@ -35,7 +35,7 @@ function Backdrop() {
   return (
     <div className="field-saffron absolute inset-0">
       <div className="dot-grid absolute inset-0 opacity-60" />
-      <div className="absolute -right-24 top-1/4 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgb(253_186_116/0.55),transparent_65%)]" />
+      <div className="absolute -right-24 top-1/4 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgb(246_166_9/0.35),transparent_65%)]" />
     </div>
   );
 }
@@ -87,7 +87,7 @@ export function Hero() {
 
   return (
     <section ref={section} id="live" aria-label="Live 3D food court" className="relative h-[100dvh] min-h-[600px] w-full">
-      <div className={explore ? 'fixed inset-0 z-50 bg-[#d6dee4]' : 'absolute inset-0 overflow-hidden bg-[#d6dee4]'}>
+      <div className={explore ? 'fixed inset-0 z-50 bg-[#dde3e8]' : 'absolute inset-0 overflow-hidden bg-[#dde3e8]'}>
         {failed ? (
           <Backdrop />
         ) : (

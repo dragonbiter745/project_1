@@ -231,3 +231,12 @@
   points marked "Coming soon".
 - **Ops:** the Email/Password provider must be enabled in Firebase Authentication.
 
+
+## ADR 021: One palette for every app
+- **Decision:** customer, kitchen, shop admin, master and landing share the same tokens: Ice Silver
+  `#DDE3E8` (canvas), Deep Aubergine `#3A0F34` (text and primary actions), Marigold `#F6A609`
+  (accent). Each app's `styles/index.css` holds the same `:root` values; components keep using the
+  semantic classes (`bg-ink`, `bg-accent`, `text-accent-ink`).
+- **Kept on purpose:** status colours (veg/non-veg, ready green, prep amber, danger red), each
+  shop's own brand colour in the 3D court, and the banknote/coin colours on the shop admin login,
+  which depict real rupees.

@@ -324,7 +324,7 @@ export function doorMatMap() {
       ctx.fillStyle = y % 12 ? '#2d2c2a' : '#46443f';
       ctx.fillRect(0, y, s, 3);
     }
-    ctx.strokeStyle = '#e4570f';
+    ctx.strokeStyle = '#F6A609';
     ctx.lineWidth = 8;
     ctx.strokeRect(10, 10, s - 20, s - 20);
     noise(ctx, s, rng, 30, 1);
@@ -563,7 +563,7 @@ export function gateSignMap() {
 /** Sign over the food court entrance canopy: board is 5.4 m x 0.7 m. */
 export function courtSignMap() {
   return wideTexture('court-sign', 2048, 266, (ctx, w, h) => {
-    ctx.fillStyle = '#b4430b';
+    ctx.fillStyle = '#3A0F34';
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = '#ffffff';
     ctx.font = `800 170px ${SIGN_FONT}`;

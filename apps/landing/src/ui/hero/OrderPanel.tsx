@@ -212,7 +212,7 @@ function MenuStep({ onCheckout }: { onCheckout: () => void }) {
                 add('dosa-corner', 'dc-masala', 1);
                 add('chai-chaat', 'cc-chai', 1);
               }}
-              className="spot pressable flex w-full items-center gap-3 rounded-[16px] bg-gradient-to-r from-[#fff4e6] to-[#fdecef] px-3 py-3 text-left text-sm ring-1 ring-inset ring-accent-line"
+              className="spot pressable flex w-full items-center gap-3 rounded-[16px] bg-gradient-to-r from-accent-tint to-surface px-3 py-3 text-left text-sm ring-1 ring-inset ring-accent-line"
             >
               <span className="grid h-9 w-9 place-items-center rounded-[12px] bg-accent-ink text-white">
                 <Store className="h-4 w-4" />
@@ -231,7 +231,7 @@ function MenuStep({ onCheckout }: { onCheckout: () => void }) {
           type="button"
           disabled={count === 0}
           onClick={onCheckout}
-          className="pressable flex h-14 w-full items-center justify-between rounded-full bg-ink pl-5 pr-2 text-white shadow-float transition-[background-color,opacity] hover:bg-black disabled:opacity-40"
+          className="pressable flex h-14 w-full items-center justify-between rounded-full bg-ink pl-5 pr-2 text-white shadow-float transition-[background-color,opacity] hover:bg-ink/90 disabled:opacity-40"
         >
           <span className="text-left">
             <span className="block text-sm font-semibold">{count === 0 ? 'Add a dish to start' : `${count} ${count === 1 ? 'item' : 'items'} · ${shopsInCart} ${shopsInCart === 1 ? 'shop' : 'shops'}`}</span>

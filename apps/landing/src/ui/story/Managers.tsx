@@ -11,8 +11,8 @@ const FEATURES = [
   { icon: QrCode, title: 'Print table QR codes', body: 'Generate and reprint the code for any table; each one carries its table number into every order.' },
 ];
 
-const ROWS = ['bg-accent', 'bg-[#0891b2]', 'bg-[#16a34a]', 'bg-[#7c3aed]', 'bg-[#dc2626]', 'bg-[#ca8a04]'];
-const TABLE_TONES = ['bg-[#dcfce7]', 'bg-[#fdba74]', 'bg-[#fdba74]', 'bg-[#dcfce7]', 'bg-[#fde68a]', 'bg-[#fdba74]', 'bg-[#fca5a5]', 'bg-[#dcfce7]', 'bg-[#fdba74]', 'bg-[#dcfce7]', 'bg-[#fdba74]', 'bg-[#dcfce7]'];
+const ROWS = ['bg-accent', 'bg-ink', 'bg-accent/70', 'bg-ink/70', 'bg-accent/45', 'bg-ink/45'];
+const TABLE_TONES = ['bg-surface-2', 'bg-accent/60', 'bg-accent/60', 'bg-surface-2', 'bg-accent-tint', 'bg-accent/60', 'bg-ink/40', 'bg-surface-2', 'bg-accent/60', 'bg-surface-2', 'bg-accent/60', 'bg-surface-2'];
 
 /** The operations console, shown as a wireframe illustration: no figures until real ones exist. */
 function ConsoleSketch() {
@@ -50,7 +50,7 @@ function ConsoleSketch() {
           <span className="block h-3 w-24 rounded-full bg-ink/70" />
           <div className="mt-4 flex h-20 items-end gap-1.5">
             {[30, 45, 70, 95, 80, 55, 40, 60, 85, 50].map((h, i) => (
-              <span key={i} className="flex-1 rounded-t-[4px] bg-[#c4b5fd]" style={{ height: `${h}%` }} />
+              <span key={i} className="flex-1 rounded-t-[4px] bg-accent" style={{ height: `${h}%` }} />
             ))}
           </div>
         </div>
@@ -66,7 +66,7 @@ export function Managers() {
       <div className="mx-auto max-w-[1240px] px-5 md:px-10">
         <div className="grid gap-4 md:grid-cols-[1.1fr_1fr] md:items-end">
           <div>
-            <p className="text-sm font-semibold text-[#7c3aed]">For the court</p>
+            <p className="text-sm font-semibold text-accent-ink">For the court</p>
             <RevealWords text="Every shop, every table, one screen." accent={['one']} className="mt-2 text-[34px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink md:text-6xl" />
           </div>
           <p className="max-w-[46ch] text-base leading-relaxed text-ink-2 md:text-lg">
@@ -76,7 +76,7 @@ export function Managers() {
 
         {/* Lands flat as it scrolls into view. */}
         <div
-          className="mt-10 origin-top rounded-[32px] bg-white/75 p-4 shadow-[0_40px_80px_-40px_rgba(76,29,149,0.45)] ring-1 ring-inset ring-white md:p-6"
+          className="mt-10 origin-top rounded-[32px] bg-white/75 p-4 shadow-[0_40px_80px_-40px_rgba(58,15,52,0.4)] ring-1 ring-inset ring-white md:p-6"
           style={{ transform: 'perspective(1600px) rotateX(calc((1 - min(1, var(--p) * 2.6)) * 24deg)) scale(calc(0.9 + min(1, var(--p) * 2.6) * 0.1))' }}
         >
           <ConsoleSketch />
@@ -85,7 +85,7 @@ export function Managers() {
         <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {FEATURES.map((f) => (
             <li key={f.title} className="glass spot lift rounded-[22px] p-5" style={{ ['--spot' as string]: '124 58 237' }} onPointerMove={spotlight}>
-              <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#ede9fe] text-[#7c3aed]">
+              <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-accent-tint text-accent-ink">
                 <f.icon className="h-5 w-5" strokeWidth={2} />
               </span>
               <h3 className="mt-4 text-base font-semibold leading-snug tracking-tight text-ink">{f.title}</h3>

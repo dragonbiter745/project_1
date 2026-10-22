@@ -8,8 +8,8 @@ export function FinalCta() {
   const ref = useReveal<HTMLDivElement>();
   return (
     <section className="bg-bg px-3 pb-6 md:px-6">
-      <div ref={ref} className="reveal relative mx-auto max-w-[1280px] overflow-hidden rounded-[40px] bg-[#1a0d06] px-6 py-20 text-center md:py-28">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_80%_at_20%_10%,rgba(228,87,15,0.55),transparent_60%),radial-gradient(50%_70%_at_85%_90%,rgba(225,29,72,0.45),transparent_60%),radial-gradient(40%_50%_at_60%_40%,rgba(245,158,11,0.3),transparent_70%)]" />
+      <div ref={ref} className="reveal relative mx-auto max-w-[1280px] overflow-hidden rounded-[40px] bg-ink px-6 py-20 text-center md:py-28">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_80%_at_20%_10%,rgba(246,166,9,0.5),transparent_60%),radial-gradient(50%_70%_at_85%_90%,rgba(122,46,110,0.55),transparent_60%),radial-gradient(40%_50%_at_60%_40%,rgba(246,166,9,0.25),transparent_70%)]" />
         <div className="grain pointer-events-none absolute inset-0" />
         <div className="relative">
           <BrandMark size="lg" className="mx-auto" />
