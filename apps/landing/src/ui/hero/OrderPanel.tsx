@@ -5,7 +5,7 @@ import { VegDot, cx } from '@foodcourt/ui';
 import { TABLES } from '../../data/layout';
 import { SHOPS, SHOP_BY_ID } from '../../data/shops';
 import { chime } from '../../lib/audio';
-import { orderAtTable } from '../../lib/links';
+import { orderOnline } from '../../lib/links';
 import { useCart } from '../../store/cart';
 import { getSim, type YouOrder } from '../../store/sim';
 import { useUi } from '../../store/ui';
@@ -212,7 +212,7 @@ function MenuStep({ onCheckout }: { onCheckout: () => void }) {
                 add('dosa-corner', 'dc-masala', 1);
                 add('chai-chaat', 'cc-chai', 1);
               }}
-              className="spot pressable flex w-full items-center gap-3 rounded-[16px] bg-gradient-to-r from-[#fff4e6] to-[#fdecef] px-3 py-3 text-left text-sm ring-1 ring-inset ring-accent-line"
+              className="spot pressable flex w-full items-center gap-3 rounded-[16px] bg-gradient-to-r from-accent-tint to-surface px-3 py-3 text-left text-sm ring-1 ring-inset ring-accent-line"
             >
               <span className="grid h-9 w-9 place-items-center rounded-[12px] bg-accent-ink text-white">
                 <Store className="h-4 w-4" />
@@ -231,7 +231,7 @@ function MenuStep({ onCheckout }: { onCheckout: () => void }) {
           type="button"
           disabled={count === 0}
           onClick={onCheckout}
-          className="pressable flex h-14 w-full items-center justify-between rounded-full bg-ink pl-5 pr-2 text-white shadow-float transition-[background-color,opacity] hover:bg-black disabled:opacity-40"
+          className="pressable flex h-14 w-full items-center justify-between rounded-full bg-ink pl-5 pr-2 text-white shadow-float transition-[background-color,opacity] hover:bg-ink/90 disabled:opacity-40"
         >
           <span className="text-left">
             <span className="block text-sm font-semibold">{count === 0 ? 'Add a dish to start' : `${count} ${count === 1 ? 'item' : 'items'} · ${shopsInCart} ${shopsInCart === 1 ? 'shop' : 'shops'}`}</span>
@@ -412,8 +412,8 @@ function TrackStep({ onAgain }: { onAgain: () => void }) {
             <button type="button" onClick={onAgain} className="pressable h-12 rounded-full bg-ink text-sm font-semibold text-white">
               Place another demo order
             </button>
-            <a href={orderAtTable()} className="pressable grid h-12 place-items-center rounded-full bg-white text-sm font-semibold text-accent-ink ring-1 ring-inset ring-accent-line">
-              Scan a table QR at REVA to order
+            <a href={orderOnline()} className="pressable grid h-12 place-items-center rounded-full bg-white text-sm font-semibold text-accent-ink ring-1 ring-inset ring-accent-line">
+              Order for real online
             </a>
           </div>
         </div>

@@ -7,13 +7,13 @@ const SIZES = {
   lg: 'h-16 w-16 rounded-[18px] [&_svg]:h-7 [&_svg]:w-7',
 } as const;
 
-// Saffron squircle with a soft top highlight; the one place the brand colour is used as a fill.
+// A flat Charcoal tile with a Terracotta fork and knife: the REVA mark in every app.
 export function BrandMark({ size = 'md', className }: { size?: keyof typeof SIZES; className?: string }) {
   return (
     <span
       aria-hidden
       className={cx(
-        'brand-mark relative grid shrink-0 place-items-center bg-accent-ink text-on-accent shadow-card',
+        'relative grid shrink-0 place-items-center bg-ink text-[rgb(var(--accent-line))]',
         SIZES[size],
         className
       )}

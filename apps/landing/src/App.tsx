@@ -5,6 +5,7 @@ import { Kitchens } from './ui/story/Kitchens';
 import { Managers } from './ui/story/Managers';
 import { Nav } from './ui/story/Nav';
 import { Numbers } from './ui/story/Numbers';
+import { OrderOnline } from './ui/story/OrderOnline';
 import { CursorGlow, ScrollProgress } from './ui/story/ScrollFx';
 import { Split } from './ui/story/Split';
 import { Story } from './ui/story/Story';
@@ -20,6 +21,7 @@ export default function App() {
       <Nav />
       <main>
         <Hero />
+        <OrderOnline />
         <Story />
         <Split />
         <Kitchens />

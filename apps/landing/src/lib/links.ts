@@ -1,4 +1,4 @@
-/** The real diner app. Diners reach it only by scanning the secure QR on their table. */
+/** The diner site: shops and menus for online pickup orders, and the table flow behind each QR. */
 export const CUSTOMER_URL = (import.meta.env.VITE_CUSTOMER_URL ?? 'https://reva-nest-foodcourt.web.app').replace(/\/$/, '');
 
 /**
@@ -6,3 +6,6 @@ export const CUSTOMER_URL = (import.meta.env.VITE_CUSTOMER_URL ?? 'https://reva-
  * Ordering CTAs lead to the explanation of how to order: scan the QR on any table.
  */
 export const orderAtTable = () => '#story';
+
+/** Online ordering for pickup on the diner site (sign-in needed); at a table, the QR is still the way in. */
+export const orderOnline = () => CUSTOMER_URL;

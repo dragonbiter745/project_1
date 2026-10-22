@@ -254,3 +254,10 @@
   `packages/ui/**` (the kit and Tailwind preset the landing compiles) is not changed by the redesign.
   Check: `git diff 3dac67d -- apps/landing` is empty and a landing build produces the same asset hashes.
   New design work goes in `packages/design` or app folders, never in those paths.
+- **Update (same day): one landing page.** The diner site's marketing home is merged into the landing
+  app: the landing page gains an "Order online" section (pickup steps, member perks) and its ordering
+  CTAs now go to the diner site; the diner site opens straight on the shop stalls with an "About the
+  court" link back. The landing UI uses the shared tokens and Market Hall type. What stays protected
+  is the 3D view: `apps/landing/src/scene/**` and the 3D canvas setup in `Hero.tsx` are unchanged
+  from `3dac67d` (`git diff 3dac67d -- apps/landing/src/scene` is empty). The kit's BrandMark,
+  StaffLogin and Sheet now use the display face and a flat Charcoal mark.

@@ -1,49 +1,16 @@
 @import '@fontsource-variable/geist/wght.css';
 @import '@fontsource-variable/geist-mono/wght.css';
+@import '@fontsource-variable/bricolage-grotesque/wght.css';
 @import '../../../../packages/ui/src/kit/kit.css';
+@import '../../../../packages/design/tokens.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
-
-  --bg: 246 246 247;
-  --surface: 255 255 255;
-  --surface-2: 239 239 242;
-  --line: 230 230 234;
-  --line-strong: 212 212 218;
-
-  --ink: 18 18 20;
-  --ink-2: 74 74 85;
-  --ink-3: 100 100 110;
-
-  --accent: 228 87 15;
-  --accent-ink: 180 67 11;
-  --accent-tint: 255 242 234;
-  --accent-line: 249 214 194;
-  --scrim: 18 18 20;
-  --on-accent: 255 255 255;
-
-  --veg: 21 128 61;
-  --nonveg: 185 28 28;
-  --ready: 21 128 61;
-  --ready-tint: 236 253 243;
-  --prep: 180 83 9;
-  --prep-tint: 255 248 235;
-  --danger: 192 38 45;
-  --danger-tint: 255 241 241;
-
-  --shadow-float: 0 12px 32px -10px rgb(18 18 20 / 0.32), 0 2px 6px rgb(18 18 20 / 0.08);
-  --shadow-sheet: 0 -10px 40px rgb(18 18 20 / 0.12);
-  --shadow-card: 0 1px 2px rgb(92 48 18 / 0.06), 0 6px 20px -6px rgb(92 48 18 / 0.12);
-  --shadow-thumb: 0 1px 2px rgb(18 18 20 / 0.08), 0 2px 8px rgb(18 18 20 / 0.06);
-  --shadow-glass: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 18px 50px -20px rgb(92 48 18 / 0.35), 0 2px 8px -2px rgb(18 18 20 / 0.08);
-
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Landing-only: the frosted panels over the 3D court. Everything else comes from packages/design. */
+  --shadow-glass: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 18px 50px -20px rgb(52 58 54 / 0.3), 0 2px 8px -2px rgb(52 58 54 / 0.08);
 }
 
 @layer base {
@@ -58,7 +25,7 @@
     overscroll-behavior-y: none;
   }
   :focus-visible {
-    outline: 2px solid rgb(var(--accent));
+    outline: 2px solid rgb(var(--ink));
     outline-offset: 2px;
   }
   ::selection {
@@ -110,12 +77,12 @@
   .scene-label {
     @apply whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold text-ink;
     background: rgb(255 255 255 / 0.9);
-    box-shadow: 0 6px 20px -6px rgb(18 18 20 / 0.35);
+    box-shadow: 0 6px 20px -6px rgb(52 58 54 / 0.3);
     transform: translateY(-50%);
   }
 
   .text-gradient {
-    background: linear-gradient(100deg, rgb(var(--accent-ink)) 0%, #f59e0b 45%, #e11d48 100%);
+    background: linear-gradient(100deg, rgb(var(--accent)), rgb(var(--accent)));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -151,29 +118,17 @@
 
 /* Colour fields behind the story sections. */
 .field-saffron {
-  background:
-    radial-gradient(55% 60% at 12% 18%, rgb(255 214 186 / 0.85), transparent 65%),
-    radial-gradient(40% 50% at 88% 22%, rgb(254 240 199 / 0.9), transparent 60%),
-    radial-gradient(50% 60% at 70% 92%, rgb(253 226 228 / 0.8), transparent 65%),
-    rgb(var(--bg));
+  background: rgb(var(--surface-2));
 }
 .field-mint {
-  background:
-    radial-gradient(50% 55% at 85% 15%, rgb(204 251 241 / 0.9), transparent 65%),
-    radial-gradient(45% 55% at 10% 80%, rgb(224 242 254 / 0.9), transparent 60%),
-    radial-gradient(40% 40% at 50% 50%, rgb(255 237 213 / 0.6), transparent 70%),
-    rgb(var(--bg));
+  background: rgb(var(--bg));
 }
 .field-violet {
-  background:
-    radial-gradient(50% 55% at 15% 20%, rgb(237 233 254 / 0.95), transparent 65%),
-    radial-gradient(45% 55% at 90% 75%, rgb(252 231 243 / 0.9), transparent 60%),
-    radial-gradient(35% 45% at 60% 10%, rgb(255 237 213 / 0.7), transparent 70%),
-    rgb(var(--bg));
+  background: rgb(var(--surface-2));
 }
 
 .dot-grid {
-  background-image: radial-gradient(rgb(18 18 20 / 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(rgb(52 58 54 / 0.08) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 

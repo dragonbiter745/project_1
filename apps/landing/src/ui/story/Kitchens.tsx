@@ -4,12 +4,12 @@ import { spotlight, useScrollProgress } from '../../lib/hooks';
 import { RevealWords } from './ScrollFx';
 
 const FEATURES = [
-  { icon: BellRing, title: 'Rings until accepted', body: 'A new ticket chimes every few seconds until someone taps Accept. No order sits unseen.', tone: '#e4570f' },
-  { icon: Clock3, title: 'Colour that escalates', body: 'Tickets warm up at 2, 5 and 10 minutes, so the oldest order is always the loudest.', tone: '#b45309' },
-  { icon: PackageX, title: 'Sold out in one tap', body: 'Out of mutton? Toggle it and every diner’s menu updates before the next order.', tone: '#dc2626' },
-  { icon: PauseCircle, title: 'Pause when slammed', body: 'Stop new orders for a while; diners can still browse, and orders resume on their own.', tone: '#7c3aed' },
-  { icon: Undo2, title: 'Mistakes undo', body: 'Marked ready by accident? There is a 30 second undo, and collection waits 10 seconds.', tone: '#0891b2' },
-  { icon: Smartphone, title: 'Any tablet, any phone', body: 'A three-column board on the counter tablet, a one-handed swipe board on a cook’s phone.', tone: '#15803d' },
+  { icon: BellRing, title: 'Rings until accepted', body: 'A new ticket chimes every few seconds until someone taps Accept. No order sits unseen.', tone: '#9E4B2F' },
+  { icon: Clock3, title: 'Colour that escalates', body: 'Tickets warm up at 2, 5 and 10 minutes, so the oldest order is always the loudest.', tone: '#343A36' },
+  { icon: PackageX, title: 'Sold out in one tap', body: 'Out of mutton? Toggle it and every diner’s menu updates before the next order.', tone: '#69745B' },
+  { icon: PauseCircle, title: 'Pause when slammed', body: 'Stop new orders for a while; diners can still browse, and orders resume on their own.', tone: '#9E4B2F' },
+  { icon: Undo2, title: 'Mistakes undo', body: 'Marked ready by accident? There is a 30 second undo, and collection waits 10 seconds.', tone: '#343A36' },
+  { icon: Smartphone, title: 'Any tablet, any phone', body: 'A three-column board on the counter tablet, a one-handed swipe board on a cook’s phone.', tone: '#69745B' },
 ];
 
 const TICKETS = [
@@ -36,7 +36,7 @@ export function Kitchens() {
         <div className="mx-auto w-full max-w-[1240px] px-5 pt-14 md:px-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-[#0f766e]">For kitchens</p>
+              <p className="text-sm font-semibold text-accent-ink">For kitchens</p>
               <RevealWords text="A display cooks can read from across the line." accent={['across']} className="mt-2 max-w-[18ch] text-[34px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink md:text-6xl" />
             </div>
             <p className="hidden font-mono text-sm font-semibold text-ink-3 md:block">Keep scrolling →</p>
@@ -97,7 +97,7 @@ export function Kitchens() {
 
         <div className="mx-auto mt-8 w-full max-w-[1240px] px-5 md:px-10">
           <div className="h-1 overflow-hidden rounded-full bg-ink/10">
-            <div className="h-full origin-left rounded-full bg-[#0f766e]" style={{ transform: 'scaleX(var(--p))' }} />
+            <div className="h-full origin-left rounded-full bg-accent" style={{ transform: 'scaleX(var(--p))' }} />
           </div>
         </div>
       </div>

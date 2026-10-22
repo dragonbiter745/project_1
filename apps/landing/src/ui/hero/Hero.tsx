@@ -35,7 +35,7 @@ function Backdrop() {
   return (
     <div className="field-saffron absolute inset-0">
       <div className="dot-grid absolute inset-0 opacity-60" />
-      <div className="absolute -right-24 top-1/4 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgb(253_186_116/0.55),transparent_65%)]" />
+      <div className="absolute -right-24 top-1/4 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgb(185_92_60/0.16),transparent_65%)]" />
     </div>
   );
 }

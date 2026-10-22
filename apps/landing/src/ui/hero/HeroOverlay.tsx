@@ -1,5 +1,5 @@
-import { ArrowDown, ArrowRight, BellRing, Box, QrCode, Store, Wallet } from 'lucide-react';
-import { orderAtTable } from '../../lib/links';
+import { ArrowDown, ArrowRight, BellRing, Box, ShoppingBag, Store, Wallet } from 'lucide-react';
+import { orderOnline } from '../../lib/links';
 import { useUi } from '../../store/ui';
 
 export function HeroOverlay() {
@@ -33,7 +33,7 @@ export function HeroOverlay() {
             <button
               type="button"
               onClick={() => enter(false)}
-              className="pressable group inline-flex h-14 items-center gap-2.5 rounded-full bg-ink pl-6 pr-5 text-base font-semibold text-white shadow-float transition-[background-color,box-shadow] hover:bg-black"
+              className="pressable group inline-flex h-14 items-center gap-2.5 rounded-full bg-ink pl-6 pr-5 text-base font-semibold text-white shadow-float transition-[background-color,box-shadow] hover:bg-ink/90"
             >
               <Box className="h-5 w-5" strokeWidth={2} />
               Explore the court in 3D
@@ -41,11 +41,11 @@ export function HeroOverlay() {
             </button>
             )}
             <a
-              href={orderAtTable()}
+              href={orderOnline()}
               className="pressable glass inline-flex h-14 items-center gap-2.5 rounded-full px-6 text-base font-semibold text-ink transition-colors hover:bg-white/90"
             >
-              <QrCode className="h-5 w-5 text-accent-ink" strokeWidth={2} />
-              How to order
+              <ShoppingBag className="h-5 w-5 text-accent-ink" strokeWidth={2} />
+              Order online
             </a>
           </div>
 

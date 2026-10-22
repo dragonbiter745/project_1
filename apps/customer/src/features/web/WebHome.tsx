@@ -1,71 +1,63 @@
 import { useMemo, type CSSProperties } from 'react';
-import { ArrowRight, QrCode, UserRound } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, UserRound } from 'lucide-react';
 import type { Vendor, VendorMenu } from '@foodcourt/shared';
 import { useAuth } from '../../lib/authStore';
 import { cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
 import { Avatar } from '../account/Avatar';
-import { PERKS, SoonTag } from '../auth/perks';
 import { useProfile } from '../auth/profileStore';
 import { useUi } from '../ui/uiStore';
 import { Skeleton } from '@foodcourt/ui';
 
-const STEPS = [
-  { verb: 'Pick', text: 'Dishes from any counter go into one cart.' },
-  { verb: 'Pay', text: 'Once, online. Each shop gives you its own token.' },
-  { verb: 'Collect', text: 'Live updates tell you when each dish is up.' },
-];
+// The story of the court (3D preview, how it works, rewards) lives on the landing page; this site is for ordering.
+const LANDING_URL = ((import.meta.env.VITE_LANDING_URL as string | undefined) ?? 'https://reva-nest-landing.web.app').replace(/\/$/, '');
 
-const SECTIONS = [
-  ['restaurants', 'Restaurants'],
-  ['rewards', 'Rewards'],
-  ['how', 'How it works'],
-] as const;
-
-const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-/** The website's front page: the court's counters as stalls, member rewards and how pickup works. */
+/** The diner site's front door: pick a counter and start ordering. */
 export function WebHome({ onOpenShop }: { onOpenShop: (vendorId: string) => void }) {
   const vendors = useLocal((s) => s.vendors, jsonEqual);
   const menus = useLocal((s) => s.menus, jsonEqual);
+  const member = useAuth((s) => Boolean(s.user?.member));
+  const showLogin = useUi((s) => s.showLogin);
 
   return (
     <div className="min-h-[100dvh] pb-32">
       <TopBar />
 
-      <section className="mx-auto max-w-6xl px-4 pt-8 md:px-6 md:pt-14">
-        <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
-          <h1 className="enter-up font-display text-[clamp(48px,8.5vw,120px)] font-extrabold leading-[0.9] text-ink">
-            Every counter.
-            <br />
-            <span className="text-accent">One cart.</span>
-          </h1>
-          <div className="enter-up max-w-xs md:pb-3" style={{ '--i': 1 } as CSSProperties}>
-            <p className="text-md text-ink-2">Order ahead from the whole food court, pay once, collect with your token.</p>
-            <button
-              type="button"
-              onClick={() => scrollTo('restaurants')}
-              className="pressable mt-5 inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-base font-semibold text-on-accent"
-            >
-              Browse restaurants
-              <ArrowRight className="h-[18px] w-[18px]" strokeWidth={2.25} />
-            </button>
-          </div>
-        </div>
+      <main className="mx-auto max-w-6xl px-4 pt-6 md:px-6 md:pt-10">
+        <h1 className="enter-up font-display text-[clamp(36px,6vw,64px)] font-extrabold leading-[0.95] text-ink">
+          Choose a counter.
+        </h1>
+        <p className="enter-up mt-2 max-w-md text-md text-ink-2" style={{ '--i': 1 } as CSSProperties}>
+          One cart for every shop. Pay once online and collect with your token.
+        </p>
 
-        <div id="restaurants" className="mt-8 grid scroll-mt-20 gap-3 md:mt-12 md:grid-cols-[1.4fr_1fr]" aria-label="Restaurants">
+        <div className="mt-6 grid gap-3 md:mt-8 md:grid-cols-[1.4fr_1fr]" aria-label="Restaurants">
           {vendors.length === 0
             ? Array.from({ length: 2 }, (_, i) => <Skeleton key={i} className="h-[300px] rounded-[28px]" />)
             : vendors.map((v, i) => <Stall key={v.id} vendor={v} menu={menus[v.id]} index={i} onOpen={() => onOpenShop(v.id)} />)}
         </div>
-      </section>
 
-      <Rewards />
-      <HowItWorks />
+        {!member && (
+          <div className="mt-6 flex flex-col gap-3 rounded-[24px] bg-surface-2 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-base text-ink-2">
+              <span className="font-semibold text-ink">Members get more.</span> Member-only coupons, offers and your orders on any phone.
+            </p>
+            <button
+              type="button"
+              onClick={() => showLogin(undefined, { mode: 'signup' })}
+              className="pressable h-11 shrink-0 rounded-full bg-ink px-5 text-sm font-semibold text-surface"
+            >
+              Create free account
+            </button>
+          </div>
+        )}
+      </main>
 
-      <footer className="mx-auto mt-20 max-w-6xl px-4 text-sm text-ink-3 md:px-6">
+      <footer className="mx-auto mt-16 max-w-6xl px-4 text-sm text-ink-3 md:px-6">
         <div className="flex flex-col gap-2 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-display text-lg font-bold text-ink">REVA Food Court</p>
+          <a href={LANDING_URL} className="font-display text-lg font-bold text-ink hover:text-accent-ink">
+            REVA Food Court
+          </a>
           <p>Prices include GST. Each shop prepares its own dishes; collect them at its counter.</p>
         </div>
       </footer>
@@ -84,16 +76,15 @@ function TopBar() {
   return (
     <header className="sticky top-0 z-header border-b border-line/70 bg-bg/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 md:px-6">
-        <a href="/" className="font-display text-2xl font-extrabold text-ink" aria-label="REVA Food Court home">
-          REVA
-        </a>
-        <nav aria-label="Sections" className="hidden items-center gap-1 md:flex">
-          {SECTIONS.map(([id, label]) => (
-            <button key={id} type="button" onClick={() => scrollTo(id)} className="pressable h-10 rounded-full px-3.5 text-sm font-medium text-ink-2 hover-surface">
-              {label}
-            </button>
-          ))}
-        </nav>
+        <div className="flex min-w-0 items-center gap-4">
+          <a href={LANDING_URL} className="font-display text-2xl font-extrabold text-ink" aria-label="REVA Food Court, about the court">
+            REVA
+          </a>
+          <a href={LANDING_URL} className="hidden items-center gap-1 text-sm font-medium text-ink-2 hover:text-ink sm:inline-flex">
+            About the court
+            <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.25} />
+          </a>
+        </div>
         <div className="flex shrink-0 items-center gap-1">
           {!member && (
             <button type="button" onClick={() => showLogin()} className="pressable h-10 rounded-full bg-ink px-4 text-sm font-semibold text-surface">
@@ -185,88 +176,5 @@ function Stall({ vendor, menu, index, onOpen }: StallProps) {
         </span>
       </button>
     </article>
-  );
-}
-
-function Rewards() {
-  const member = useAuth((s) => Boolean(s.user?.member));
-  const showLogin = useUi((s) => s.showLogin);
-  const show = useUi((s) => s.show);
-
-  return (
-    <section id="rewards" aria-labelledby="rewards-title" className="mx-auto mt-20 max-w-6xl scroll-mt-20 px-4 md:mt-28 md:px-6">
-      <div className="grid gap-10 border-t-2 border-ink pt-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div>
-          <h2 id="rewards-title" className="font-display text-[clamp(36px,5vw,64px)] font-extrabold leading-[0.95] text-ink">
-            Members get more.
-          </h2>
-          <p className="mt-4 max-w-sm text-md text-ink-2">A free account keeps your orders together and unlocks offers guests don't see.</p>
-          <div className="mt-7 flex flex-wrap items-center gap-3">
-            {member ? (
-              <button type="button" onClick={() => show('account')} className="pressable inline-flex h-12 items-center gap-2 rounded-full bg-ink px-6 text-base font-semibold text-surface">
-                See your coupons
-                <ArrowRight className="h-4 w-4" strokeWidth={2.25} />
-              </button>
-            ) : (
-              <>
-                <button type="button" onClick={() => showLogin(undefined, { mode: 'signup' })} className="pressable h-12 rounded-full bg-ink px-6 text-base font-semibold text-surface">
-                  Create free account
-                </button>
-                <button
-                  type="button"
-                  onClick={() => showLogin(undefined, { mode: 'login' })}
-                  className="pressable h-12 rounded-full px-5 text-base font-semibold text-ink ring-1 ring-inset ring-line-strong hover-surface"
-                >
-                  Log in
-                </button>
-              </>
-            )}
-          </div>
-          <p className="mt-5 max-w-sm text-xs text-ink-3">Coupons and offers depend on what the court and its shops run. Loyalty points are not live yet.</p>
-        </div>
-        <dl className="grid gap-x-8 sm:grid-cols-2">
-          {PERKS.map(({ icon: Icon, title, text, soon }) => (
-            <div key={title} className="flex gap-4 border-b border-line py-5">
-              <Icon className="mt-0.5 h-6 w-6 shrink-0 text-accent-ink" strokeWidth={1.5} />
-              <div>
-                <dt className="text-base font-semibold text-ink">
-                  {title}
-                  {soon && <SoonTag />}
-                </dt>
-                <dd className="mt-1 text-sm text-ink-3">{text}</dd>
-              </div>
-            </div>
-          ))}
-        </dl>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorks() {
-  return (
-    <section id="how" aria-labelledby="how-title" className="mt-20 scroll-mt-20 bg-surface-2 py-14 md:mt-28 md:py-20">
-      <div className="mx-auto max-w-6xl px-4 md:px-6">
-        <h2 id="how-title" className="max-w-xl font-display text-[clamp(30px,4vw,48px)] font-bold leading-tight text-ink">
-          Order ahead, skip the queue.
-        </h2>
-        <p className="mt-3 text-base text-ink-3">Ordering online needs a free account and online payment.</p>
-        <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-10">
-          {STEPS.map(({ verb, text }) => (
-            <li key={verb}>
-              <p className="font-display text-[44px] font-extrabold leading-none text-accent">{verb}</p>
-              <p className="mt-3 max-w-[28ch] text-base text-ink-2">{text}</p>
-            </li>
-          ))}
-        </ol>
-        <div className="mt-12 flex items-start gap-4 border-t border-line-strong/60 pt-6">
-          <QrCode className="mt-0.5 h-6 w-6 shrink-0 text-ink" strokeWidth={1.5} />
-          <p className="text-base text-ink-2">
-            <span className="font-semibold text-ink">Already at the court?</span> Scan the QR on your table to order from your seat. Guests can order there
-            without an account.
-          </p>
-        </div>
-      </div>
-    </section>
   );
 }

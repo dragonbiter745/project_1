@@ -131,7 +131,7 @@ export function Sheet({ open, onClose, title, description, children, footer }: S
           <div className="mx-auto mt-2 h-[5px] w-9 rounded-full bg-line-strong" aria-hidden />
           <div className="flex items-start justify-between gap-3 pb-3 pl-5 pr-2 pt-2">
             <div className="min-w-0 pt-1.5">
-              <h2 id={titleId} className="text-xl font-semibold tracking-tight text-ink">
+              <h2 id={titleId} className="font-display text-2xl font-bold leading-tight text-ink">
                 {title}
               </h2>
               {description && <p className="mt-0.5 text-sm text-ink-3">{description}</p>}

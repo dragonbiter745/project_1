@@ -1,5 +1,5 @@
 import { BrandMark } from '@foodcourt/ui';
-import { orderAtTable } from '../../lib/links';
+import { orderOnline } from '../../lib/links';
 
 export function Footer() {
   return (
@@ -17,8 +17,8 @@ export function Footer() {
           <a href="#live" className="hover:text-ink">
             3D preview
           </a>
-          <a href={orderAtTable()} className="hover:text-ink">
-            How to order
+          <a href={orderOnline()} className="hover:text-ink">
+            Order online
           </a>
         </nav>
       </div>

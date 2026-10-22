@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { BrandMark, cx } from '@foodcourt/ui';
-import { orderAtTable } from '../../lib/links';
+import { orderOnline } from '../../lib/links';
 
 const LINKS = [
+  { href: '#order', label: 'Order online' },
   { href: '#story', label: 'How it works' },
   { href: '#kitchens', label: 'For kitchens' },
   { href: '#managers', label: 'For the court' },
@@ -40,8 +41,8 @@ export function Nav() {
             </li>
           ))}
         </ul>
-        <a href={orderAtTable()} className="pressable inline-flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-semibold text-white transition-colors hover:bg-black">
-          How to order
+        <a href={orderOnline()} className="pressable inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-ink">
+          Order online
           <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
         </a>
       </nav>

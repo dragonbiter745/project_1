@@ -44,7 +44,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => useUi.getState().set({ orderOpen: !useUi.getState().orderOpen })}
-          className="pressable relative inline-flex h-11 items-center gap-2 rounded-full bg-ink pl-4 pr-4 text-sm font-semibold text-white shadow-float transition-colors hover:bg-black"
+          className="pressable relative inline-flex h-11 items-center gap-2 rounded-full bg-ink pl-4 pr-4 text-sm font-semibold text-white shadow-float transition-colors hover:bg-ink/90"
         >
           <ShoppingBag className="h-4 w-4" strokeWidth={2} />
           <span className="hidden sm:inline">Order</span>

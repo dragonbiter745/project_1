@@ -67,7 +67,7 @@ export function StaffLogin({ title, subtitle, onSubmit, scene, corner, exiting =
   };
 
   return (
-    <main className="grain ambient relative grid min-h-[100dvh] place-items-center overflow-hidden px-6 py-12">
+    <main className="grain relative grid min-h-[100dvh] place-items-center overflow-hidden bg-surface-2 px-6 py-12">
       {scene}
       <form
         ref={formRef}
@@ -78,7 +78,7 @@ export function StaffLogin({ title, subtitle, onSubmit, scene, corner, exiting =
       >
         {corner && <div className="absolute right-4 top-4">{corner}</div>}
         <BrandMark size="lg" />
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight text-ink">{title}</h1>
+        <h1 className="mt-6 font-display text-[30px] font-bold leading-tight text-ink">{title}</h1>
         <p className="mt-1.5 text-sm text-ink-3">{subtitle}</p>
         <div className="mt-6 space-y-4">
           <div className="space-y-1.5">
