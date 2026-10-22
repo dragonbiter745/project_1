@@ -9,37 +9,38 @@
 :root {
   color-scheme: light;
 
-  /* RGB channels so Tailwind opacity modifiers (ring-line/70, bg-ink/40) resolve. */
-  --bg: 246 246 247;
-  --surface: 255 255 255;
-  --surface-2: 239 239 242;
-  --line: 230 230 234;
-  --line-strong: 212 212 218;
+  /* Palette: Ice Silver #DDE3E8 (primary), Deep Aubergine #3A0F34 (secondary), Marigold #F6A609 (accent).
+     RGB channels so Tailwind opacity modifiers (ring-line/70, bg-ink/40) resolve. */
+  --bg: 221 227 232;
+  --surface: 251 252 253;
+  --surface-2: 236 240 243;
+  --line: 207 214 221;
+  --line-strong: 178 187 197;
 
-  --ink: 18 18 20;
-  --ink-2: 74 74 85;
-  --ink-3: 100 100 110;
+  --ink: 58 15 52;
+  --ink-2: 86 64 83;
+  --ink-3: 101 87 101;
 
-  --accent: 228 87 15;
-  --accent-ink: 180 67 11;
-  --accent-tint: 255 242 234;
-  --accent-line: 249 214 194;
-  --scrim: 18 18 20;
+  --accent: 246 166 9;
+  --accent-ink: 74 20 66;
+  --accent-tint: 254 243 216;
+  --accent-line: 245 208 130;
+  --scrim: 34 8 30;
   --on-accent: 255 255 255;
 
   --veg: 21 128 61;
   --nonveg: 185 28 28;
   --ready: 21 128 61;
-  --ready-tint: 236 253 243;
-  --prep: 180 83 9;
-  --prep-tint: 255 248 235;
-  --danger: 192 38 45;
-  --danger-tint: 255 241 241;
+  --ready-tint: 232 247 238;
+  --prep: 156 86 0;
+  --prep-tint: 255 245 224;
+  --danger: 185 28 45;
+  --danger-tint: 253 238 240;
 
-  --shadow-float: 0 12px 32px -10px rgb(18 18 20 / 0.32), 0 2px 6px rgb(18 18 20 / 0.08);
-  --shadow-sheet: 0 -10px 40px rgb(18 18 20 / 0.12);
-  --shadow-card: 0 1px 2px rgb(92 48 18 / 0.06), 0 6px 20px -6px rgb(92 48 18 / 0.12);
-  --shadow-thumb: 0 1px 2px rgb(18 18 20 / 0.08), 0 2px 8px rgb(18 18 20 / 0.06);
+  --shadow-float: 0 14px 34px -12px rgb(58 15 52 / 0.38), 0 2px 6px rgb(58 15 52 / 0.1);
+  --shadow-sheet: 0 -10px 40px rgb(58 15 52 / 0.16);
+  --shadow-card: 0 1px 2px rgb(58 15 52 / 0.05), 0 8px 24px -10px rgb(58 15 52 / 0.16);
+  --shadow-thumb: 0 1px 2px rgb(58 15 52 / 0.1), 0 2px 8px rgb(58 15 52 / 0.08);
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -66,7 +67,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid rgb(var(--accent));
+    outline: 2px solid rgb(var(--ink));
     outline-offset: 2px;
   }
 
@@ -80,7 +81,7 @@
 .hub-panel {
   transform: translate3d(100%, 0, 0);
   transition: transform 240ms var(--ease-out);
-  box-shadow: -12px 0 32px rgb(18 18 20 / 0.08);
+  box-shadow: -12px 0 32px rgb(58 15 52 / 0.1);
 }
 .hub-panel[data-visible='true'] {
   transform: translate3d(0, 0, 0);

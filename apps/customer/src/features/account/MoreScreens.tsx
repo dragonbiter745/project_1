@@ -30,7 +30,7 @@ function SignInFirst({ text }: { text: string }) {
       text={text}
       action={
         <Button variant="accent" onClick={() => showLogin()}>
-          Sign in with Google
+          Sign in or create account
         </Button>
       }
     />
@@ -537,8 +537,8 @@ export function ProfileScreen() {
         <input id={ids.student} value={studentId} maxLength={20} onChange={(e) => setStudentId(e.target.value.toUpperCase())} placeholder="R20EA123" className={cx(fieldClass, 'uppercase')} />
       </div>
       <div className="space-y-2">
-        <span className="block text-sm font-medium text-ink">Google account</span>
-        <input value={user.email ?? ''} disabled className={fieldClass} aria-label="Google account email" />
+        <span className="block text-sm font-medium text-ink">Account email</span>
+        <input value={user.email ?? ''} disabled className={fieldClass} aria-label="Account email" />
       </div>
       <Group>
         <Switch label="Veg only menu" description="Open the menu with only vegetarian dishes showing." checked={vegOnly} onChange={setVegOnly} />
@@ -649,7 +649,7 @@ export function PrivacyScreen() {
       <div className="rounded-card bg-surface p-4 text-sm text-ink-2 ring-1 ring-inset ring-line/70">
         <p className="text-base font-semibold text-ink">What we keep</p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li>Your Google name, email and photo.</li>
+          <li>Your name and email, and your Google photo if you signed in with Google.</li>
           <li>The mobile number and student ID you add.</li>
           <li>Your orders, favourites and preferences.</li>
         </ul>

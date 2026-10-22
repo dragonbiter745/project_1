@@ -16,10 +16,10 @@ export function ShopSwitcher({ vendors, activeId, onChange }: ShopSwitcherProps)
   const clip = `inset(0 ${((count - 1 - index) * 100) / count}% 0 ${(index * 100) / count}% round 999px)`;
 
   return (
-    <div role="tablist" aria-label="Shops" className="relative grid h-11 rounded-full bg-surface-2 p-1" style={columns}>
+    <div role="tablist" aria-label="Shops" className="relative grid h-11 rounded-full bg-surface p-1 ring-1 ring-inset ring-line" style={columns}>
       <span
         aria-hidden
-        className="seg-indicator absolute inset-y-1 left-1 rounded-full bg-surface shadow-thumb"
+        className="seg-indicator absolute inset-y-1 left-1 rounded-full bg-ink shadow-thumb"
         style={{ width: `calc((100% - 8px) / ${count})`, transform: `translateX(${index * 100}%)` }}
       />
       {vendors.map((vendor) => (
@@ -40,7 +40,7 @@ export function ShopSwitcher({ vendors, activeId, onChange }: ShopSwitcherProps)
         style={{ ...columns, clipPath: clip }}
       >
         {vendors.map((vendor) => (
-          <span key={vendor.id} className="grid place-items-center truncate px-2 text-sm font-semibold text-ink">
+          <span key={vendor.id} className="grid place-items-center truncate px-2 text-sm font-semibold text-surface">
             {vendor.name}
           </span>
         ))}

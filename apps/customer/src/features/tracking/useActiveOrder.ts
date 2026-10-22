@@ -105,7 +105,7 @@ export function useReadyAlert(subOrders: SubOrder[]) {
           spread: 70,
           startVelocity: 38,
           origin: { y: 0.7 },
-          colors: ['#e4570f', '#15803d', '#121214'],
+          colors: ['#F6A609', '#15803d', '#3A0F34'],
           disableForReducedMotion: true,
         })
       );

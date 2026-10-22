@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-/** Who is using this phone: an anonymous guest, or a diner signed in with Google. */
+/** Who is using this phone: an anonymous guest, or a diner signed in with Google or email. */
 export interface AuthUser {
   uid: string;
   member: boolean;

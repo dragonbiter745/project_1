@@ -14,7 +14,7 @@ const fieldClass =
 
 /**
  * The name called out at the counter and the mobile number Cashfree needs for an online payment.
- * Opens once straight after Google sign-in, and at checkout if the number is still missing.
+ * Opens once straight after a sign-in that left them missing, and at checkout if the number is still missing.
  * Guests keep these on this phone; signed-in diners save them to their account.
  */
 export function DetailsSheet({ session }: { session: TableSession }) {

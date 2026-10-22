@@ -20,7 +20,7 @@ interface UiState {
   loginRequired: boolean;
   /** The account page to open straight to (a notification tap opens the inbox). */
   hubStart: 'inbox' | null;
-  /** `welcome` straight after Google sign-in, `checkout` when paying needs a mobile number. */
+  /** `welcome` straight after a sign-in that left the name or number missing, `checkout` when paying needs a mobile number. */
   detailsMode: 'welcome' | 'checkout';
   showDetails: (mode: 'welcome' | 'checkout') => void;
   show: (sheet: SheetName) => void;

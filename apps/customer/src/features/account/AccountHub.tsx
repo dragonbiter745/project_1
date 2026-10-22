@@ -189,12 +189,13 @@ function Home() {
           </Button>
         </section>
       ) : (
-        <section className="enter-up overflow-hidden rounded-card bg-gradient-to-br from-accent-tint to-surface p-5 ring-1 ring-inset ring-accent-line">
-          <p className="text-xl font-semibold tracking-tight text-ink">You're ordering as a guest</p>
-          <p className="mt-1 text-sm text-ink-2">Sign in to keep your orders on any phone, save favourites, and get coupons as they launch.</p>
-          <Button variant="accent" className="mt-4" onClick={() => showLogin()}>
-            Sign in with Google
-          </Button>
+        <section className="enter-up relative overflow-hidden rounded-card bg-ink p-5 text-surface shadow-float">
+          <span aria-hidden className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-accent/70 blur-3xl" />
+          <p className="relative text-xl font-semibold tracking-tight">You're ordering as a guest</p>
+          <p className="relative mt-1 text-sm text-surface/75">Sign in to keep your orders on any phone, save favourites, and get member-only coupons.</p>
+          <button type="button" onClick={() => showLogin()} className="pressable relative mt-4 inline-flex h-11 items-center rounded-full bg-accent px-5 text-base font-semibold text-ink">
+            Sign in or create account
+          </button>
         </section>
       )}
 
@@ -210,10 +211,10 @@ function Home() {
         <button
           type="button"
           onClick={() => track(active.id, closeHub)}
-          className="enter-up pressable mt-3 flex w-full items-center gap-3 rounded-card bg-accent-ink px-4 py-3.5 text-left text-on-accent shadow-float"
+          className="enter-up pressable mt-3 flex w-full items-center gap-3 rounded-card bg-ink px-4 py-3.5 text-left text-surface shadow-float"
           style={{ ['--i' as string]: 2 }}
         >
-          <span className="live-dot h-2.5 w-2.5 shrink-0 rounded-full bg-on-accent" aria-hidden />
+          <span className="live-dot h-2.5 w-2.5 shrink-0 rounded-full bg-accent" aria-hidden />
           <span className="min-w-0 flex-1">
             <span className="block text-base font-semibold">Order {shortOrderNo(active.id)} is in the kitchen</span>
             <span className="block text-sm opacity-85">Tap to track it live</span>
@@ -228,7 +229,7 @@ function Home() {
             icon={Inbox}
             label="Inbox"
             detail={inbox.length === 0 ? 'Offers and news from the court' : inbox[0]!.title}
-            badge={unread > 0 ? <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent-ink px-1.5 text-xs font-semibold tabular-nums text-on-accent">{unread}</span> : undefined}
+            badge={unread > 0 ? <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent px-1.5 text-xs font-semibold tabular-nums text-ink">{unread}</span> : undefined}
             onClick={() => push({ name: 'inbox' })}
           />
         </Group>
