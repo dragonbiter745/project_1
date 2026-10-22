@@ -68,7 +68,7 @@ function build(): Map<MatKey, THREE.Material> {
   m.set('notice', std({ map: noticeMap(), roughness: 0.9 }));
   m.set('kitchenFloor', std({ color: '#5b5f63', roughness: 0.85 }));
   m.set('screenDark', std({ color: '#0d0f12', roughness: 0.25, metalness: 0.4 }));
-  m.set('umbrellaA', std({ map: fabricMap('ua', '#F6A609'), roughness: 0.9, side: THREE.DoubleSide }));
+  m.set('umbrellaA', std({ map: fabricMap('ua', '#e4570f'), roughness: 0.9, side: THREE.DoubleSide }));
   m.set('umbrellaB', std({ map: fabricMap('ub', '#f2efe8'), roughness: 0.9, side: THREE.DoubleSide }));
   m.set('cushion', std({ map: fabricMap('cushion', '#3f4c5a'), roughness: 0.95 }));
   m.set('food', std({ color: '#d99a3e', roughness: 0.7 }));
@@ -109,7 +109,7 @@ function build(): Map<MatKey, THREE.Material> {
   m.set('scooterA', std({ color: '#dc2626', roughness: 0.35, metalness: 0.3 }));
   m.set('scooterB', std({ color: '#1d4ed8', roughness: 0.35, metalness: 0.3 }));
   m.set('scooterC', std({ color: '#f5f5f4', roughness: 0.35, metalness: 0.3 }));
-  m.set('flag', std({ color: '#3A0F34', roughness: 0.8, side: THREE.DoubleSide }));
+  m.set('flag', std({ color: '#e4570f', roughness: 0.8, side: THREE.DoubleSide }));
 
   for (const shop of SHOPS) {
     m.set(`lacquer:${shop.id}`, new THREE.MeshPhysicalMaterial({ color: shop.color, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.18 }));

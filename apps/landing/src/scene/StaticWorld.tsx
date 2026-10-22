@@ -62,7 +62,7 @@ function Ground() {
   );
 }
 
-const CHAIR_COLORS = ['#dde3e8', '#3A0F34', '#F6A609', '#dde3e8', '#5C1F54', '#dde3e8'];
+const CHAIR_COLORS = ['#f2efe8', '#e4570f', '#0f766e', '#f2efe8', '#f59e0b', '#f2efe8'];
 
 function chairGeometry() {
   const parts: THREE.BufferGeometry[] = [];
@@ -135,7 +135,7 @@ function QrPlates() {
       const y = Math.floor(i / cols) * ch;
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(x, y, cw, ch);
-      ctx.fillStyle = '#F6A609';
+      ctx.fillStyle = '#e4570f';
       ctx.fillRect(x, y, cw, 34);
       ctx.fillStyle = '#fff';
       ctx.font = '600 17px system-ui, sans-serif';

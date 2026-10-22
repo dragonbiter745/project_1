@@ -6,8 +6,8 @@ import { SHOPS, SHOP_BY_ID } from '../../data/shops';
 export function Phone({ step }: { step: number }) {
   return (
     <div className="relative mx-auto w-[300px] shrink-0">
-      <div className="absolute -inset-10 -z-10 rounded-[80px] bg-gradient-to-br from-accent/40 via-accent-tint to-[#dde3e8] opacity-70 blur-3xl" />
-      <div className="rounded-[52px] bg-[#2a0a26] p-[11px] shadow-[0_40px_80px_-30px_rgba(58,15,52,0.5)]">
+      <div className="absolute -inset-10 -z-10 rounded-[80px] bg-gradient-to-br from-[#ffd7bd] via-[#fde68a]/60 to-[#fbcfe8] opacity-70 blur-3xl" />
+      <div className="rounded-[52px] bg-[#111214] p-[11px] shadow-[0_40px_80px_-30px_rgba(92,48,18,0.55)]">
         <div className="relative h-[600px] overflow-hidden rounded-[42px] bg-bg">
           <div className="absolute left-1/2 top-2.5 z-20 h-7 w-28 -translate-x-1/2 rounded-full bg-black" />
           {[ScanScreen, BrowseScreen, CartScreen, TokenScreen, ReadyScreen].map((Screen, i) => (

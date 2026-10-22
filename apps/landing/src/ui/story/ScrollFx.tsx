@@ -22,7 +22,7 @@ export function ScrollProgress() {
   }, []);
   return (
     <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[45] h-[3px]">
-      <div ref={bar} className="h-full origin-left bg-gradient-to-r from-ink via-accent-ink to-accent" style={{ transform: 'scaleX(0)' }} />
+      <div ref={bar} className="h-full origin-left bg-gradient-to-r from-accent-ink via-[#f59e0b] to-[#e11d48]" style={{ transform: 'scaleX(0)' }} />
     </div>
   );
 }
@@ -78,7 +78,7 @@ export function CursorGlow() {
       ref={el}
       aria-hidden
       className={cx('pointer-events-none fixed left-0 top-0 z-[1] hidden h-[500px] w-[500px] rounded-full opacity-60 mix-blend-multiply transition-opacity duration-500 [@media(pointer:fine)]:block', explore && 'opacity-0')}
-      style={{ background: 'radial-gradient(circle, rgb(246 166 9 / 0.28), transparent 62%)' }}
+      style={{ background: 'radial-gradient(circle, rgb(255 214 186 / 0.55), transparent 62%)' }}
     />
   );
 }

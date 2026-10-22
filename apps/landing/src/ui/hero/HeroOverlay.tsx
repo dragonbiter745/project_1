@@ -33,7 +33,7 @@ export function HeroOverlay() {
             <button
               type="button"
               onClick={() => enter(false)}
-              className="pressable group inline-flex h-14 items-center gap-2.5 rounded-full bg-ink pl-6 pr-5 text-base font-semibold text-white shadow-float transition-[background-color,box-shadow] hover:bg-ink/90"
+              className="pressable group inline-flex h-14 items-center gap-2.5 rounded-full bg-ink pl-6 pr-5 text-base font-semibold text-white shadow-float transition-[background-color,box-shadow] hover:bg-black"
             >
               <Box className="h-5 w-5" strokeWidth={2} />
               Explore the court in 3D

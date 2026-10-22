@@ -23,7 +23,7 @@ export function Split() {
   return (
     <section ref={ref} aria-label="One payment, split per kitchen" className="relative bg-bg" style={{ height: '200vh', ['--k' as string]: 'clamp(0, calc(var(--p) * 1.7 - 0.15), 1)' }}>
       <div className="sticky top-0 flex h-[100dvh] items-center overflow-hidden">
-        <div className="pointer-events-none absolute right-[-10%] top-[10%] h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,rgb(246_166_9/0.3),transparent_65%)]" />
+        <div className="pointer-events-none absolute right-[-10%] top-[10%] h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,rgb(255_214_186/0.7),transparent_65%)]" />
         <div className="relative mx-auto w-full max-w-[1240px] px-5 pt-14 md:px-10">
           <div className="grid gap-4 md:grid-cols-[1.15fr_1fr] md:items-end">
             <RevealWords text="One payment in. A clean ticket for every kitchen out." accent={['ticket']} className="text-[34px] font-semibold leading-[1.04] tracking-[-0.03em] text-ink md:text-6xl" />

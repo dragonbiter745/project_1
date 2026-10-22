@@ -11,7 +11,7 @@ const TABLE_TONE: Record<string, string> = {
   reserved: 'bg-prep-tint text-prep',
   occupied: 'bg-accent-tint text-accent-ink',
   dirty: 'bg-danger-tint text-danger',
-  cleaning: 'bg-surface-2 text-ink-2',
+  cleaning: 'bg-[#e0f2fe] text-[#0369a1]',
 };
 const TABLE_LABEL: Record<string, string> = { free: 'Free', reserved: 'Reserved', occupied: 'Occupied', dirty: 'Needs cleaning', cleaning: 'Cleaning' };
 

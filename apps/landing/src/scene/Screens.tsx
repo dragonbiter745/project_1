@@ -138,7 +138,7 @@ function drawWallBoard(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const sim = getSim();
   ctx.fillStyle = '#08090b';
   ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = '#F6A609';
+  ctx.fillStyle = '#e4570f';
   ctx.fillRect(0, 0, w, 70);
   ctx.fillStyle = '#fff';
   ctx.font = `800 42px ${FONT}`;
@@ -220,7 +220,7 @@ export function Screens() {
       ctx.fillRect(-3, -10, 6, i % 3 ? 14 : 22);
       ctx.restore();
     }
-    ctx.fillStyle = '#F6A609';
+    ctx.fillStyle = '#e4570f';
     ctx.font = '700 20px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText('REVA', 128, 175);

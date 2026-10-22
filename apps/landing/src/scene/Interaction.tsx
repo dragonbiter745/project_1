@@ -38,7 +38,7 @@ function buildHits(): Hit[] {
   return hits;
 }
 
-const HEAT: Record<string, string> = { free: '#22c55e', reserved: '#f59e0b', occupied: '#7A2E6E', dirty: '#dc2626', cleaning: '#0ea5e9' };
+const HEAT: Record<string, string> = { free: '#22c55e', reserved: '#f59e0b', occupied: '#e4570f', dirty: '#dc2626', cleaning: '#0ea5e9' };
 
 export function Interaction() {
   const hits = useMemo(buildHits, []);

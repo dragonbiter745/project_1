@@ -61,7 +61,7 @@ export function DetailPanel() {
             onClick={() => ui.set({ follow: following ? null : selection.id })}
             className={cx(
               'pressable inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors',
-              following ? 'bg-accent-ink text-white' : 'bg-ink text-white hover:bg-ink/90'
+              following ? 'bg-accent-ink text-white' : 'bg-ink text-white hover:bg-black'
             )}
           >
             <Crosshair className="h-4 w-4" strokeWidth={2} />
@@ -72,7 +72,7 @@ export function DetailPanel() {
           <button
             type="button"
             onClick={() => ui.set({ orderOpen: true, orderShop: selection.id })}
-            className="pressable inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90"
+            className="pressable inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink px-4 text-sm font-semibold text-white hover:bg-black"
           >
             <ShoppingBag className="h-4 w-4" strokeWidth={2} />
             Order from here
@@ -82,7 +82,7 @@ export function DetailPanel() {
           <button
             type="button"
             onClick={() => ui.set({ orderOpen: true, presetTable: selection.id })}
-            className="pressable inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90"
+            className="pressable inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink px-4 text-sm font-semibold text-white hover:bg-black"
           >
             <ShoppingBag className="h-4 w-4" strokeWidth={2} />
             Order to this table
