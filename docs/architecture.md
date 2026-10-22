@@ -240,3 +240,17 @@
 - **Kept on purpose:** status colours (veg/non-veg, ready green, prep amber, danger red), each
   shop's own brand colour in the 3D court, and the banknote/coin colours on the shop admin login,
   which depict real rupees.
+
+## ADR 022: Market Hall design system, Earthy Minimal palette, protected 3D landing
+- **Supersedes ADR 021's palette.** Customer, kitchen, shop admin and master import
+  `packages/design/tokens.css`: Warm Canvas, Stone, White, Charcoal, Terracotta, Sage, Muted Olive,
+  Warm Gray, Soft Border, Error, plus motion durations (`--dur-fast/base/slow`, zeroed under reduced
+  motion) and stall colours. Display face: Bricolage Grotesque (self-hosted via fontsource, `font-display`
+  class / Tailwind `font-display`); interface: Geist; tokens and money: Geist Mono / tabular numerals.
+- **Contrast rules:** Warm Gray and Sage fail AA for small text, so secondary text uses `--ink-3`
+  (5:1) and Sage is decorative only. White on Terracotta passes AA (4.7:1). Kitchen states are
+  Terracotta (New), Charcoal (Cooking), Olive (Ready), each also labelled and iconed.
+- **Protected:** `apps/landing/**` stays byte-identical to the deployed commit `3dac67d`, and
+  `packages/ui/**` (the kit and Tailwind preset the landing compiles) is not changed by the redesign.
+  Check: `git diff 3dac67d -- apps/landing` is empty and a landing build produces the same asset hashes.
+  New design work goes in `packages/design` or app folders, never in those paths.
