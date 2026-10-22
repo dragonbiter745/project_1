@@ -15,7 +15,7 @@ export function More({ staff, vendorId }: { staff: StaffUser; vendorId: string }
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold tracking-tight text-ink">More</h1>
+      <h1 className="font-display text-[30px] font-bold leading-tight text-ink">More</h1>
 
       <ul className="space-y-2">
         <Row

@@ -17,7 +17,7 @@ export function StartOverlay({ shopName, onStart }: { shopName: string; onStart:
     >
       <div className="spotlight w-full max-w-md rounded-[28px] bg-surface p-8 text-center shadow-float ring-1 ring-inset ring-line/70">
         <BrandMark size="lg" className="mx-auto" />
-        <h1 id="start-title" className="mt-6 text-2xl font-semibold tracking-tight text-ink">
+        <h1 id="start-title" className="mt-6 font-display text-[30px] font-bold leading-tight text-ink">
           {shopName} kitchen
         </h1>
         <p className="mt-2 text-base text-ink-3">One tap to start service.</p>

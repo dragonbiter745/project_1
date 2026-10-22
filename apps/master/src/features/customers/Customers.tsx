@@ -30,13 +30,13 @@ const SEGMENTS: Array<{ key: CustomerSegment; label: string; hint: string }> = [
   { key: 'lapsed', label: 'Lapsed', hint: 'Not back in 30+ days' },
 ];
 
-// Second chart hue, validated with saffron (lightness, chroma, CVD and contrast checks all pass).
-const FIRST_RGB = '59 111 182';
+// Second chart hue next to Terracotta: Muted Olive from the palette (different lightness and hue).
+const FIRST_RGB = '105 116 91';
 
 const TAG_STYLE: Record<CustomerTag, { label: string; className: string }> = {
   member: { label: 'Signed in', className: 'bg-ready-tint text-ready' },
   regular: { label: 'Regular', className: 'bg-accent-tint text-accent-ink' },
-  new: { label: 'New', className: 'bg-[rgb(59_111_182/0.12)] text-[rgb(42_80_133)]' },
+  new: { label: 'New', className: 'bg-ink/10 text-ink' },
   lapsed: { label: 'Lapsed', className: 'bg-surface-2 text-ink-3' },
 };
 

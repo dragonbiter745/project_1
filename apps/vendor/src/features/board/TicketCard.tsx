@@ -22,7 +22,7 @@ function urgency(minutes: number): string {
   return 'bg-surface-2 text-ink-2';
 }
 
-const EDGE = { NEW: 'bg-accent', COOKING: 'bg-prep', READY: 'bg-ready' } as const;
+const EDGE = { NEW: 'bg-accent', COOKING: 'bg-ink', READY: 'bg-ready' } as const;
 
 const FOLD_AFTER = 3;
 
@@ -102,7 +102,7 @@ export const TicketCard = memo(function TicketCard({ sub, now, compact, onAccept
       <footer className="pb-4 pl-5 pr-4">
         {isNew && (
           <div className="grid grid-cols-[auto_1fr] gap-2">
-            <Button variant="danger" size="lg" onClick={() => onReject(sub)} className="px-4">
+            <Button variant="danger" size="lg" onClick={() => onReject(sub)} className="bg-danger-tint px-4 ring-1 ring-inset ring-danger/40">
               Reject
             </Button>
             <Button variant="accent" size="lg" onClick={() => onAccept(sub)}>

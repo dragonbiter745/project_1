@@ -175,7 +175,7 @@ function Console({ staff }: { staff: StaffUser }) {
                 <BrandMark size="sm" />
               </span>
               <div className="min-w-0">
-                <h1 className="truncate text-2xl font-semibold tracking-tight text-ink">{current.label}</h1>
+                <h1 className="truncate font-display text-[30px] font-bold leading-tight text-ink">{current.label}</h1>
                 <p className="mt-0.5 hidden text-sm text-ink-3 sm:block">{current.blurb}</p>
               </div>
             </div>

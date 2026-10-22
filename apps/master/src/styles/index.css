@@ -61,9 +61,9 @@
 
 /* Featured KPI: saffron light falling from the top-left corner onto the tile. */
 .kpi-feature {
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgb(var(--accent) / 0.16), transparent 55%),
-    linear-gradient(160deg, rgb(var(--accent-tint)), rgb(var(--surface)) 65%);
+  /* Solid tint and a terracotta rule: the featured figure stands out without a gradient. */
+  background: rgb(var(--accent-tint));
+  box-shadow: inset 0 3px 0 rgb(var(--accent));
 }
 
 /* Table header and row emphasis for the live board. */

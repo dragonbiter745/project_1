@@ -210,10 +210,11 @@ export function Board({ vendorId, alarmOn, phone, onMore, moreAlert }: BoardProp
       hint: 'Mark ready when plated',
       swipeHint: 'Swipe right once it is plated',
       Icon: ChefHat,
-      band: 'bg-prep-tint text-prep ring-prep/20',
-      body: 'bg-prep-tint/30',
+      // Charcoal, not amber: amber sits too close to the terracotta "New" column at a glance.
+      band: 'bg-surface-2 text-ink ring-line-strong',
+      body: 'bg-surface-2/50',
       list: columns.cooking,
-      tone: 'bg-prep text-on-accent',
+      tone: 'bg-ink text-surface',
       emptyText: 'Nothing on the stove',
     },
     {

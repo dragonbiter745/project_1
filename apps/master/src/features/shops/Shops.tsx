@@ -49,7 +49,7 @@ function ShopCard({ vendor, onPause }: { vendor: Vendor; onPause: () => void }) 
         <div className="flex min-w-0 items-center gap-4">
           <Monogram code={vendor.code} size="lg" tone="solid" />
           <div className="min-w-0">
-            <h2 className="truncate text-xl font-semibold tracking-tight text-ink">{vendor.name}</h2>
+            <h2 className="truncate font-display text-2xl font-bold text-ink">{vendor.name}</h2>
             <p className="mt-0.5 text-sm text-ink-3">
               Tokens {vendor.code}-001 onward · usual prep {vendor.defaultPrepMin} min
             </p>

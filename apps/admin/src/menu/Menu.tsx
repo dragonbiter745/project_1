@@ -40,7 +40,7 @@ export function Menu({ vendorId }: { vendorId: string }) {
     <div className="space-y-5">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Menu</h1>
+          <h1 className="font-display text-[30px] font-bold leading-tight text-ink">Menu</h1>
           <p className="text-sm text-ink-3">What diners see. Changes show up right away.</p>
         </div>
         <Button variant="accent" onClick={() => addDish()} icon={<Plus className="h-5 w-5" />}>

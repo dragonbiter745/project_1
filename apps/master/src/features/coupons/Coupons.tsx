@@ -56,6 +56,9 @@ export function Coupons() {
   useEffect(load, [load]);
 
   const toggle = async (c: Coupon) => {
+    // Coupons are paid by the court, so switching one on or off is confirmed first.
+    const ask = c.active ? `Pause ${c.code}? Diners can no longer use it.` : `Turn on ${c.code}? Diners can use it straight away.`;
+    if (!window.confirm(ask)) return;
     try {
       await setCouponActive(c.code, !c.active);
       load();

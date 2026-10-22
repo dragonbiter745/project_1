@@ -68,6 +68,7 @@ export function Messages() {
   }, []);
 
   const cancel = async (c: Campaign) => {
+    if (!window.confirm(`Cancel "${c.title}"? It will not be sent.`)) return;
     try {
       await cancelCampaign(c.id);
     } catch (err) {

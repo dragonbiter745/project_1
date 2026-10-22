@@ -26,7 +26,7 @@ export function ShopPicker({ onPick }: { onPick: (vendorId: string) => void }) {
               >
                 <Monogram code={vendor.code} size="lg" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xl font-semibold tracking-tight text-ink">{vendor.name}</span>
+                  <span className="block font-display text-2xl font-bold text-ink">{vendor.name}</span>
                   <span className="mt-1 block text-sm text-ink-3">
                     Tokens {vendor.code}-001 onward · usual prep {vendor.defaultPrepMin} min
                   </span>

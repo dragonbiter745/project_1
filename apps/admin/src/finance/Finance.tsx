@@ -16,7 +16,7 @@ export default function Finance({ vendorId }: { vendorId: string }) {
         <BalanceCard balancePaise={shop?.balanceDuePaise ?? null} />
       <div className="flex flex-wrap items-end justify-between gap-3 rounded-sheet bg-surface/90 p-4 shadow-card ring-1 ring-inset ring-line/70 backdrop-blur-sm">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Money</h1>
+          <h1 className="font-display text-[30px] font-bold leading-tight text-ink">Money</h1>
           <p className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-3">
             <CalendarDays className="h-4 w-4" /> {rangeLabel(range)}
           </p>
