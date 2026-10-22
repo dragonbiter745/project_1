@@ -202,3 +202,16 @@
   never logged. The admin login's own password change (by email) is deferred.
 - **Money:** the Money tab is the old earnings page (ShopFinance) under a hero that reuses the login's
   3D rupees (`moneyScene`), lazy-loaded and skipped for reduced motion or no WebGL.
+
+## ADR 019: Website pickup orders
+- **Context:** the founders want people who are not at the court to browse and order from the
+  normal website, while diners at a table keep the scan-and-order flow (FR-C1b).
+- **Decisions:** `startSession` also takes `{ mode: 'pickup' }`. It needs a signed-in (non-anonymous)
+  diner and opens a session with `tableId: 'pickup'`, `tableLabel: 'Pickup'` and no `qrToken`, keyed
+  `{uid}_pickup_{dateKey}` like table sessions. `createCheckout` re-checks sign-in for pickup
+  sessions and refuses them while online payments are off, so nobody can place an unpaid order from
+  home. Payment returns to `/order?order_id=…` and order pushes link there too. Kitchens see the
+  label "Pickup" where a table label would be; tickets and tokens are unchanged.
+- **Load:** the per-day pickup counter (`counters/{dateKey}_pickup`) moves only when a member opens
+  their first website session of the day, far below the 1 write/s limit.
+

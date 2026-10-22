@@ -11,6 +11,7 @@ import {
   type Vendor,
   type VendorAvailability,
   type VendorMenu,
+  PICKUP_TABLE_ID,
 } from '@foodcourt/shared';
 import { CASHFREE_SECRETS, CUSTOMER_URL, PAYMENT_WINDOW_MS, REGION } from '../config';
 import { db } from '../db';
@@ -57,11 +58,17 @@ export const createCheckout = onCall(
 
     const now = Date.now();
     const session = sessionSnap.data();
+    const pickup = session?.tableId === PICKUP_TABLE_ID;
     if (!session || session.uid !== uid || (session.expiresAt as number) < now) {
-      throw new HttpsError('failed-precondition', 'Your table session ended. Scan the QR on your table again.');
+      throw new HttpsError('failed-precondition', pickup ? 'Your order session ended. Refresh the page and try again.' : 'Your table session ended. Scan the QR on your table again.');
     }
+    const provider = signInProvider(req);
+    const member = Boolean(provider && provider !== 'anonymous');
     const config = (configSnap.exists ? configSnap.data() : FALLBACK_CONFIG) as GlobalConfig;
     if (config.flags.maintenance) throw new HttpsError('unavailable', 'Ordering is paused for a few minutes. Please try again shortly.');
+    // Pickup orders come from people who are not at a table yet: signed in and paid up front only.
+    if (pickup && !member) throw new HttpsError('failed-precondition', 'Sign in to order for pickup.');
+    if (pickup && !config.flags.paymentsEnabled) throw new HttpsError('failed-precondition', 'Online orders are paused. Scan the QR on a table at the court to order.');
 
     // Read every shop's menu, stock and status in parallel.
     const vendorIds = [...new Set(items.map((i) => i.vendorId))];
@@ -90,8 +97,7 @@ export const createCheckout = onCall(
     let coupon: { code: string; title: string; discountPaise: number } | null = null;
     if (couponCode) {
       if (!config.flags.paymentsEnabled) throw new HttpsError('failed-precondition', 'Coupons work with online payment, which is off right now. Remove the coupon to order.');
-      const provider = signInProvider(req);
-      const found = await discountForCheckout(couponCode, uid, Boolean(provider && provider !== 'anonymous'), verified, fullTotals.totalPaise, now);
+      const found = await discountForCheckout(couponCode, uid, member, verified, fullTotals.totalPaise, now);
       coupon = { code: found.coupon.code, title: found.coupon.title, discountPaise: found.discountPaise };
     }
     const totals = withDiscount(fullTotals, coupon?.discountPaise ?? 0);
@@ -135,7 +141,7 @@ export const createCheckout = onCall(
         customerId: uid,
         customerPhone,
         customerName: base.displayName || 'REVA diner',
-        returnUrl: `${CUSTOMER_URL.value()}/t/${session.qrToken as string}?order_id={order_id}`,
+        returnUrl: pickup ? `${CUSTOMER_URL.value()}/order?order_id={order_id}` : `${CUSTOMER_URL.value()}/t/${session.qrToken as string}?order_id={order_id}`,
         expiresAt: expiresAt + 60_000,
       });
       if (!cf.payment_session_id) throw new CashfreeError(502, 'No payment session returned');

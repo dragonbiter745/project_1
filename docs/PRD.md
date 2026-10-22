@@ -17,7 +17,7 @@ A food court with several shops. Every table has its own QR. A customer scans it
 **Three surfaces**
 | Surface | Users | Access |
 |---|---|---|
-| Customer app (PWA) | Diners | No signup; scan & order; optional login for points |
+| Customer app (PWA) | Diners | At a table: scan & order as a guest, optional login. On the website: sign in, order for pickup |
 | Vendor dashboard (one per shop, same codebase, scoped by `vendorId`) | Shop owner / staff | Email/phone login, role `vendorAdmin` / `vendorStaff` |
 | Master admin | Founders | Role `master`; sees and controls everything |
 
@@ -42,6 +42,7 @@ Delivery fleet, native apps, table reservations, inventory/stock management, ful
 
 ### 3.1 Customer app (PWA, mobile‑first, 360px baseline)
 - **FR‑C1 Scan & session.** QR encodes `https://order.<domain>/t/{tableCode}`. First visit creates a **session** bound to table + device (Firebase Anonymous Auth). Re‑scan or refresh within the session TTL (3h idle) reuses it.
+- **FR‑C1b Website pickup (Oct 2026).** Opening the site without a table link shows the shops and menus. Ordering needs a signed-in account and online payment; the server opens a `pickup` session (no table) and the diner collects at the counter with their token. Table QR ordering is unchanged.
 - **FR‑C2 Identity.** On session creation the server assigns `displayName` (random "Adjective + Food", e.g. "Zesty Mango") and `dailyNo` = the day's running customer number (resets at 00:00 IST). Shown in header as "Zesty Mango · #042". Names are never unique identifiers; `dailyNo` + date is.
 - **FR‑C3 Browse.** Shop tabs/chips (Roll Me, Siddi Vinayaka…), category sticky nav, search across all shops, veg/non‑veg filter, item cards (name, price, veg dot, optional photo, tags). Out‑of‑stock items greyed and non‑addable in real time. Shops that paused orders show a banner and block add‑to‑cart.
 - **FR‑C4 Cart.** One cart, grouped by shop. Quantity steppers, per‑item note (≤120 chars), persisted locally (survives refresh). Subtotals per shop, one grand total.
@@ -348,7 +349,7 @@ foodcourt/
 
 **Phase 2 (after pilot evidence):** points redemption, Easy Split auto‑settlement, push notifications at scale, tiers/offers, reorder favourites, Kannada/Hindi, thermal‑printer bridge.
 
-**Brought forward (Oct 2026, founders' decision):** Google sign-in with a full account area, customer analytics in master, court-paid coupons (online payments only), web push and in-app messages. Phone OTP is dropped for cost; email is paused. Decisions in `docs/architecture.md` ADR 014–017.
+**Brought forward (Oct 2026, founders' decision):** Google sign-in with a full account area, customer analytics in master, court-paid coupons (online payments only), web push and in-app messages. Phone OTP is dropped for cost; email is paused. Decisions in `docs/architecture.md` ADR 014–017. Website pickup ordering: ADR 019.
 
 ---
 

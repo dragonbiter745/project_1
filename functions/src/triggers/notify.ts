@@ -22,7 +22,7 @@ export async function notifyTicket(ticketId: string, t: SubOrder): Promise<'sent
   if (tokens.length === 0) return 'no-phone';
   const session = t.sessionId ? (await db.collection('sessions').doc(t.sessionId).get()).data() : undefined;
   const base = CUSTOMER_URL.value();
-  const link = session?.qrToken ? `${base}/t/${session.qrToken as string}?order_id=${t.orderId}` : `${base}/?order_id=${t.orderId}`;
+  const link = session?.qrToken ? `${base}/t/${session.qrToken as string}?order_id=${t.orderId}` : `${base}/order?order_id=${t.orderId}`;
   await sendPush(tokens, { ...message, link, tag: ticketId });
   return 'sent';
 }

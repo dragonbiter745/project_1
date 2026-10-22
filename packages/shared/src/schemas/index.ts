@@ -9,6 +9,11 @@ export const StartSessionSchema = z.object({
 
 export type StartSessionInput = z.infer<typeof StartSessionSchema>;
 
+/** A website (pickup) session needs no table: the diner must be signed in instead. */
+export const StartPickupSessionSchema = z.object({ mode: z.literal('pickup') });
+
+export type StartPickupSessionInput = z.infer<typeof StartPickupSessionSchema>;
+
 export const CartItemSchema = z.object({
   itemId: z.string().min(1),
   vendorId: z.string().min(1),

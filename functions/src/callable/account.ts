@@ -29,7 +29,7 @@ export function signInProvider(req: Pick<CallableRequest, 'auth'>): string | nul
 function requireMember(req: CallableRequest): string {
   const uid = requireUid(req);
   const provider = signInProvider(req);
-  if (!provider || provider === 'anonymous') throw new HttpsError('failed-precondition', 'Sign in with Google first.');
+  if (!provider || provider === 'anonymous') throw new HttpsError('failed-precondition', 'Sign in first.');
   return uid;
 }
 
