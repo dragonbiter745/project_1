@@ -2,6 +2,8 @@ node_modules/
 .pnpm-store/
 dist/
 build/
+# The 3D court's geometry source lives in a folder named build; it is code, not output.
+!apps/landing/src/scene/build/
 .turbo/
 .cache/
 *.log
