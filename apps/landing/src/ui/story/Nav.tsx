@@ -29,7 +29,10 @@ export function Nav() {
         )}
       >
         <a href="#live" aria-label="Qrave, back to the top" className="flex min-w-0 items-center rounded-full pl-2.5 pr-3">
-          <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="h-8 w-auto select-none" draggable={false} />
+          <picture>
+            <source srcSet="/qrave-wordmark-dark.png" media="(prefers-color-scheme: dark)" />
+            <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="h-8 w-auto select-none" draggable={false} />
+          </picture>
         </a>
         <ul className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (
