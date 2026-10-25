@@ -2,7 +2,7 @@ import { useEffect, useState, type ComponentType } from 'react';
 import { BarChart3, LogOut, Megaphone, QrCode, Radio, Settings2, ShieldAlert, Store, TicketPercent, Users, Wallet } from 'lucide-react';
 import { CourtFinance } from '@foodcourt/finance-ui';
 import { ActionToast, BrandMark, Button, StaffLogin, cx, useNow } from '@foodcourt/ui';
-import { connectMaster } from '@foodcourt/firebase-client/live';
+import { connectMaster, whenVisible } from '@foodcourt/firebase-client/live';
 import { staffSignIn, staffSignOut, watchStaff, type StaffUser } from '@foodcourt/firebase-client/staff';
 import { Coupons } from './features/coupons/Coupons';
 import { Customers } from './features/customers/Customers';
@@ -66,7 +66,8 @@ function NoAccess({ email }: { email: string | null }) {
 }
 
 function Console({ staff }: { staff: StaffUser }) {
-  useEffect(() => connectMaster(), []);
+  // Listeners pause while the tab sits in the background, so a console left open overnight stops being billed.
+  useEffect(() => whenVisible(() => connectMaster()), []);
   const [page, setPage] = useState<Page>(readPage);
   const flags = useLocal((s) => s.config.flags, jsonEqual);
   const live = useLocal(
@@ -99,10 +100,9 @@ function Console({ staff }: { staff: StaffUser }) {
         className="hidden border-r border-line/80 bg-surface/70 backdrop-blur-xl lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:w-[264px] lg:shrink-0 lg:flex-col lg:px-4 lg:py-6"
       >
         <div className="flex items-center gap-3 px-2">
-          <BrandMark />
           <div className="min-w-0">
-            <p className="truncate text-base font-semibold tracking-tight text-ink">REVA Food Court</p>
-            <p className="text-xs font-medium text-ink-3">Operations console</p>
+            <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="h-9 w-auto select-none" draggable={false} />
+            <p className="mt-1 text-xs font-medium text-ink-3">Operations console</p>
           </div>
         </div>
 

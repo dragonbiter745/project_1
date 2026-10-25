@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { LAPSED_DAYS, addDays, getIstDateKey, istDayStartMs, type CustomerInsights } from '@foodcourt/shared';
 import { REGION } from '../config';
 import { db } from '../db';
-import { limitShared, requireUid, roleOf } from '../lib/guard';
+import { limitLocal, requireUid, roleOf } from '../lib/guard';
 
 const DAY = 86_400_000;
 const InsightsSchema = z.object({ days: z.union([z.literal(7), z.literal(30), z.literal(90)]) });
@@ -72,7 +72,7 @@ export async function buildCustomerInsights(days: 7 | 30 | 90, now = Date.now())
 export const customerInsights = onCall({ region: REGION, maxInstances: 5, timeoutSeconds: 60 }, async (req) => {
   const uid = requireUid(req);
   if (roleOf(req).role !== 'master') throw new HttpsError('permission-denied', 'Only the court manager can open this.');
-  await limitShared(`customer-insights:${uid}`, 30, 60);
+  limitLocal(`customer-insights:${uid}`, 30, 60);
   const parsed = InsightsSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', 'Pick 7, 30 or 90 days.');
   return buildCustomerInsights(parsed.data.days);

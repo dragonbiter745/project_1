@@ -16,5 +16,7 @@ export { campaignAction, campaignSweeper, pushAction } from './callable/messages
 export { onTicketNotify } from './triggers/notify';
 export { cashfreeWebhook } from './webhook/cashfreeWebhook';
 export { sweeper } from './scheduled/sweeper';
+export { catalog, onFlagsChanged, onMenuChanged, onShopChanged, onStockChanged } from './catalog';
+export { billingGuard } from './billing/killSwitch';
 export { onTicketFailed } from './triggers/refunds';
 export { financeReport, financeAction, founderReport, shopReport } from './callable/finance';

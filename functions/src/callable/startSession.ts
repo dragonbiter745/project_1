@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { PICKUP_TABLE_ID, PICKUP_TABLE_LABEL, StartPickupSessionSchema, StartSessionSchema, generateDisplayName, getIstDateKey, type Table } from '@foodcourt/shared';
 import { REGION, SESSION_TTL_MS } from '../config';
 import { db } from '../db';
-import { clientIp, limitLocal, limitShared, requireUid } from '../lib/guard';
+import { clientIp, limitLocal, requireUid } from '../lib/guard';
 import { customerRef, writeVisit } from '../lib/customers';
 import { signInProvider } from './account';
 
@@ -18,10 +18,10 @@ function hashSeed(s: string): number {
  * diner's pickup session for ordering on the website.
  * One session per diner per table per day, keyed deterministically: no global counter to contend on.
  */
-export const startSession = onCall({ region: REGION, minInstances: 1, maxInstances: 100, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
+export const startSession = onCall({ region: REGION, maxInstances: 100, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
   const uid = requireUid(req);
   limitLocal(`ip:${clientIp(req)}:session`, 900, 60);
-  await limitShared(`session:${uid}`, 30, 600);
+  limitLocal(`session:${uid}`, 30, 600);
 
   // Website orders have no table: a signed-in diner gets a pickup session and collects at the counter.
   const pickup = StartPickupSessionSchema.safeParse(req.data).success;

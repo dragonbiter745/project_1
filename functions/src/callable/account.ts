@@ -6,7 +6,7 @@ import { AccountActionSchema, MAX_FAVOURITES, favouriteKey, type UserProfile } f
 import { REGION } from '../config';
 import { app, db } from '../db';
 import { customerRef, mergeCustomer } from '../lib/customers';
-import { limitShared, requireUid } from '../lib/guard';
+import { limitLocal, requireUid } from '../lib/guard';
 
 /** The master console's customer list shows who a member is; guests stay anonymous there. */
 async function mirrorToCustomer(uid: string, p: Partial<UserProfile>, now: number): Promise<void> {
@@ -95,7 +95,7 @@ const publicProfile = (uid: string, p: Partial<UserProfile>) => ({
 
 export const accountAction = onCall({ region: REGION, maxInstances: 50, concurrency: 80, timeoutSeconds: 60 }, async (req) => {
   const uid = requireMember(req);
-  await limitShared(`account:${uid}`, 60, 300);
+  limitLocal(`account:${uid}`, 60, 300);
   const parsed = AccountActionSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid request.');
   const input = parsed.data;

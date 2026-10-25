@@ -18,7 +18,7 @@ import {
 } from '@foodcourt/shared';
 import { CUSTOMER_URL, REGION } from '../config';
 import { db } from '../db';
-import { limitShared, requireUid, roleOf } from '../lib/guard';
+import { limitLocal, limitShared, requireUid, roleOf } from '../lib/guard';
 import { sendPush, tokenDocId, tokensFor } from '../lib/push';
 
 const DAY = 86_400_000;
@@ -31,7 +31,7 @@ const ANNOUNCEMENT_DAYS = 3;
 /** A diner's phone allowed notifications (or stopped). Guests too: order-ready alerts help everyone. */
 export const pushAction = onCall({ region: REGION, maxInstances: 30, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
   const uid = requireUid(req);
-  await limitShared(`push:${uid}`, 20, 600);
+  limitLocal(`push:${uid}`, 20, 600);
   const parsed = PushActionSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', 'Invalid notification token.');
   const ref = db.collection('pushTokens').doc(tokenDocId(parsed.data.token));

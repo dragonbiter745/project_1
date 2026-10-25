@@ -261,3 +261,41 @@
   is the 3D view: `apps/landing/src/scene/**` and the 3D canvas setup in `Hero.tsx` are unchanged
   from `3dac67d` (`git diff 3dac67d -- apps/landing/src/scene` is empty). The kit's BrandMark,
   StaffLogin and Sheet now use the display face and a flat Charcoal mark.
+
+
+## ADR 023: Adding shops from menu files
+
+Sweet Cravings, Basil and Yash Fruit Juice & Icecream Corner joined Roll Me and Siddi Vinayaka Garden.
+
+- **Menus are files.** Each shop's menu lives in `docs/menus/<shop>.json` and `functions/test/menus.test.ts` checks every file the way the shop-admin screen would (unique ids, whole-rupee prices within limits, name and size caps). A shop is loaded with create-only writes, never by re-running `seed.ts`, which also resets the global config and regenerates every table QR.
+- **One price per dish.** The menu model has no size options, so a dish sold in two sizes is two dishes, `Mint Lemonade (Lite)` and `(Regular)`, and Sweet Cravings' half-kilo and one-kilo cakes are separate dishes next to each other. Extras the model cannot price (eggless, custom design) are said in the dish description.
+- **Five shops no longer fit as one pill.** The customer shop switcher keeps the sliding pill up to three shops and becomes a sideways-scrolling row of chips beyond that. Shops are sorted by name everywhere, including the customer's REST loader.
+- **The platform charge on the new shops is ₹1 per order and no percentage** (`feePct: 0`, `perOrderFeePaise: 100`). Every shop runs 07:00-21:00. Roll Me and Siddi Vinayaka Garden still carry the older 3% plus ₹1 in production.
+
+
+## ADR 024: Cost control, the cached catalogue and the billing guard
+
+The product has to cost close to nothing to run. Firebase bills operations (reads, writes, function calls), so the
+design rule is: **cost follows orders, never visitors or open tabs.** Full numbers and the runbook are in
+`docs/cost-control.md`; the failure scenarios are in `docs/worst-cases.md`.
+
+- **The diner's catalogue is a cached copy, not a database read.** `functions/src/catalog.ts` keeps two documents
+  in `publicCatalog` (heavy `data`: shops and menus; light `status`: stock, pauses, flags) current with one small
+  write per change. The customer site's Hosting CDN serves them at `/api/status` (15 s) and `/api/catalog?v=<version>`
+  (a day, because the URL changes with the content). A phone checks the small status about every 90 seconds and
+  fetches the catalogue only when its version moves. Local development still reads Firestore directly.
+- **Public reads are closed.** `vendors`, `menus`, `availability`, `config` and `venues` are readable by staff only,
+  scoped to their own shop; `publicCatalog` is server-only. Every public read would have been billed to the project.
+- **No polling and no hidden listeners.** Admin Home refreshes every 5 minutes while visible; manager and shop-admin
+  listeners pause in a background tab; staff apps keep a persistent browser cache. Kitchens stay live.
+- **Background work is idle-cheap.** The sweeper runs 06:00 to 21:59 IST, does one query when nothing is waiting, and
+  asks Cashfree about an unpaid order at fixed ages (2, 3, 5, 8, 12, 16, 21, 26 minutes) instead of every minute.
+- **The shared rate limiter is for money.** It costs a read and a write per call, so only `createCheckout` and a few
+  low-volume actions use it; session start, kitchen actions and staff reports use the in-memory limiter.
+- **Write only what changed.** The order's overall status is re-derived only after Collected, Reject and Cancel,
+  the only kitchen steps that can change it, and is written only when it differs.
+- **A hard cap exists but is off.** `billingGuard` unlinks billing when a budget alert reaches 100% (the project then
+  stops until billing is linked again). It is deployed with `KILL_SWITCH_ENABLED=false` until a budget is chosen.
+- **Honest limit.** At about 60 reads and 16 writes per order the free quota covers roughly 620 to 750 orders a day;
+  beyond that the bill grows by about ₹85 a month per extra 1,000 orders a day. Moving the live ticket stream to
+  Realtime Database (billed by data, not operation) is the next step if volume makes that matter.

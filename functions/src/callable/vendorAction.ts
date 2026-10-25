@@ -10,18 +10,18 @@ import {
 } from '@foodcourt/shared';
 import { REGION } from '../config';
 import { db } from '../db';
-import { limitShared, requireUid, roleOf } from '../lib/guard';
+import { limitLocal, requireUid, roleOf } from '../lib/guard';
 import { syncParentStatus, timelineKey } from '../lib/orders';
 
 /**
  * Every kitchen status change goes through here and the shared status machine. Shop staff can only
  * touch their own shop's tickets; only the court master can cancel.
  */
-export const vendorAction = onCall({ region: REGION, minInstances: 1, maxInstances: 50, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
+export const vendorAction = onCall({ region: REGION, maxInstances: 50, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
   const uid = requireUid(req);
   const { role, vendorId: staffVendor } = roleOf(req);
   if (!role) throw new HttpsError('permission-denied', 'Sign in with a kitchen or manager account.');
-  await limitShared(`vendor:${uid}`, 400, 300);
+  limitLocal(`vendor:${uid}`, 400, 300);
 
   const parsed = VendorActionSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid action.');
@@ -51,7 +51,9 @@ export const vendorAction = onCall({ region: REGION, minInstances: 1, maxInstanc
     return { ticket, status: updates.status as string, now };
   });
 
-  await syncParentStatus(result.ticket.orderId);
+  // Only these steps can change the order's overall status (all collected, or a ticket refunded); accepting,
+  // marking ready and undoing ready never can, so they skip the query and read the re-check would cost.
+  if (action === 'COLLECTED' || action === 'REJECT' || action === 'CANCEL') await syncParentStatus(result.ticket.orderId);
 
   // Loyalty points on collection, idempotent per ticket.
   if (action === 'COLLECTED' && result.ticket.uid) {

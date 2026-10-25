@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import { House, Settings2, UtensilsCrossed, Wallet, type LucideIcon } from 'lucide-react';
-import { connectVendor } from '@foodcourt/firebase-client/live';
+import { connectVendor, whenVisible } from '@foodcourt/firebase-client/live';
 import type { StaffUser } from '@foodcourt/firebase-client/staff';
 import { BrandMark, Monogram, Skeleton, cx } from '@foodcourt/ui';
 import { useLocal } from '../lib/store';
@@ -35,7 +35,8 @@ export function Shell({ staff, vendorId }: { staff: StaffUser; vendorId: string 
     addEventListener('hashchange', on);
     return () => removeEventListener('hashchange', on);
   }, []);
-  useEffect(() => connectVendor(vendorId), [vendorId]);
+  // Pauses in a background tab; the kitchen screen is the one that has to keep listening all service.
+  useEffect(() => whenVisible(() => connectVendor(vendorId)), [vendorId]);
 
   const vendor = useLocal((s) => s.vendors.find((v) => v.id === vendorId) ?? null, (a, b) => a?.name === b?.name && a?.code === b?.code);
   const go = (next: Tab) => {
@@ -57,7 +58,10 @@ export function Shell({ staff, vendorId }: { staff: StaffUser; vendorId: string 
   return (
     <div className="grain ambient min-h-[100dvh]">
       <aside className={cx('fixed inset-y-0 left-0 z-header hidden w-60 flex-col overflow-y-auto border-r border-line/70 p-4 md:flex', glass)}>
-        <ShopTitle name={vendor?.name} code={vendor?.code} />
+        <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="h-9 w-auto self-start select-none" draggable={false} />
+        <div className="mt-5 border-t border-line/70 pt-5">
+          <ShopTitle name={vendor?.name} code={vendor?.code} />
+        </div>
         <nav className="mt-8 space-y-1" aria-label="Shop admin">
           {TABS.map((t) => (
             <button
@@ -77,8 +81,12 @@ export function Shell({ staff, vendorId }: { staff: StaffUser; vendorId: string 
       </aside>
 
       <header className={cx('sticky top-0 z-header border-b border-line/70 md:hidden', glass)}>
-        <div className="px-4 py-3">
-          <ShopTitle name={vendor?.name} code={vendor?.code} />
+        <div className="flex items-center gap-3 px-4 py-3">
+          <BrandMark size="sm" className="h-9 w-9" />
+          <span aria-hidden className="h-8 w-px shrink-0 bg-line" />
+          <div className="min-w-0">
+            <ShopTitle name={vendor?.name} code={vendor?.code} />
+          </div>
         </div>
       </header>
 

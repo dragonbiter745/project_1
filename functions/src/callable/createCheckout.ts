@@ -22,6 +22,9 @@ import { writeCustomerOrder } from '../lib/customers';
 import { signInProvider } from './account';
 import { readForTickets, writeTickets } from '../lib/orders';
 
+/** Cashfree insists on a mobile number; guests give none, so this stands in and is never stored on the order. */
+const GUEST_PHONE = '9999999999';
+
 const FALLBACK_CONFIG: GlobalConfig = {
   pointsPerRupee: 0.1,
   pointsExpiryDays: 90,
@@ -37,11 +40,12 @@ const FALLBACK_CONFIG: GlobalConfig = {
  * retries cannot create a second order or a second payment.
  */
 export const createCheckout = onCall(
-  { region: REGION, secrets: CASHFREE_SECRETS, minInstances: 1, maxInstances: 100, concurrency: 80, timeoutSeconds: 30, memory: '512MiB' },
+  { region: REGION, secrets: CASHFREE_SECRETS, maxInstances: 100, concurrency: 80, timeoutSeconds: 30, memory: '512MiB' },
   async (req) => {
     const uid = requireUid(req);
     limitLocal(`ip:${clientIp(req)}:checkout`, 600, 60);
-    await limitShared(`checkout:${uid}`, 10, 600);
+    // A diner places one or two orders; six attempts in ten minutes is generous, and each one can create a gateway order.
+    await limitShared(`checkout:${uid}`, 6, 600);
 
     const parsed = CreateCheckoutSchema.safeParse(req.data);
     if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid order.');
@@ -118,6 +122,10 @@ export const createCheckout = onCall(
 
     // Pay at the counter: the order is confirmed and goes to the kitchens straight away.
     if (!config.flags.paymentsEnabled) {
+      // Nothing is paid here to slow a prankster down, so each session and each table gets a small allowance
+      // (a table of six ordering twice each fits well inside it). Retries of the same order never reach this line.
+      await limitShared(`counter:session:${sessionId}`, 3, 900);
+      await limitShared(`counter:table:${session.tableId as string}`, 30, 900);
       await db.runTransaction(async (tx) => {
         const fresh = await tx.get(orderRef);
         if (fresh.exists) return;
@@ -129,18 +137,18 @@ export const createCheckout = onCall(
       return { orderId, status: 'PAID', paymentSessionId: null, cashfreeMode: null, totalPaise: totals.totalPaise };
     }
 
-    if (!customerPhone) throw new HttpsError('invalid-argument', 'Enter your mobile number to pay online.');
     const expiresAt = now + PAYMENT_WINDOW_MS;
     if (coupon) await holdCoupon(coupon.code, uid, orderId, expiresAt, now);
-    await orderRef.create({ ...base, status: 'PENDING_PAYMENT', payment: { status: 'PENDING', mode: 'ONLINE' }, customerPhone, expiresAt });
+    // Guests pay without giving a number (PRD §6.2): Cashfree still needs one, so it gets a placeholder and none is stored.
+    await orderRef.create({ ...base, status: 'PENDING_PAYMENT', payment: { status: 'PENDING', mode: 'ONLINE' }, ...(customerPhone ? { customerPhone } : {}), expiresAt });
 
     try {
       const cf = await createOrder({
         orderId,
         amountPaise: totals.totalPaise,
         customerId: uid,
-        customerPhone,
-        customerName: base.displayName || 'REVA diner',
+        customerPhone: customerPhone ?? GUEST_PHONE,
+        customerName: base.displayName || 'Qrave diner',
         returnUrl: pickup ? `${CUSTOMER_URL.value()}/order?order_id={order_id}` : `${CUSTOMER_URL.value()}/t/${session.qrToken as string}?order_id={order_id}`,
         expiresAt: expiresAt + 60_000,
       });

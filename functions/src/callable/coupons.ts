@@ -4,7 +4,7 @@ import { CouponActionSchema, PreviewCouponSchema, couponBlocked, toPublicCoupon,
 import { REGION } from '../config';
 import { db } from '../db';
 import { couponRef, dinerContext, readCoupon } from '../lib/coupons';
-import { limitShared, requireUid, roleOf } from '../lib/guard';
+import { limitLocal, limitShared, requireUid, roleOf } from '../lib/guard';
 import { signInProvider } from './account';
 
 /** The court manager creates, edits and pauses coupons. Usage counters are only ever moved by payments. */
@@ -96,7 +96,7 @@ export const dinerCoupons = onCall({ region: REGION, maxInstances: 30, concurren
   const now = Date.now();
 
   if (parsed.data.action === 'WALLET') {
-    await limitShared(`coupon-wallet:${uid}`, 60, 300);
+    limitLocal(`coupon-wallet:${uid}`, 60, 300);
     const snap = await db.collection('coupons').where('showInWallet', '==', true).where('active', '==', true).limit(50).get();
     const live = snap.docs
       .map((d) => ({ ...(d.data() as Coupon), code: d.id }))
@@ -111,7 +111,7 @@ export const dinerCoupons = onCall({ region: REGION, maxInstances: 30, concurren
     return { coupons: coupons.sort((a, b) => Number(b.usable) - Number(a.usable) || (a.coupon.endsAt ?? Infinity) - (b.coupon.endsAt ?? Infinity)) };
   }
 
-  await limitShared(`coupon-preview:${uid}`, 20, 600);
+  limitLocal(`coupon-preview:${uid}`, 20, 600);
   const config = (await db.collection('config').doc('global').get()).data() as GlobalConfig | undefined;
   if (config && !config.flags.paymentsEnabled) throw new HttpsError('failed-precondition', 'Coupons work with online payment, which is off right now.');
   const coupon = await readCoupon(parsed.data.code);

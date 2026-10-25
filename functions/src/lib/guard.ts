@@ -27,6 +27,9 @@ export function clientIp(req: { rawRequest?: { headers?: Record<string, unknown>
 
 const local = new Map<string, { n: number; resetAt: number }>();
 
+/** Test hook: forget every in-memory count. */
+export const resetLocalLimits = (): void => local.clear();
+
 function tooMany(): HttpsError {
   return new HttpsError('resource-exhausted', 'Too many requests. Please wait a moment and try again.');
 }

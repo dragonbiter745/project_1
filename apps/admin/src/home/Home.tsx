@@ -79,19 +79,37 @@ export function Home({ vendorId, onOpenMoney, onOpenMenu }: { vendorId: string; 
   );
 }
 
+const REPORT_REFRESH_MS = 5 * 60_000;
+
 function useToday(vendorId: string): ShopReport | null {
   const [report, setReport] = useState<ShopReport | null>(null);
   useEffect(() => {
     let live = true;
+    let last = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const load = () => {
+      last = Date.now();
       const day = getIstDateKey();
       getShopReport(day, day, vendorId).then((r) => live && setReport(r)).catch(() => undefined);
     };
+    // Every call runs several database queries, so: once on open, every five minutes while the page is in
+    // front, and again on return only if it has been a while. Never from a tab nobody is looking at.
+    const schedule = () => {
+      timer = setTimeout(() => {
+        if (document.visibilityState === 'visible') load();
+        schedule();
+      }, REPORT_REFRESH_MS);
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - last > 60_000) load();
+    };
     load();
-    const timer = setInterval(load, 60_000);
+    schedule();
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       live = false;
-      clearInterval(timer);
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [vendorId]);
   return report;

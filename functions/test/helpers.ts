@@ -1,11 +1,13 @@
 import * as crypto from 'crypto';
 import { vi } from 'vitest';
 import { db } from '../src/db';
+import { resetLocalLimits } from '../src/lib/guard';
 
 export const PROJECT = process.env.GCLOUD_PROJECT!;
 export const QR = 'Q7xk2PqM9vR4tLw8nB3ydA'; // 22-char base64url token for table T14
 
 export async function resetDb() {
+  resetLocalLimits();
   await fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/${PROJECT}/databases/default/documents`, { method: 'DELETE' });
 }
 
@@ -95,3 +97,33 @@ export function fakeCashfree(handlers: Partial<Record<'createOrder' | 'getOrder'
   return calls;
 }
 (globalThis as any).__realFetch ??= globalThis.fetch;
+
+/** Calls an onRequest handler with a GET (or other) request and returns what it sent back. */
+export function httpCall(handler: (req: any, res: any) => unknown, opts: { method?: string; path: string; query?: Record<string, string>; headers?: Record<string, string> }) {
+  const headers = Object.fromEntries(Object.entries(opts.headers ?? {}).map(([k, v]) => [k.toLowerCase(), v]));
+  const req = { method: opts.method ?? 'GET', path: opts.path, query: opts.query ?? {}, headers, ip: '1.2.3.4', get: (h: string) => headers[h.toLowerCase()] };
+  const sent: Record<string, string> = {};
+  let status = 200;
+  let payload: unknown;
+  const res = {
+    on() {
+      return res;
+    },
+    setHeader(k: string, v: string) {
+      sent[k.toLowerCase()] = String(v);
+      return res;
+    },
+    status(code: number) {
+      status = code;
+      return res;
+    },
+    send(p: unknown) {
+      payload = p;
+      return res;
+    },
+    end() {
+      return res;
+    },
+  };
+  return Promise.resolve(handler(req, res)).then(() => ({ status, headers: sent, payload }));
+}

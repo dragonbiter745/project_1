@@ -22,6 +22,9 @@ beforeEach(async () => {
     await setDoc(doc(db, 'tables/tbl-14'), { label: 'T-14', active: true, qrToken: 'secret-token-abcdefghijk' });
     await setDoc(doc(db, 'vendors/v-rm'), { name: 'Roll Me', acceptingOrders: true, defaultPrepMin: 10, status: 'active', feePct: 3 });
     await setDoc(doc(db, 'availability/v-rm'), { vendorId: 'v-rm', unavailable: {}, updatedAt: 1 });
+    await setDoc(doc(db, 'menus/v-rm'), { vendorId: 'v-rm', version: 1, categories: [] });
+    await setDoc(doc(db, 'venues/venue-reva'), { name: 'Court' });
+    await setDoc(doc(db, 'publicCatalog/status'), { v: 'x' });
     await setDoc(doc(db, 'orders/o1'), { uid: 'alice', totals: { totalPaise: 100 } });
     await setDoc(doc(db, 'subOrders/o1__v-rm'), { uid: 'alice', orderId: 'o1', vendorId: 'v-rm', dateKey: '2026-10-20', status: 'NEW' });
     await setDoc(doc(db, 'config/global'), { flags: { maintenance: false } });
@@ -164,8 +167,40 @@ describe('firestore.rules', () => {
     await assertFails(setDoc(doc(owner, 'menus/v-rm'), { categories: [] }));
     await assertFails(updateDoc(doc(owner, 'vendors/v-rm'), { defaultPrepMin: 5 }));
     await assertFails(updateDoc(doc(owner, 'availability/v-rm'), { unavailable: {} }));
-    await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), 'config/global')));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'config/global')));
+    await assertSucceeds(getDoc(doc(staff(), 'config/global')));
     await assertFails(updateDoc(doc(staff(), 'config/global'), { 'flags.maintenance': true }));
     await assertSucceeds(updateDoc(doc(master(), 'config/global'), { 'flags.maintenance': true }));
+  });
+
+  it('keeps the shop catalogue off the public internet, because every read is billed to the project', async () => {
+    const nobody = env.unauthenticatedContext().firestore();
+    for (const ctx of [nobody, diner()]) {
+      await assertFails(getDoc(doc(ctx, 'vendors/v-rm')));
+      await assertFails(getDocs(collection(ctx, 'vendors')));
+      await assertFails(getDocs(query(collection(ctx, 'vendors'), where('status', '==', 'active'))));
+      await assertFails(getDoc(doc(ctx, 'menus/v-rm')));
+      await assertFails(getDoc(doc(ctx, 'availability/v-rm')));
+      await assertFails(getDoc(doc(ctx, 'config/global')));
+      await assertFails(getDoc(doc(ctx, 'venues/venue-reva')));
+    }
+    // A kitchen sees its own shop only; a shop admin the same; the court manager everything.
+    await assertSucceeds(getDoc(doc(staff(), 'vendors/v-rm')));
+    await assertSucceeds(getDoc(doc(staff(), 'menus/v-rm')));
+    await assertSucceeds(getDoc(doc(staff(), 'availability/v-rm')));
+    await assertFails(getDoc(doc(staff('v-sv'), 'menus/v-rm')));
+    await assertFails(getDoc(doc(staff('v-sv'), 'vendors/v-rm')));
+    await assertFails(getDocs(collection(staff(), 'vendors')));
+    const fin = env.authenticatedContext('fin-rm', { role: 'vendorFinance', vendorId: 'v-rm' }).firestore();
+    await assertSucceeds(getDoc(doc(fin, 'menus/v-rm')));
+    await assertSucceeds(getDoc(doc(fin, 'config/global')));
+    await assertFails(getDoc(doc(fin, 'menus/v-sv')));
+    await assertSucceeds(getDocs(query(collection(master(), 'vendors'), where('status', 'in', ['active', 'inactive', 'suspended']))));
+    await assertSucceeds(getDoc(doc(master(), 'venues/venue-reva')));
+    // The cached copy the /api endpoints serve is for the server alone.
+    for (const ctx of [nobody, diner(), staff(), master()]) {
+      await assertFails(getDoc(doc(ctx, 'publicCatalog/status')));
+      await assertFails(setDoc(doc(ctx, 'publicCatalog/status'), { v: 'hacked' }));
+    }
   });
 });

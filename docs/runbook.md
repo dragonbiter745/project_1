@@ -72,6 +72,13 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
 - New shop: create its account with the claim for the new `vendors/{id}`; a password reset is a
   new password set by the master (Identity Toolkit `accounts:update`).
 
+### Adding a shop (checklist)
+1. Write `docs/menus/<shop>.json` and run the menu test (`npm test` in `functions`).
+2. Create `vendors/<id>`, `availability/<id>` and `menus/<id>` with create-only writes. Do not re-run `seed.ts` on production: it resets the global config and regenerates every table QR.
+3. Create two logins, the kitchen one (`vendorAdmin`) and the shop admin one (`vendorFinance`), each with its `vendorId` claim.
+4. Set the claims with Identity Toolkit `accounts:update` and read them back. `accounts:create` can accept `customAttributes` without applying them, and the login then signs in but is refused by the kitchen and admin apps.
+5. Set the platform charge (₹1 per order is `feePct: 0`, `perOrderFeePaise: 100`) and confirm hours and prep time with the shop.
+
 ### Table QR codes
 - QR links are `https://<customer-site>/t/<qrToken>`, a 128-bit random token per table; the short
   table code is printed for humans but is never accepted on its own. Tables are master-only in rules.

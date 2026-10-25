@@ -25,7 +25,7 @@ import {
 } from '@foodcourt/shared';
 import { REGION } from '../config';
 import { db } from '../db';
-import { limitShared, requireUid, roleOf } from '../lib/guard';
+import { limitLocal, limitShared, requireUid, roleOf } from '../lib/guard';
 
 const FAILED = [...REFUNDABLE_STATUSES];
 const ALL_TIME: Window = { from: '2000-01-01', to: '9999-12-31' };
@@ -292,7 +292,7 @@ export const shopReport = onCall({ region: REGION, maxInstances: 20, timeoutSeco
   const asked = typeof (req.data as { vendorId?: unknown })?.vendorId === 'string' ? (req.data as { vendorId: string }).vendorId : null;
   const vendorId = role === 'vendorFinance' ? own : role === 'master' ? asked : null;
   if (!vendorId) throw new HttpsError('permission-denied', "Only the shop's finance login can open this.");
-  await limitShared(`shop-report:${uid}`, 30, 60);
+  limitLocal(`shop-report:${uid}`, 30, 60);
   const parsed = FinanceReportSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid date range.');
   return buildShopReport(vendorId, parsed.data.from, parsed.data.to);
@@ -300,7 +300,7 @@ export const shopReport = onCall({ region: REGION, maxInstances: 20, timeoutSeco
 
 export const financeReport = onCall({ region: REGION, maxInstances: 10, timeoutSeconds: 60 }, async (req) => {
   const uid = requireCourt(req);
-  await limitShared(`finance-report:${uid}`, 30, 60);
+  limitLocal(`finance-report:${uid}`, 30, 60);
   const parsed = FinanceReportSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid date range.');
   return buildFinanceReport(parsed.data.from, parsed.data.to);
@@ -421,6 +421,6 @@ export async function buildFounderIncome(months = 12, today = getIstDateKey()): 
 
 export const founderReport = onCall({ region: REGION, maxInstances: 5, timeoutSeconds: 60 }, async (req) => {
   const uid = requireCourt(req);
-  await limitShared(`founder-report:${uid}`, 20, 60);
+  limitLocal(`founder-report:${uid}`, 20, 60);
   return buildFounderIncome();
 });

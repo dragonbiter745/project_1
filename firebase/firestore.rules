@@ -16,6 +16,16 @@ service cloud.firestore {
         && (request.auth.token.role == 'vendorAdmin' || request.auth.token.role == 'vendorStaff')
         && request.auth.token.vendorId == vendorId;
     }
+    // Any shop login (kitchen or shop admin), whichever shop it belongs to.
+    function isStaff() {
+      return signedIn()
+        && (request.auth.token.role == 'vendorAdmin' || request.auth.token.role == 'vendorStaff' || request.auth.token.role == 'vendorFinance');
+    }
+    // The shop catalogue is for staff only. Diners get it through the cached /api endpoints, so the public
+    // internet cannot read these collections: every read here is billed to the project.
+    function canSeeShop(vendorId) {
+      return isMaster() || isVendor(vendorId) || isShopFinance(vendorId);
+    }
     function isOwner(uid) {
       return signedIn() && request.auth.uid == uid;
     }
@@ -24,13 +34,13 @@ service cloud.firestore {
     }
 
     match /venues/{venueId} {
-      allow read: if true;
+      allow read: if isMaster() || isStaff();
       allow write: if isMaster();
     }
 
     // Shop status: kitchens may only pause/resume and set their prep time.
     match /vendors/{vendorId} {
-      allow read: if true;
+      allow read: if canSeeShop(vendorId);
       allow create, delete: if isMaster();
       allow update: if isMaster()
         || (isVendor(vendorId) && onlyChanges(['acceptingOrders', 'pausedUntil', 'defaultPrepMin', 'updatedAt'])
@@ -41,13 +51,13 @@ service cloud.firestore {
 
     // Menus and prices are changed by the court manager only; prices are re-checked server-side anyway.
     match /menus/{vendorId} {
-      allow read: if true;
+      allow read: if canSeeShop(vendorId);
       allow write: if isMaster();
     }
 
     // Sold-out toggles: the shop's own staff, only the stock map.
     match /availability/{vendorId} {
-      allow read: if true;
+      allow read: if canSeeShop(vendorId);
       allow create, update: if isMaster()
         || (isVendor(vendorId)
             && request.resource.data.vendorId == vendorId
@@ -154,13 +164,18 @@ service cloud.firestore {
     }
 
     match /config/{configId} {
-      allow read: if true;
+      allow read: if isMaster() || isStaff();
       allow write: if isMaster();
     }
 
     match /auditLogs/{logId} {
       allow read: if isMaster();
       allow write: if false;
+    }
+
+    // The cached catalogue the /api endpoints serve: written and read by functions only.
+    match /publicCatalog/{id} {
+      allow read, write: if false;
     }
 
     // Server-only bookkeeping.

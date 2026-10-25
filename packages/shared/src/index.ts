@@ -12,3 +12,5 @@ export * from './founders';
 export * from './customers';
 export * from './coupons';
 export * from './messages';
+export * from './images';
+export * from './catalog';

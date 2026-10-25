@@ -90,6 +90,41 @@ export function connectVendor(vendorId: string, store: LiveStore = liveStore): U
   return () => subs.forEach((u) => u());
 }
 
+/**
+ * Runs `start` while the page is in front, stops its listeners after `hiddenMs` in the background and starts
+ * them again when the page returns. A tab forgotten overnight then stops being billed for every change.
+ */
+export function whenVisible(start: () => Unsubscribe, hiddenMs = 120_000): Unsubscribe {
+  let stop: Unsubscribe | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const sync = () => {
+    clearTimeout(timer);
+    if (document.visibilityState === 'visible') {
+      stop ??= start();
+    } else if (stop) {
+      timer = setTimeout(() => {
+        stop?.();
+        stop = null;
+      }, hiddenMs);
+    }
+  };
+  document.addEventListener('visibilitychange', sync);
+  sync();
+  return () => {
+    document.removeEventListener('visibilitychange', sync);
+    clearTimeout(timer);
+    stop?.();
+    stop = null;
+  };
+}
+
+/** One read of the shop list, for a signed-in manager who has to pick a shop. */
+export async function loadShopList(store: LiveStore = liveStore): Promise<void> {
+  const snap = await getDocs(query(collection(getDb(), 'vendors'), where('status', 'in', ['active', 'inactive', 'suspended'])));
+  store.patch((d) => void (d.vendors = snap.docs.map((x) => withId<Vendor>(x)).sort((a, b) => a.name.localeCompare(b.name))));
+  store.markLoaded('vendors');
+}
+
 /** The court manager: every shop, every table and today's tickets across the court. */
 export function connectMaster(store: LiveStore = liveStore): Unsubscribe {
   const db = getDb();

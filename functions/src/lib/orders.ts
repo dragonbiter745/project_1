@@ -102,11 +102,13 @@ export async function materializePaidOrder(orderId: string, payment: { amountPai
 
 /** Recomputes an order's status from its tickets after any ticket changes. */
 export async function syncParentStatus(orderId: string): Promise<void> {
-  const tickets = await db.collection('subOrders').where('orderId', '==', orderId).get();
+  const orderRef = db.collection('orders').doc(orderId);
+  const [tickets, parent] = await Promise.all([db.collection('subOrders').where('orderId', '==', orderId).get(), orderRef.get()]);
   if (tickets.empty) return;
   const all = tickets.docs.map((d) => d.data() as SubOrder);
   const status = deriveParentOrderStatus(all);
-  await db.collection('orders').doc(orderId).update({ status, updatedAt: Date.now() });
+  // Most kitchen steps leave the order's overall status as it was: skip the write (and the listeners' re-reads).
+  if (parent.data()?.status !== status) await orderRef.update({ status, updatedAt: Date.now() });
   // Nothing was eaten: hand the diner's coupon use back.
   if (all.every((t) => REFUNDABLE_STATUSES.has(t.status))) await releaseCouponUse(orderId);
 }

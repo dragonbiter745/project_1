@@ -1,9 +1,9 @@
-import type { GlobalConfig, Vendor, VendorAvailability, VendorMenu } from '@foodcourt/shared';
+import type { CatalogData, CatalogStatus, GlobalConfig, Vendor, VendorAvailability, VendorMenu } from '@foodcourt/shared';
 import { defaultFirebaseConfig } from './config';
 import { liveStore, type LiveStore } from './liveStore';
 
-// Public catalog reads over Firestore's REST API: no SDK in the diner's first download.
-// Rules allow public reads of vendors, menus, availability and config.
+// The diner's catalogue arrives over plain HTTP (no database SDK in the first download). In production it comes
+// from the CDN-cached /api endpoints; the Firestore REST path below is for local development only.
 
 const DOCS = `https://firestore.googleapis.com/v1/projects/${defaultFirebaseConfig.projectId}/databases/default/documents`;
 const KEY = `key=${defaultFirebaseConfig.apiKey}`;
@@ -39,8 +39,8 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Fetches shops, menus, stock and flags in two requests and writes them into the store. */
-export async function loadCatalog(store: LiveStore = liveStore): Promise<void> {
+/** Straight from Firestore: local development only. Production never reads the database for the catalogue. */
+async function loadCatalogDirect(store: LiveStore): Promise<void> {
   // A structured query, not the list-documents endpoint: Firestore refuses unfiltered lists of a
   // named database's collection for public callers, while the same read as a query is allowed.
   const rows = await getJson<Array<{ document?: RestDoc }>>(`${DOCS}:runQuery?${KEY}`, {
@@ -51,7 +51,9 @@ export async function loadCatalog(store: LiveStore = liveStore): Promise<void> {
   const vendors = rows
     .flatMap((r) => (r.document ? [r.document] : []))
     .map((d) => ({ id: idOf(d), ...decodeFields(d.fields ?? {}) }) as Vendor)
-    .filter((v) => v.status === 'active');
+    .filter((v) => v.status === 'active')
+    // Same order as the staff apps; Firestore returns shops in no particular order.
+    .sort((a, b) => a.name.localeCompare(b.name));
   const names = [
     ...vendors.flatMap((v) => [`menus/${v.id}`, `availability/${v.id}`]),
     'config/global',
@@ -76,21 +78,85 @@ export async function loadCatalog(store: LiveStore = liveStore): Promise<void> {
   store.markLoaded('catalog');
 }
 
-/** Keeps the catalog fresh while the page is visible: stock and pauses change during service. */
-export function keepCatalogFresh(store: LiveStore = liveStore, everyMs = 60_000): () => void {
+// ── The diner's catalogue through the CDN ─────────────────────────────────────────────────────────────
+// A phone never reads the database for the catalogue. /api/status is tiny and short-lived, and
+// /api/catalog?v=<version> is large but cached for a day, so thousands of open pages cost the backend a
+// handful of reads a minute in total. The heavy part is also kept in this browser between visits.
+
+const CATALOG_KEY = 'fc_catalog_v2';
+let heldData: CatalogData | null = null;
+
+function savedData(): CatalogData | null {
+  try {
+    const raw = localStorage.getItem(CATALOG_KEY);
+    return raw ? (JSON.parse(raw) as CatalogData) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveData(data: CatalogData): void {
+  try {
+    localStorage.setItem(CATALOG_KEY, JSON.stringify(data));
+  } catch {
+    // storage full or blocked: it is simply fetched again next time
+  }
+}
+
+// Default cache mode on purpose: the CDN's max-age is what keeps these requests off the backend.
+async function fromCdn<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Catalog request failed (${res.status})`);
+  return (await res.json()) as T;
+}
+
+const isLocalDev = () => typeof location !== 'undefined' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+/** Shops, menus, stock and flags for the diner, from the CDN: the small status, then the catalogue only if its version moved. */
+export async function loadCatalog(store: LiveStore = liveStore): Promise<void> {
+  if (isLocalDev()) return loadCatalogDirect(store);
+  const status = await fromCdn<CatalogStatus>('/api/status');
+  let data = heldData ?? savedData();
+  if (!data || data.v !== status.v) {
+    data = await fromCdn<CatalogData>(`/api/catalog?v=${encodeURIComponent(status.v)}`);
+    saveData(data);
+  }
+  heldData = data;
+  const fresh = data;
+  store.patch((draft) => {
+    draft.vendors = fresh.vendors.map((v) => ({ ...v, ...(status.vendors[v.id] ?? {}) }) as Vendor);
+    for (const v of fresh.vendors) {
+      const menu = fresh.menus[v.id];
+      if (menu) draft.menus[v.id] = menu;
+      const stock = status.availability[v.id];
+      draft.availability[v.id] = { updatedAt: 0, ...(stock ?? {}), vendorId: v.id, unavailable: stock?.unavailable ?? {} } as VendorAvailability;
+    }
+    if (status.config) draft.config = { ...draft.config, ...status.config, flags: { ...draft.config.flags, ...(status.config.flags ?? {}) } };
+  });
+  store.markLoaded('catalog');
+}
+
+/**
+ * Keeps the catalog fresh while the page is visible: stock and pauses change during service. Checks are
+ * spread out (about every 90 s, never in step across phones) and back off while the network is failing.
+ */
+export function keepCatalogFresh(store: LiveStore = liveStore, everyMs = 90_000): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
+  let failures = 0;
   const tick = async () => {
     if (stopped) return;
     if (document.visibilityState === 'visible') {
       try {
         await loadCatalog(store);
         store.setStatus('live');
+        failures = 0;
       } catch {
+        failures += 1;
         store.setStatus(navigator.onLine ? 'error' : 'offline');
       }
     }
-    timer = setTimeout(tick, everyMs);
+    timer = setTimeout(tick, everyMs * (0.85 + Math.random() * 0.3) * 2 ** Math.min(failures, 2));
   };
   const onVisible = () => {
     if (document.visibilityState !== 'visible') return;

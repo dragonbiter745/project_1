@@ -1,13 +1,6 @@
-import {
-  addDoc,
-  collection,
-  connectFirestoreEmulator,
-  getFirestore,
-  serverTimestamp,
-  type Firestore,
-} from 'firebase/firestore';
-import { getFirebaseApp, shouldUseEmulators } from './app';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { getAuthClient } from './auth';
+import { getDb } from './db';
 
 export interface IssueInput {
   orderId: string;
@@ -15,21 +8,6 @@ export interface IssueInput {
   vendorId?: string;
   reason: string;
   text?: string;
-}
-
-let db: Firestore | null = null;
-
-function getDb(): Firestore {
-  if (db) return db;
-  db = getFirestore(getFirebaseApp(), 'default');
-  if (shouldUseEmulators()) {
-    try {
-      connectFirestoreEmulator(db, 'localhost', 8080);
-    } catch {
-      // already connected during HMR
-    }
-  }
-  return db;
 }
 
 // Issues are the one collection clients may create directly (firestore.rules: create if signed in).
