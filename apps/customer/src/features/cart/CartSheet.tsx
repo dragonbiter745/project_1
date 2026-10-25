@@ -205,7 +205,7 @@ export function CartSheet({ session }: { session: TableSession | null }) {
           {member && config.flags.loyaltyEnabled && points > 0 && (
             <p className="mt-4 flex items-center gap-2.5 text-sm text-ink-2">
               <Gift className="h-[18px] w-[18px] shrink-0 text-accent-ink" strokeWidth={1.75} />
-              You'll earn {points} REVA points when you collect.
+              You'll earn {points} Qrave points when you collect.
             </p>
           )}
           {!isWebMode && <SignInNudge place="cart" className="mt-4" />}

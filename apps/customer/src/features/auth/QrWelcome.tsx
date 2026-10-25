@@ -73,7 +73,7 @@ export function QrWelcome({ session }: { session: TableSession }) {
     <Sheet
       open={open}
       onClose={close}
-      title="Welcome to REVA Food Court"
+      title="Welcome to Qrave"
       description={`Table ${session.tableLabel}. Order from every shop in one cart.`}
       footer={
         <div className="space-y-2 pb-1">

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Bell, Map as MapIcon, Search, ShoppingBag, SlidersHorizontal, Table2, X } from 'lucide-react';
-import { BrandMark, cx } from '@foodcourt/ui';
+import { cx } from '@foodcourt/ui';
 import { AREAS, TABLES } from '../../data/layout';
 import { SHOPS } from '../../data/shops';
 import { setAmbient } from '../../lib/audio';
@@ -22,8 +22,7 @@ export function TopBar() {
     <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-3 md:p-4">
       <div className="pointer-events-auto flex min-w-0 items-center gap-2">
         <div className="glass flex h-11 items-center gap-2.5 rounded-full pl-1.5 pr-4">
-          <BrandMark size="sm" />
-          <span className="hidden text-sm font-semibold tracking-tight text-ink sm:inline">REVA Food Court</span>
+          <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="ml-2.5 h-7 w-auto select-none" draggable={false} />
           <span title="A simulated lunch service; diners, orders and timings are illustrative." className="hidden items-center gap-1.5 rounded-full bg-accent-tint px-2 py-0.5 text-[11px] font-semibold text-accent-ink md:inline-flex">
             <span className="live-dot h-1.5 w-1.5 rounded-full bg-accent" />
             Demo

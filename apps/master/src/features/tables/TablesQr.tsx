@@ -10,7 +10,7 @@ import { jsonEqual, useLocal } from '../../lib/store';
 // printed table number, so nobody can order to another table by editing the link.
 const CUSTOMER_URL =
   import.meta.env.VITE_CUSTOMER_APP_URL ||
-  (window.location.hostname === 'localhost' ? 'http://localhost:5173' : 'https://reva-nest-foodcourt.web.app');
+  (window.location.hostname === 'localhost' ? 'http://localhost:5173' : 'https://order.getqrave.in');
 
 const qrCache = new Map<string, string>();
 

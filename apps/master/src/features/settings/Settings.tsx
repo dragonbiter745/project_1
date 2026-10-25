@@ -62,7 +62,7 @@ export function Settings() {
         <dl className="mt-3 divide-y divide-line overflow-hidden rounded-card bg-surface text-sm ring-1 ring-inset ring-line">
           <Row label="GST rate" value={`${config.gstPct}%`} />
           <Row label="Menu prices" value={config.taxInclusive ? 'Include GST' : 'GST added at checkout'} />
-          <Row label="REVA points" value={`1 point per ₹${Math.round(1 / (config.pointsPerRupee || 0.1))} spent`} />
+          <Row label="Qrave points" value={`1 point per ₹${Math.round(1 / (config.pointsPerRupee || 0.1))} spent`} />
           <Row label="Points expire after" value={`${config.pointsExpiryDays} days`} />
         </dl>
         <p className="mt-2 text-sm text-ink-3">These are set in the config/global document and change with a deploy.</p>

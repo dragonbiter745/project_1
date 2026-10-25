@@ -1,6 +1,6 @@
 {
-  "name": "REVA Food Court",
-  "short_name": "REVA Food",
+  "name": "Qrave",
+  "short_name": "Qrave",
   "description": "Order from every shop in one cart, pay once, and know when your food is ready.",
   "start_url": "/",
   "scope": "/",
@@ -10,6 +10,6 @@
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

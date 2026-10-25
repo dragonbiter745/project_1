@@ -53,7 +53,7 @@ export function PushPrompt({ className }: { className?: string }) {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-ink">{state === 'install' ? 'Get alerts on iPhone' : 'Get a buzz when your food is ready'}</p>
         <p className="mt-0.5 text-sm text-ink-2">
-          {state === 'install' ? 'Tap Share, then Add to Home Screen. Open REVA Food from there to turn on alerts.' : 'Works even if you lock your phone or switch apps.'}
+          {state === 'install' ? 'Tap Share, then Add to Home Screen. Open Qrave from there to turn on alerts.' : 'Works even if you lock your phone or switch apps.'}
         </p>
         {state === 'off' && (
           <Button size="sm" variant="tint" className="mt-3" loading={pending} onClick={() => void turnOn()}>

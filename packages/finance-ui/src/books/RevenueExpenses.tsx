@@ -76,13 +76,13 @@ export function RevenueExpenses({ range, report: { report }, books, go }: PagePr
 
   const exportLedger = () =>
     downloadCsv(
-      `reva-expenses-${range.from}_to_${range.to}.csv`,
+      `qrave-expenses-${range.from}_to_${range.to}.csv`,
       ['Date', 'What', 'Category', 'Paid by', 'Reference', 'Amount (Rs)', 'Status', 'Void reason', 'Recorded by'],
       ledger.map((e) => [e.date, e.note ?? '', expenseLabel(e.category ?? ''), nameOf(e.paidBy), e.reference ?? '', rupees(e.amountPaise), e.status, e.voidReason ?? '', e.createdBy])
     );
   const exportMonths = () =>
     downloadCsv(
-      'reva-monthly-report.csv',
+      'qrave-monthly-report.csv',
       ['Month', 'Revenue (Rs)', 'Expenses (Rs)', 'Net profit (Rs)', ...partners.map((p) => `${p.name} share (Rs)`)],
       months.map((m) => [monthLabel(m.month), rupees(m.revenue), rupees(m.expenses), rupees(m.profit), ...partners.map((p) => rupees(m.shares[p.id] ?? 0))])
     );

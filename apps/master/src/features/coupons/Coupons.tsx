@@ -239,7 +239,7 @@ const fromLocalInput = (v: string) => (v ? new Date(v).getTime() : NaN);
 const rupees = (paise: number | null | undefined) => (paise ? String(paise / 100) : '');
 
 function suggestCode(): string {
-  const words = ['REVA', 'TASTY', 'HUNGRY', 'LUNCH', 'CHAI', 'FEAST', 'TREAT'];
+  const words = ['QRAVE', 'TASTY', 'HUNGRY', 'LUNCH', 'CHAI', 'FEAST', 'TREAT'];
   return `${words[Math.floor(Math.random() * words.length)]}${Math.floor(10 + Math.random() * 90)}`;
 }
 

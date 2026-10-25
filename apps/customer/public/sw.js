@@ -1,4 +1,4 @@
-// REVA Food Court service worker: shows web push notifications and opens the right screen on tap.
+// Qrave service worker: shows web push notifications and opens the right screen on tap.
 // Pushes are data-only ({ title, body, link, tag }) so this file decides how they look.
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -12,7 +12,7 @@ self.addEventListener('push', (event) => {
     payload = {};
   }
   const data = payload.data || payload;
-  const title = data.title || 'REVA Food Court';
+  const title = data.title || 'Qrave';
   event.waitUntil(
     (async () => {
       // The app is open and in front: it shows the message itself instead of a system notification.

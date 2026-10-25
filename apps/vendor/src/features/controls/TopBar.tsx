@@ -1,7 +1,7 @@
 import { ArrowLeftRight, BarChart3, Loader2, PackageX, PauseCircle, PlayCircle, Volume2, VolumeX, WifiOff } from 'lucide-react';
 import type { Vendor } from '@foodcourt/shared';
 import type { SyncStatus } from '../../lib/store';
-import { Button, IconButton, Monogram, cx, useNow } from '@foodcourt/ui';
+import { BrandMark, Button, IconButton, Monogram, cx, useNow } from '@foodcourt/ui';
 
 interface TopBarProps {
   vendor: Vendor;
@@ -36,6 +36,8 @@ export function TopBar(props: TopBarProps) {
         )}
       >
         <div className="flex min-w-0 items-center gap-3">
+          {phone ? <BrandMark size="sm" className="h-8 w-8" /> : <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="h-8 w-auto shrink-0 select-none" draggable={false} />}
+          <span aria-hidden className="h-8 w-px shrink-0 bg-line" />
           <Monogram code={vendor.code} tone="solid" size={phone ? 'sm' : 'md'} />
           <div className="min-w-0">
             <p className="truncate text-lg font-semibold leading-tight tracking-tight text-ink">{vendor.name}</p>

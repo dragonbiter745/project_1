@@ -1,5 +1,5 @@
 /** The diner site: shops and menus for online pickup orders, and the table flow behind each QR. */
-export const CUSTOMER_URL = (import.meta.env.VITE_CUSTOMER_URL ?? 'https://reva-nest-foodcourt.web.app').replace(/\/$/, '');
+export const CUSTOMER_URL = (import.meta.env.VITE_CUSTOMER_URL ?? 'https://order.getqrave.in').replace(/\/$/, '');
 
 /**
  * Every table's QR carries an unguessable token, so there is no public "order here" link to share.

@@ -3,7 +3,7 @@ import path from 'path';
 import QRCode from 'qrcode';
 import { generateFoodCourtTables } from '@foodcourt/shared';
 
-const BASE_URL = process.env.CUSTOMER_APP_URL || 'https://reva-nest-foodcourt.web.app';
+const BASE_URL = process.env.CUSTOMER_APP_URL || 'https://order.getqrave.in';
 const rootDir = process.cwd().endsWith('scripts') ? path.resolve(process.cwd(), '..') : process.cwd();
 const OUT_DIR = path.resolve(rootDir, 'generated-qrs');
 const SVG_DIR = path.join(OUT_DIR, 'svg');

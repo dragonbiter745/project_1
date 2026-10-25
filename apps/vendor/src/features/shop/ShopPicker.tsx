@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-react';
-import { BrandMark, Monogram } from '@foodcourt/ui';
+import { Monogram } from '@foodcourt/ui';
 import { jsonEqual, useLocal } from '../../lib/store';
 
 // Until vendor sign-in exists (PRD FR-V6), the tablet is bound to one shop on first launch.
@@ -9,8 +9,10 @@ export function ShopPicker({ onPick }: { onPick: (vendorId: string) => void }) {
     <main className="grain ambient grid min-h-[100dvh] place-items-center px-6 py-12">
       <div className="enter-up w-full max-w-xl">
         <div className="flex items-center gap-3">
-          <BrandMark />
-          <p className="text-sm font-semibold text-ink-2">REVA Food Court · Kitchen display</p>
+          <div>
+            <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="h-9 w-auto select-none" draggable={false} />
+            <p className="mt-1 text-sm font-semibold text-ink-2">Kitchen display</p>
+          </div>
         </div>
         <h1 className="mt-8 text-4xl font-semibold tracking-tight text-ink [text-wrap:balance]">Which kitchen is this screen for?</h1>
         <p className="mt-3 max-w-[52ch] text-base text-ink-3">

@@ -27,7 +27,7 @@ const TITLES: Record<Route['name'], string> = {
   favourites: 'Favourites',
   coupons: 'Coupons',
   payments: 'Payments and refunds',
-  points: 'REVA points',
+  points: 'Qrave points',
   notifications: 'Notifications',
   profile: 'Profile and preferences',
   help: 'Help and support',
@@ -247,7 +247,7 @@ function Home() {
 
       <Group title="Money" className="mt-6">
         <Row icon={Wallet} label="Payments and refunds" detail="How you paid, refund status" onClick={() => push({ name: 'payments' })} />
-        {loyalty && member && <Row icon={Gift} label="REVA points" detail={`${profile?.pointsBalance ?? 0} points`} onClick={() => push({ name: 'points' })} />}
+        {loyalty && member && <Row icon={Gift} label="Qrave points" detail={`${profile?.pointsBalance ?? 0} points`} onClick={() => push({ name: 'points' })} />}
       </Group>
 
       <Group title="Settings" className="mt-6">
@@ -262,7 +262,7 @@ function Home() {
           Sign out
         </Button>
       )}
-      <p className="mt-6 text-center text-xs text-ink-3">REVA Food Court</p>
+      <p className="mt-6 text-center text-xs text-ink-3">Qrave</p>
     </>
   );
 }

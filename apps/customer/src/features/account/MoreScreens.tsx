@@ -286,7 +286,7 @@ export function PaymentsScreen() {
       <div className="flex gap-3 rounded-card bg-ready-tint p-4 ring-1 ring-inset ring-ready/20">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-ready" strokeWidth={1.75} />
         <div className="text-sm text-ink-2">
-          <p className="font-semibold text-ink">Your card and UPI details never reach REVA</p>
+          <p className="font-semibold text-ink">Your card and UPI details never reach Qrave</p>
           <p className="mt-1">
             Payments run on Cashfree, an RBI-authorised payment gateway. Saved cards and UPI IDs stay with Cashfree and your UPI app, and you
             pick them in the payment window each time.
@@ -350,7 +350,7 @@ export function PointsScreen() {
   return (
     <>
       <div className="rounded-card bg-accent-tint p-5 ring-1 ring-inset ring-accent-line">
-        <p className="text-sm font-medium text-accent-ink">REVA points</p>
+        <p className="text-sm font-medium text-accent-ink">Qrave points</p>
         <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-ink">{profile?.pointsBalance ?? 0}</p>
         <p className="mt-1 text-sm text-ink-2">1 point for every ₹{everyRupees} you spend, added when you collect your food.</p>
       </div>
@@ -418,7 +418,7 @@ const PHONE_STATE: Record<PushState, { title: string; text: string }> = {
   on: { title: 'On for this phone', text: 'You get alerts even when the app is closed.' },
   off: { title: 'Off for this phone', text: 'Turn on to get a buzz when your food is ready.' },
   blocked: { title: 'Blocked in your browser', text: 'Allow notifications for this site in your browser settings, then come back.' },
-  install: { title: 'iPhone needs one step', text: 'Tap Share, then Add to Home Screen. Open REVA Food from there to turn on alerts.' },
+  install: { title: 'iPhone needs one step', text: 'Tap Share, then Add to Home Screen. Open Qrave from there to turn on alerts.' },
   unsupported: { title: 'Not available in this browser', text: 'Try Chrome on Android, or a laptop browser. Your order screen still buzzes while it is open.' },
   unavailable: { title: 'Coming soon', text: 'Phone alerts are being set up. Messages still arrive in your inbox.' },
 };
@@ -638,7 +638,7 @@ export function PrivacyScreen() {
       })),
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-    const a = Object.assign(document.createElement('a'), { href: url, download: 'reva-food-court-my-data.json' });
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'qrave-my-data.json' });
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };

@@ -601,7 +601,7 @@ function Preview({ title, body, couponCode, kitchens }: { title: string; body: s
             <span className="grid h-5 w-5 place-items-center rounded-[6px] bg-accent-ink text-on-accent">
               <UtensilsCrossed className="h-3 w-3" strokeWidth={2.5} />
             </span>
-            <span className="text-2xs font-semibold uppercase tracking-wide text-ink-3">REVA Food · now</span>
+            <span className="text-2xs font-semibold uppercase tracking-wide text-ink-3">Qrave · now</span>
           </div>
           <p className="mt-1.5 truncate text-sm font-semibold text-ink">{title || 'Your title'}</p>
           <p className="line-clamp-3 text-sm text-ink-2">{body || 'Your message.'}</p>

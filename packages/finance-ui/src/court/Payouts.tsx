@@ -47,7 +47,7 @@ export function Payouts({ range, report: { report, reload: reloadReport } }: Pag
 
   const exportCsv = () =>
     downloadCsv(
-      `reva-payouts-${range.from}_to_${range.to}.csv`,
+      `qrave-payouts-${range.from}_to_${range.to}.csv`,
       ['Paid on', 'Shop', 'Amount (Rs)', 'UTR / reference', 'Note', 'Status', 'Recorded by', 'Recorded at', 'Void reason'],
       rows.map((p) => [p.paidOn, p.vendorName, rupees(p.amountPaise), p.reference, p.note ?? '', p.status, p.createdBy, formatTime(p.createdAt), p.voidReason ?? ''])
     );

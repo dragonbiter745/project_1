@@ -16,7 +16,7 @@ import { CategoryRail } from './CategoryRail';
 import { ItemRow } from './ItemRow';
 import { ShopSwitcher } from './ShopSwitcher';
 import { MENU_END_ID, sectionDomId, useScrollSpy } from './useScrollSpy';
-import { Button, Skeleton } from '@foodcourt/ui';
+import { BrandMark, Button, Skeleton } from '@foodcourt/ui';
 
 const NONE_UNAVAILABLE: Record<string, boolean> = {};
 let entrancePlayed = false;
@@ -223,19 +223,22 @@ function IdentityRow({ session, web }: IdentityRowProps) {
     <div className="flex h-16 items-center justify-between gap-3 pl-4 pr-2 pt-1">
       {web ? (
         <div className="min-w-0">
-          <a href={LANDING_URL} className="block truncate font-display text-xl font-extrabold text-ink" aria-label="REVA Food Court, about the court">
-            REVA
+          <a href={LANDING_URL} className="block" aria-label="Qrave, home">
+            <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="h-8 w-auto select-none" draggable={false} />
           </a>
           <p className="truncate text-sm text-ink-3">Order online. Pickup at the counter.</p>
         </div>
       ) : (
-        <div className="min-w-0">
-          <p className="truncate text-lg font-semibold tracking-tight text-ink">{name}</p>
-          {session && (
-            <p className="text-sm tabular-nums text-ink-3">
-              {formatDailyCustomerNo(session.dailyNo)} · {placeName(session)}
-            </p>
-          )}
+        <div className="flex min-w-0 items-center gap-3">
+          <BrandMark size="sm" className="h-9 w-9" />
+          <div className="min-w-0">
+            <p className="truncate text-lg font-semibold tracking-tight text-ink">{name}</p>
+            {session && (
+              <p className="text-sm tabular-nums text-ink-3">
+                {formatDailyCustomerNo(session.dailyNo)} · {placeName(session)}
+              </p>
+            )}
+          </div>
         </div>
       )}
       <div className="flex shrink-0 items-center">

@@ -40,7 +40,7 @@ export function Overview({ range, report: { report, loading, error, reload } }: 
   const owing = r.shops.filter((s) => s.balanceDuePaise > 0).sort((a, b) => b.balanceDuePaise - a.balanceDuePaise);
   const exportShops = () =>
     downloadCsv(
-      `reva-shops-${range.from}_to_${range.to}.csv`,
+      `qrave-shops-${range.from}_to_${range.to}.csv`,
       ['Shop', 'Code', 'Online orders', 'Sales (Rs)', 'Refunds (Rs)', 'Commission (Rs)', 'Payable for period (Rs)', 'Paid out in period (Rs)', 'Balance due (Rs)', 'Counter orders', 'Counter sales (Rs)', 'Commission rate'],
       r.shops.map((s) => [s.name, s.code, s.orders, rupees(s.salesPaise), rupees(s.refundsPaise), rupees(s.commissionPaise), rupees(s.payablePaise), rupees(s.paidOutPaise), rupees(s.balanceDuePaise), s.counterOrders, rupees(s.counterSalesPaise), rate(s)])
     );

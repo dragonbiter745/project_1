@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
-import { BrandMark, cx } from '@foodcourt/ui';
+import { cx } from '@foodcourt/ui';
 import { orderOnline } from '../../lib/links';
 
 const LINKS = [
@@ -25,12 +25,11 @@ export function Nav() {
         aria-label="Main"
         className={cx(
           'pointer-events-auto mx-auto flex h-14 max-w-[1240px] items-center justify-between rounded-full pl-2 pr-2 transition-[background-color,box-shadow,backdrop-filter] duration-300',
-          scrolled ? 'glass-strong' : 'bg-transparent'
+          scrolled ? 'glass-strong' : 'glass-strong md:border-transparent md:bg-transparent md:shadow-none md:backdrop-blur-none'
         )}
       >
-        <a href="#live" className="flex items-center gap-2.5 rounded-full pr-3">
-          <BrandMark size="sm" />
-          <span className="text-[15px] font-semibold tracking-tight text-ink">REVA Food Court</span>
+        <a href="#live" aria-label="Qrave, back to the top" className="flex min-w-0 items-center rounded-full pl-2.5 pr-3">
+          <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="h-8 w-auto select-none" draggable={false} />
         </a>
         <ul className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (
@@ -41,7 +40,7 @@ export function Nav() {
             </li>
           ))}
         </ul>
-        <a href={orderOnline()} className="pressable inline-flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-ink">
+        <a href={orderOnline()} className="pressable inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-ink">
           Order online
           <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
         </a>

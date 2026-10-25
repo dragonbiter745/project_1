@@ -12,13 +12,13 @@ export function HeroOverlay() {
       <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-white/85 via-white/45 to-transparent md:w-[62%]" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-bg to-transparent" />
 
-      <div className="relative mx-auto flex h-full max-w-[1320px] flex-col justify-center px-5 pb-28 pt-24 md:px-10">
+      <div className="relative mx-auto flex h-full max-w-[1320px] flex-col justify-start px-5 pb-20 pt-[88px] sm:justify-center sm:pb-28 sm:pt-24 md:px-10">
         <div className="max-w-[640px]">
           <p className="enter-up glass pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-sm font-medium text-ink-2" style={{ ['--i' as string]: 0 }}>
             <span className="h-2 w-2 rounded-full bg-accent" aria-hidden />
             {failed ? 'REVA Food Court' : 'Interactive 3D preview of the court'}
           </p>
-          <h1 className="enter-up mt-6 text-[44px] font-semibold leading-[1.02] tracking-[-0.035em] text-ink sm:text-6xl lg:text-[76px]" style={{ ['--i' as string]: 1 }}>
+          <h1 className="enter-up mt-5 text-[40px] font-semibold leading-[1.02] tracking-[-0.035em] text-ink sm:text-6xl lg:text-[76px]" style={{ ['--i' as string]: 1 }}>
             Every kitchen.
             <br />
             One QR.
@@ -49,7 +49,7 @@ export function HeroOverlay() {
             </a>
           </div>
 
-          <ul className="enter-up pointer-events-auto mt-10 grid max-w-[600px] gap-2.5 sm:grid-cols-3" style={{ ['--i' as string]: 4 }}>
+          <ul className="enter-up pointer-events-auto mt-10 hidden max-w-[600px] gap-2.5 sm:grid sm:grid-cols-3" style={{ ['--i' as string]: 4 }}>
             <Point icon={<Store className="h-4 w-4" />} title="Every shop" body="One menu for the whole court" />
             <Point icon={<Wallet className="h-4 w-4" />} title="Pay once" body="A single UPI payment" />
             <Point icon={<BellRing className="h-4 w-4" />} title="Track live" body="A token per shop, pinged when ready" />

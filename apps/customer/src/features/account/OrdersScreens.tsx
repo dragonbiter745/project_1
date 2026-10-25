@@ -330,7 +330,7 @@ export function ReceiptScreen({ id }: { id: string }) {
 
   const share = async () => {
     const lines = [
-      `REVA Food Court · Receipt ${shortOrderNo(order.id)}`,
+      `Qrave · Receipt ${shortOrderNo(order.id)}`,
       `${dayFormat.format(order.createdAt)}, ${timeFormat.format(order.createdAt)} · ${placeName(order)}`,
       ...order.items.map((i) => `${i.qty} × ${i.name}  ${formatPaise(i.pricePaise * i.qty)}`),
       `Total ${formatPaise(order.totals.totalPaise)} (GST included)`,
@@ -359,7 +359,7 @@ export function ReceiptScreen({ id }: { id: string }) {
     <>
       <article data-print-root className="rounded-card bg-surface p-5 ring-1 ring-inset ring-line/70">
         <header className="border-b border-dashed border-line-strong pb-4 text-center">
-          <p className="text-lg font-semibold tracking-tight text-ink">REVA Food Court</p>
+          <p className="text-lg font-semibold tracking-tight text-ink">Qrave</p>
           <p className="text-sm text-ink-3">Receipt {shortOrderNo(order.id)}</p>
           <p className="mt-1 text-sm tabular-nums text-ink-3">
             {dayFormat.format(order.createdAt)}, {timeFormat.format(order.createdAt)} · {placeName(order)}

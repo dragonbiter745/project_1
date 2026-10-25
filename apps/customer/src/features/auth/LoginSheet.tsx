@@ -59,7 +59,7 @@ export function welcomeBack({ firstSignIn, merged, profile }: SignInResult, clos
 }
 
 const TITLES: Record<Mode, string> = {
-  choose: 'Sign in to REVA',
+  choose: 'Sign in to Qrave',
   signup: 'Create your account',
   login: 'Welcome back',
   reset: 'Reset your password',
@@ -309,7 +309,7 @@ function EmailForm({ mode, session, googlePending, onGoogle, onSwitch, onDone }:
         </Button>
       </form>
       <div className="mt-2 flex items-center justify-center gap-1 text-sm text-ink-3">
-        {signup ? 'Already have an account?' : 'New to REVA?'}
+        {signup ? 'Already have an account?' : 'New to Qrave?'}
         <TextLink onClick={() => onSwitch(signup ? 'login' : 'signup')}>{signup ? 'Log in' : 'Create an account'}</TextLink>
       </div>
       <BackLink onClick={() => onSwitch('choose')}>All sign-in options</BackLink>
@@ -354,7 +354,7 @@ function ResetForm({ onBack }: { onBack: () => void }) {
       {sent ? (
         <div role="status" className="rounded-card bg-ready-tint p-4 text-sm text-ink-2 ring-1 ring-inset ring-ready/25">
           <span className="block font-semibold text-ink">Check your inbox</span>
-          If {email.trim()} has a REVA account, a reset link is on its way. It can take a minute.
+          If {email.trim()} has a Qrave account, a reset link is on its way. It can take a minute.
         </div>
       ) : (
         <form onSubmit={(e) => void submit(e)} noValidate className="space-y-4">

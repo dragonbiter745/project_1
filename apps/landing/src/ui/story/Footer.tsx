@@ -1,14 +1,12 @@
-import { BrandMark } from '@foodcourt/ui';
 import { orderOnline } from '../../lib/links';
 
 export function Footer() {
   return (
     <footer className="bg-bg px-5 pb-10 pt-8 md:px-10">
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 border-t border-line pt-8 text-sm text-ink-3">
-        <p className="flex items-center gap-2.5">
-          <BrandMark size="sm" />
-          <span className="font-semibold text-ink">REVA Food Court</span>
-          <span>· Every kitchen, one QR, one payment</span>
+        <p className="flex items-center gap-4">
+          <img src="/qrave-lockup.png" alt="Qrave. Scan it. Crave it." width="560" height="345" className="h-16 w-auto select-none" draggable={false} />
+          <span className="hidden sm:inline">Every kitchen, one QR, one payment</span>
         </p>
         <nav aria-label="Footer" className="flex flex-wrap gap-5">
           <a href="#story" className="hover:text-ink">

@@ -74,7 +74,7 @@ export function Transactions({ range }: PageProps) {
     await run(
       allOrders(range.from, range.to, filter).then((list) =>
         downloadCsv(
-          `reva-transactions-${range.from}_to_${range.to}${filter === 'all' ? '' : `-${filter}`}.csv`,
+          `qrave-transactions-${range.from}_to_${range.to}${filter === 'all' ? '' : `-${filter}`}.csv`,
           ['Placed at', 'Order ID', 'Status', 'Payment', 'Method', 'Amount (Rs)', 'Table', 'Diner phone', 'Cashfree order', 'Cashfree payment', 'Paid at', 'Shops'],
           list.map((o) => [
             formatTime(o.createdAt),

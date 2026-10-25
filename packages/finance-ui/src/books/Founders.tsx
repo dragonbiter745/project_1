@@ -31,7 +31,7 @@ export function Founders({ range, report: { report }, books }: PageProps) {
 
   const exportPsr = () =>
     downloadCsv(
-      `reva-partner-share-${range.from}_to_${range.to}.csv`,
+      `qrave-partner-share-${range.from}_to_${range.to}.csv`,
       ['Founder', 'Share %', 'Profit share (Rs)', 'Invested in period (Rs)', 'Withdrawn in period (Rs)', 'Net for period (Rs)'],
       [
         ...period.partners.map((b) => [b.partner.name, b.partner.shareBps / 100, rupees(b.profitSharePaise), rupees(b.capitalPaise + b.expensesPaidPaise), rupees(b.drawingsPaise), rupees(b.balancePaise)]),
