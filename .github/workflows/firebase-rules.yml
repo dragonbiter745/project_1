@@ -86,4 +86,4 @@ jobs:
 
       - name: Deploy rules and indexes
         if: env.HAS_FIREBASE_SA == 'true'
-        run: npx --yes firebase-tools@13 deploy --only firestore:rules,firestore:indexes,storage --project "$FIREBASE_PROJECT_ID" --non-interactive
+        run: npx --yes firebase-tools@13 deploy --only firestore,storage --project "$FIREBASE_PROJECT_ID" --non-interactive

@@ -21,6 +21,6 @@ export function projectId(): string {
 
 /** How long a kitchen has to accept a new ticket before it times out (PRD default). */
 export const DEFAULT_ACCEPT_SLA_SEC = 180;
-/** Unpaid online orders stop being payable after this long. */
-export const PAYMENT_WINDOW_MS = 15 * 60 * 1000;
+/** Unpaid online orders stop being payable after this long (must be > 15m for Cashfree). */
+export const PAYMENT_WINDOW_MS = 20 * 60 * 1000;
 export const SESSION_TTL_MS = 3 * 60 * 60 * 1000;
