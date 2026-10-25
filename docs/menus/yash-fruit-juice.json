@@ -1,0 +1,688 @@
+{
+  "vendorId": "vendor-yash-fruit-juice",
+  "vendorName": "Yash Fruit Juice & Icecream Corner",
+  "vendorCode": "YF",
+  "version": 2,
+  "categories": [
+    {
+      "id": "yf-milkshakes",
+      "name": "Milkshakes",
+      "sort": 1,
+      "items": [
+        {
+          "id": "yf-milkshakes-1",
+          "name": "Plain Buttermilk",
+          "pricePaise": 2500,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "yf-milkshakes-2",
+          "name": "Masala Buttermilk",
+          "pricePaise": 3000,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "yf-milkshakes-3",
+          "name": "Strawberry Milkshake",
+          "pricePaise": 8500,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "yf-milkshakes-4",
+          "name": "Oreo Milkshake",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "yf-milkshakes-5",
+          "name": "Butterfruit Milkshake",
+          "pricePaise": 8000,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "yf-milkshakes-6",
+          "name": "Mango Milkshake",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 6
+        },
+        {
+          "id": "yf-milkshakes-7",
+          "name": "Apple Milkshake",
+          "pricePaise": 8000,
+          "veg": true,
+          "sort": 7
+        },
+        {
+          "id": "yf-milkshakes-8",
+          "name": "Kulfi Milkshake",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 8
+        },
+        {
+          "id": "yf-milkshakes-9",
+          "name": "Chikoo Milkshake",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 9
+        },
+        {
+          "id": "yf-milkshakes-10",
+          "name": "Banana Milkshake",
+          "pricePaise": 4000,
+          "veg": true,
+          "sort": 10
+        },
+        {
+          "id": "yf-milkshakes-11",
+          "name": "Kitkat Milkshake",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 11
+        },
+        {
+          "id": "yf-milkshakes-12",
+          "name": "Dairy Milkshake",
+          "pricePaise": 8000,
+          "veg": true,
+          "sort": 12
+        },
+        {
+          "id": "yf-milkshakes-13",
+          "name": "Chocolate Milkshake",
+          "pricePaise": 8000,
+          "veg": true,
+          "sort": 13
+        },
+        {
+          "id": "yf-milkshakes-14",
+          "name": "Blackcurrant Milkshake",
+          "pricePaise": 8500,
+          "veg": true,
+          "sort": 14
+        },
+        {
+          "id": "yf-milkshakes-15",
+          "name": "Double Boost Milkshake",
+          "pricePaise": 8000,
+          "veg": true,
+          "sort": 15
+        },
+        {
+          "id": "yf-milkshakes-16",
+          "name": "Horlicks Milkshake",
+          "pricePaise": 8000,
+          "veg": true,
+          "sort": 16
+        },
+        {
+          "id": "yf-milkshakes-17",
+          "name": "Muskmelon Milkshake",
+          "pricePaise": 8000,
+          "veg": true,
+          "sort": 17
+        },
+        {
+          "id": "yf-milkshakes-18",
+          "name": "Dragon Fruit Milkshake",
+          "pricePaise": 9000,
+          "veg": true,
+          "sort": 18
+        },
+        {
+          "id": "yf-milkshakes-19",
+          "name": "Tender Coconut Milkshake",
+          "pricePaise": 9000,
+          "veg": true,
+          "sort": 19
+        },
+        {
+          "id": "yf-milkshakes-20",
+          "name": "Cold Coffee Milkshake",
+          "pricePaise": 9000,
+          "veg": true,
+          "sort": 20
+        },
+        {
+          "id": "yf-milkshakes-21",
+          "name": "Badam Milkshake",
+          "pricePaise": 8000,
+          "veg": true,
+          "sort": 21
+        },
+        {
+          "id": "yf-milkshakes-22",
+          "name": "Snickers Milkshake",
+          "pricePaise": 9000,
+          "veg": true,
+          "sort": 22
+        },
+        {
+          "id": "yf-milkshakes-23",
+          "name": "Nutella Milkshake",
+          "pricePaise": 14000,
+          "veg": true,
+          "sort": 23
+        },
+        {
+          "id": "yf-milkshakes-24",
+          "name": "Peanut Butter Milkshake",
+          "pricePaise": 14000,
+          "veg": true,
+          "sort": 24
+        },
+        {
+          "id": "yf-milkshakes-25",
+          "name": "Pomegranate Milkshake",
+          "pricePaise": 9000,
+          "veg": true,
+          "sort": 25
+        },
+        {
+          "id": "yf-milkshakes-26",
+          "name": "Dry Fruit Milkshake",
+          "pricePaise": 10000,
+          "veg": true,
+          "sort": 26
+        }
+      ]
+    },
+    {
+      "id": "yf-juice",
+      "name": "Fresh Fruit Juice",
+      "sort": 2,
+      "items": [
+        {
+          "id": "yf-juice-1",
+          "name": "Fresh Mint Lime",
+          "pricePaise": 5000,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "yf-juice-2",
+          "name": "Fresh Lime Sweet & Salt",
+          "pricePaise": 4000,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "yf-juice-3",
+          "name": "Mosambi Juice",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "yf-juice-4",
+          "name": "Pineapple Juice",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "yf-juice-5",
+          "name": "Orange Juice",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "yf-juice-6",
+          "name": "Grape Juice",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 6
+        },
+        {
+          "id": "yf-juice-7",
+          "name": "Muskmelon Juice",
+          "pricePaise": 5500,
+          "veg": true,
+          "sort": 7
+        },
+        {
+          "id": "yf-juice-8",
+          "name": "Papaya Juice",
+          "pricePaise": 5500,
+          "veg": true,
+          "sort": 8
+        },
+        {
+          "id": "yf-juice-9",
+          "name": "Pomegranate Juice",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 9
+        },
+        {
+          "id": "yf-juice-10",
+          "name": "Watermelon Juice",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 10
+        },
+        {
+          "id": "yf-juice-11",
+          "name": "Apple Juice",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 11
+        },
+        {
+          "id": "yf-juice-12",
+          "name": "Chikoo Juice",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 12
+        },
+        {
+          "id": "yf-juice-13",
+          "name": "Mixed Fruit Juice",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 13
+        },
+        {
+          "id": "yf-juice-14",
+          "name": "Custard Apple Juice",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 14
+        },
+        {
+          "id": "yf-juice-15",
+          "name": "Mango Juice",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 15
+        },
+        {
+          "id": "yf-juice-16",
+          "name": "Dragon Fruit Juice",
+          "pricePaise": 9000,
+          "veg": true,
+          "sort": 16
+        },
+        {
+          "id": "yf-juice-17",
+          "name": "Black Grape Juice",
+          "pricePaise": 9000,
+          "veg": true,
+          "sort": 17
+        },
+        {
+          "id": "yf-juice-18",
+          "name": "Butterfruit Juice",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 18
+        },
+        {
+          "id": "yf-juice-19",
+          "name": "Blue Lime",
+          "pricePaise": 5000,
+          "veg": true,
+          "sort": 19
+        }
+      ]
+    },
+    {
+      "id": "yf-bowl",
+      "name": "Fruit Bowl",
+      "sort": 3,
+      "items": [
+        {
+          "id": "yf-bowl-1",
+          "name": "Mixed Fruit Bowl",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "yf-bowl-2",
+          "name": "Mixed Fruit Bowl + Icecream",
+          "pricePaise": 9000,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "yf-bowl-3",
+          "name": "Custard Bowl",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "yf-bowl-4",
+          "name": "Custard Bowl + Icecream",
+          "pricePaise": 8000,
+          "veg": true,
+          "sort": 4
+        }
+      ]
+    },
+    {
+      "id": "yf-sundae",
+      "name": "Sundae",
+      "sort": 4,
+      "items": [
+        {
+          "id": "yf-sundae-1",
+          "name": "Dark Brownie Chocolate Fantasy",
+          "pricePaise": 14900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "yf-sundae-2",
+          "name": "Dry Fruit Icecream Sundae",
+          "pricePaise": 14900,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "yf-sundae-3",
+          "name": "Snickers Sundae",
+          "pricePaise": 14900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "yf-sundae-4",
+          "name": "Mix Fruit Icecream Sundae",
+          "pricePaise": 12900,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "yf-sundae-5",
+          "name": "Mango Sundae",
+          "pricePaise": 12900,
+          "veg": true,
+          "sort": 5
+        }
+      ]
+    },
+    {
+      "id": "yf-lassi",
+      "name": "Lassi",
+      "sort": 5,
+      "items": [
+        {
+          "id": "yf-lassi-1",
+          "name": "Plain Lassi",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "yf-lassi-2",
+          "name": "Dry Fruit Lassi",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "yf-lassi-3",
+          "name": "Mango Lassi",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "yf-lassi-4",
+          "name": "Strawberry Lassi",
+          "pricePaise": 6000,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "yf-lassi-5",
+          "name": "Watermelon Lassi",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "yf-lassi-6",
+          "name": "Watermelon Pineapple Lassi",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 6
+        }
+      ]
+    },
+    {
+      "id": "yf-falooda",
+      "name": "Falooda",
+      "sort": 6,
+      "items": [
+        {
+          "id": "yf-falooda-1",
+          "name": "Tender Coconut Falooda",
+          "pricePaise": 13000,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "yf-falooda-2",
+          "name": "Royal Falooda",
+          "pricePaise": 11000,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "yf-falooda-3",
+          "name": "Alphonso Falooda",
+          "pricePaise": 12000,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "yf-falooda-4",
+          "name": "Bombay Falooda",
+          "pricePaise": 13000,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "yf-falooda-5",
+          "name": "Chocolate Brownie Falooda",
+          "pricePaise": 12000,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "yf-falooda-6",
+          "name": "Fruit Salad with Vanilla Icecream",
+          "pricePaise": 11000,
+          "veg": true,
+          "sort": 6
+        }
+      ]
+    },
+    {
+      "id": "yf-mojito",
+      "name": "Mojito",
+      "sort": 7,
+      "items": [
+        {
+          "id": "yf-mojito-1",
+          "name": "Virgin Mojito",
+          "pricePaise": 8900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "yf-mojito-2",
+          "name": "Blackberry Mojito",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "yf-mojito-3",
+          "name": "Blueberry Mojito",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "yf-mojito-4",
+          "name": "Watermelon Mojito",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "yf-mojito-5",
+          "name": "Blackcurrant Mojito",
+          "pricePaise": 11000,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "yf-mojito-6",
+          "name": "Passion Fruit Mojito",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 6
+        },
+        {
+          "id": "yf-mojito-7",
+          "name": "Litchi Mojito",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 7
+        },
+        {
+          "id": "yf-mojito-8",
+          "name": "Orange Mojito",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 8
+        },
+        {
+          "id": "yf-mojito-9",
+          "name": "Pineapple Mojito",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 9
+        },
+        {
+          "id": "yf-mojito-10",
+          "name": "Green Mango Mojito",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 10
+        },
+        {
+          "id": "yf-mojito-11",
+          "name": "Mango Mojito",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 11
+        },
+        {
+          "id": "yf-mojito-12",
+          "name": "Iced Tea Mojito with Pepsi",
+          "pricePaise": 12000,
+          "veg": true,
+          "sort": 12
+        },
+        {
+          "id": "yf-mojito-13",
+          "name": "Blackberry Mojito with Pepsi",
+          "pricePaise": 12000,
+          "veg": true,
+          "sort": 13
+        },
+        {
+          "id": "yf-mojito-14",
+          "name": "Blueberry Mojito with Pepsi",
+          "pricePaise": 12000,
+          "veg": true,
+          "sort": 14
+        }
+      ]
+    },
+    {
+      "id": "yf-healthy",
+      "name": "Healthy",
+      "sort": 8,
+      "items": [
+        {
+          "id": "yf-healthy-1",
+          "name": "Morning Energizer",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 1,
+          "desc": "Carrot, apple, ginger"
+        },
+        {
+          "id": "yf-healthy-2",
+          "name": "Detox",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 2,
+          "desc": "Apple, ginger, orange"
+        },
+        {
+          "id": "yf-healthy-3",
+          "name": "Skin Glow",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 3,
+          "desc": "Tomato, lemon, ginger, carrot"
+        },
+        {
+          "id": "yf-healthy-4",
+          "name": "Vitamin Boom",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 4,
+          "desc": "Carrot, pineapple, orange"
+        },
+        {
+          "id": "yf-healthy-5",
+          "name": "Power Punch",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 5,
+          "desc": "Tomato, celery, apple, carrot"
+        },
+        {
+          "id": "yf-healthy-6",
+          "name": "Pain Reducer",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 6,
+          "desc": "Guava, mango, banana"
+        },
+        {
+          "id": "yf-healthy-7",
+          "name": "Power Booster",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 7,
+          "desc": "Carrot, apple, orange, ginger"
+        },
+        {
+          "id": "yf-healthy-8",
+          "name": "Super Active",
+          "pricePaise": 7000,
+          "veg": true,
+          "sort": 8,
+          "desc": "Celery, beetroot, apple, carrot"
+        }
+      ]
+    }
+  ]
+}

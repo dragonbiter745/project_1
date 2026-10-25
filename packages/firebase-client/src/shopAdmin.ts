@@ -1,5 +1,5 @@
-import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
-import type { ShopAdminInput, VendorMenu } from '@foodcourt/shared';
+import { deleteObject, getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
+import { THUMB_SIDE, imagePathsOf, type ShopAdminInput, type VendorMenu } from '@foodcourt/shared';
 import { getFirebaseApp } from './app';
 import { getFunctionsClient, httpsCallable } from './functions';
 import { ActionError } from './ops';
@@ -30,13 +30,13 @@ export const newRequestKey = () => (crypto.randomUUID ? crypto.randomUUID() : `$
 
 const MAX_SIDE = 1000;
 
-/** Shrinks a phone photo to at most 1000px on its long side as JPEG (about 100-200 KB). */
-async function shrink(file: File): Promise<Blob> {
+/** Shrinks a phone photo to at most `maxSide` px on its long side as JPEG (about 100-200 KB at 1000px, about 10 KB at 240px). */
+async function shrink(file: File, maxSide = MAX_SIDE, quality = 0.82): Promise<Blob> {
   if (!file.type.startsWith('image/')) throw new ActionError('Choose a photo (JPG, PNG or WebP).');
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => {
     throw new ActionError('That photo could not be opened. Try another one.');
   });
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
@@ -46,9 +46,20 @@ async function shrink(file: File): Promise<Blob> {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/jpeg', 0.82));
+  const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/jpeg', quality));
   if (!blob) throw new ActionError('That photo could not be prepared. Try another one.');
   return blob;
+}
+
+/**
+ * Removes a replaced or discarded photo and its small copy from storage. Called only after the server has
+ * accepted the change, so a dish never points at a deleted picture; a failure just leaves a file behind.
+ */
+export async function deleteShopImage(url: string | null | undefined): Promise<void> {
+  const paths = imagePathsOf(url);
+  if (!paths) return;
+  const storage = getStorage(getFirebaseApp());
+  await Promise.allSettled([paths.full, paths.thumb].map((path) => deleteObject(ref(storage, path))));
 }
 
 /** Uploads a dish photo or logo to the shop's folder and returns its public link. */
@@ -58,6 +69,10 @@ export async function uploadShopImage(vendorId: string, file: File): Promise<str
   try {
     const target = ref(getStorage(getFirebaseApp()), path);
     await uploadBytes(target, blob, { contentType: 'image/jpeg', cacheControl: 'public,max-age=31536000,immutable' });
+    // The small copy menu lists load. A failed one is harmless: lists fall back to the full photo.
+    await shrink(file, THUMB_SIDE, 0.72)
+      .then((small) => uploadBytes(ref(getStorage(getFirebaseApp()), path.replace(/\.jpg$/, '-t.jpg')), small, { contentType: 'image/jpeg', cacheControl: 'public,max-age=31536000,immutable' }))
+      .catch(() => undefined);
     return await getDownloadURL(target);
   } catch (err) {
     throw new ActionError(message(err));

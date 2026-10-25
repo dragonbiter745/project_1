@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Field, FormError, inputClass } from '@foodcourt/finance-ui';
-import { shopAdmin } from '@foodcourt/firebase-client/shop-admin';
+import { deleteShopImage, shopAdmin } from '@foodcourt/firebase-client/shop-admin';
 import type { Vendor } from '@foodcourt/shared';
 import { Button, Sheet, cx, run } from '@foodcourt/ui';
 import { PhotoField } from '../menu/PhotoField';
@@ -37,7 +37,10 @@ function DetailsForm({ vendor, onDone }: { vendor: Vendor; onDone: () => void })
     setSaving(true);
     const ok = await run(shopAdmin({ action: 'UPDATE_SETTINGS', open, close, defaultPrepMin, fulfilmentMode: mode, logoUrl: logo }));
     setSaving(false);
-    if (ok) onDone();
+    if (ok) {
+      if (vendor.logoUrl && vendor.logoUrl !== logo) void deleteShopImage(vendor.logoUrl);
+      onDone();
+    }
   };
 
   return (

@@ -1,0 +1,976 @@
+{
+  "vendorId": "vendor-basil",
+  "vendorName": "Basil",
+  "vendorCode": "BA",
+  "version": 2,
+  "categories": [
+    {
+      "id": "ba-refreshers",
+      "name": "Refreshers",
+      "sort": 1,
+      "items": [
+        {
+          "id": "ba-refreshers-1",
+          "name": "Mint Lemonade (Lite)",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-refreshers-2",
+          "name": "Mint Lemonade (Regular)",
+          "pricePaise": 12000,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-refreshers-3",
+          "name": "Watermelon Mojito (Lite)",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-refreshers-4",
+          "name": "Watermelon Mojito (Regular)",
+          "pricePaise": 12000,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-refreshers-5",
+          "name": "Pineapple Mojito (Lite)",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-refreshers-6",
+          "name": "Pineapple Mojito (Regular)",
+          "pricePaise": 12000,
+          "veg": true,
+          "sort": 6
+        },
+        {
+          "id": "ba-refreshers-7",
+          "name": "Watermelon Orange (Lite)",
+          "pricePaise": 10900,
+          "veg": true,
+          "sort": 7
+        },
+        {
+          "id": "ba-refreshers-8",
+          "name": "Watermelon Orange (Regular)",
+          "pricePaise": 16900,
+          "veg": true,
+          "sort": 8
+        },
+        {
+          "id": "ba-refreshers-9",
+          "name": "Orange Paradise (Lite)",
+          "pricePaise": 10900,
+          "veg": true,
+          "sort": 9
+        },
+        {
+          "id": "ba-refreshers-10",
+          "name": "Orange Paradise (Regular)",
+          "pricePaise": 16900,
+          "veg": true,
+          "sort": 10
+        },
+        {
+          "id": "ba-refreshers-11",
+          "name": "Kiwi Delight (Lite)",
+          "pricePaise": 13900,
+          "veg": true,
+          "sort": 11
+        },
+        {
+          "id": "ba-refreshers-12",
+          "name": "Kiwi Delight (Regular)",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 12
+        },
+        {
+          "id": "ba-refreshers-13",
+          "name": "Jamun Kala Khatta (Lite)",
+          "pricePaise": 10900,
+          "veg": true,
+          "sort": 13
+        },
+        {
+          "id": "ba-refreshers-14",
+          "name": "Jamun Kala Khatta (Regular)",
+          "pricePaise": 16900,
+          "veg": true,
+          "sort": 14
+        },
+        {
+          "id": "ba-refreshers-15",
+          "name": "Litchi Lime (Lite)",
+          "pricePaise": 16900,
+          "veg": true,
+          "sort": 15
+        },
+        {
+          "id": "ba-refreshers-16",
+          "name": "Litchi Lime (Regular)",
+          "pricePaise": 22900,
+          "veg": true,
+          "sort": 16
+        },
+        {
+          "id": "ba-refreshers-17",
+          "name": "Masala Chaas (200 ml)",
+          "pricePaise": 8900,
+          "veg": true,
+          "sort": 17
+        }
+      ]
+    },
+    {
+      "id": "ba-juices",
+      "name": "Cold Pressed Juices",
+      "sort": 2,
+      "items": [
+        {
+          "id": "ba-juices-1",
+          "name": "Watermelon Juice (Lite)",
+          "pricePaise": 8900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-juices-2",
+          "name": "Watermelon Juice (Regular)",
+          "pricePaise": 14900,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-juices-3",
+          "name": "Pineapple Juice (Lite)",
+          "pricePaise": 13900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-juices-4",
+          "name": "Pineapple Juice (Regular)",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-juices-5",
+          "name": "Orange Juice (Lite)",
+          "pricePaise": 15900,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-juices-6",
+          "name": "Orange Juice (Regular)",
+          "pricePaise": 21900,
+          "veg": true,
+          "sort": 6
+        },
+        {
+          "id": "ba-juices-7",
+          "name": "Orange-Pineapple Juice (Lite)",
+          "pricePaise": 15900,
+          "veg": true,
+          "sort": 7
+        },
+        {
+          "id": "ba-juices-8",
+          "name": "Orange-Pineapple Juice (Regular)",
+          "pricePaise": 21900,
+          "veg": true,
+          "sort": 8
+        },
+        {
+          "id": "ba-juices-9",
+          "name": "Mix Fruit Juice (Lite)",
+          "pricePaise": 15900,
+          "veg": true,
+          "sort": 9
+        },
+        {
+          "id": "ba-juices-10",
+          "name": "Mix Fruit Juice (Regular)",
+          "pricePaise": 21900,
+          "veg": true,
+          "sort": 10
+        }
+      ]
+    },
+    {
+      "id": "ba-detox",
+      "name": "Detox",
+      "sort": 3,
+      "items": [
+        {
+          "id": "ba-detox-1",
+          "name": "Mix Vegetable (Lite)",
+          "pricePaise": 8900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-detox-2",
+          "name": "Mix Vegetable (Regular)",
+          "pricePaise": 14900,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-detox-3",
+          "name": "Red Carrot Beetroot (Lite)",
+          "pricePaise": 8900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-detox-4",
+          "name": "Red Carrot Beetroot (Regular)",
+          "pricePaise": 14900,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-detox-5",
+          "name": "Vit C Detox (Lite)",
+          "pricePaise": 10900,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-detox-6",
+          "name": "Vit C Detox (Regular)",
+          "pricePaise": 16900,
+          "veg": true,
+          "sort": 6
+        }
+      ]
+    },
+    {
+      "id": "ba-poppi",
+      "name": "Poppi (200 ml)",
+      "sort": 4,
+      "items": [
+        {
+          "id": "ba-poppi-1",
+          "name": "Poppi Kiwi",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-poppi-2",
+          "name": "Poppi Kiwi Pine",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-poppi-3",
+          "name": "Poppi Watermelon",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-poppi-4",
+          "name": "Poppi Watermelon-Pine",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 4
+        }
+      ]
+    },
+    {
+      "id": "ba-smoothies",
+      "name": "Smoothies",
+      "sort": 5,
+      "items": [
+        {
+          "id": "ba-smoothies-1",
+          "name": "Mixed Fruit Smoothie (Lite)",
+          "pricePaise": 17500,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-smoothies-2",
+          "name": "Mixed Fruit Smoothie (Regular)",
+          "pricePaise": 21500,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-smoothies-3",
+          "name": "Alphonso Mango Smoothie (Lite)",
+          "pricePaise": 17500,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-smoothies-4",
+          "name": "Alphonso Mango Smoothie (Regular)",
+          "pricePaise": 21500,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-smoothies-5",
+          "name": "Mixed Berry Smoothie (Lite)",
+          "pricePaise": 17500,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-smoothies-6",
+          "name": "Mixed Berry Smoothie (Regular)",
+          "pricePaise": 21500,
+          "veg": true,
+          "sort": 6
+        },
+        {
+          "id": "ba-smoothies-7",
+          "name": "Blueberry Fruit Punch (Lite)",
+          "pricePaise": 17500,
+          "veg": true,
+          "sort": 7
+        },
+        {
+          "id": "ba-smoothies-8",
+          "name": "Blueberry Fruit Punch (Regular)",
+          "pricePaise": 21500,
+          "veg": true,
+          "sort": 8
+        }
+      ]
+    },
+    {
+      "id": "ba-shakes",
+      "name": "Shakes",
+      "sort": 6,
+      "items": [
+        {
+          "id": "ba-shakes-1",
+          "name": "Banana Shake (Lite)",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-shakes-2",
+          "name": "Banana Shake (Regular)",
+          "pricePaise": 13500,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-shakes-3",
+          "name": "Litchi Shake (Lite)",
+          "pricePaise": 10900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-shakes-4",
+          "name": "Litchi Shake (Regular)",
+          "pricePaise": 16900,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-shakes-5",
+          "name": "Badam Thandai (Lite)",
+          "pricePaise": 10900,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-shakes-6",
+          "name": "Badam Thandai (Regular)",
+          "pricePaise": 16900,
+          "veg": true,
+          "sort": 6
+        },
+        {
+          "id": "ba-shakes-7",
+          "name": "Kesar Dry Fruit Shake (Lite)",
+          "pricePaise": 13900,
+          "veg": true,
+          "sort": 7
+        },
+        {
+          "id": "ba-shakes-8",
+          "name": "Kesar Dry Fruit Shake (Regular)",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 8
+        },
+        {
+          "id": "ba-shakes-9",
+          "name": "Alphonso Mango Shake (Lite)",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 9
+        },
+        {
+          "id": "ba-shakes-10",
+          "name": "Alphonso Mango Shake (Regular)",
+          "pricePaise": 15900,
+          "veg": true,
+          "sort": 10
+        },
+        {
+          "id": "ba-shakes-11",
+          "name": "Strawberry Shake (Lite)",
+          "pricePaise": 14900,
+          "veg": true,
+          "sort": 11
+        },
+        {
+          "id": "ba-shakes-12",
+          "name": "Strawberry Shake (Regular)",
+          "pricePaise": 18500,
+          "veg": true,
+          "sort": 12
+        },
+        {
+          "id": "ba-shakes-13",
+          "name": "Valrhona Dark Chocolate Shake (Lite)",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 13
+        },
+        {
+          "id": "ba-shakes-14",
+          "name": "Valrhona Dark Chocolate Shake (Regular)",
+          "pricePaise": 25900,
+          "veg": true,
+          "sort": 14
+        },
+        {
+          "id": "ba-shakes-15",
+          "name": "Blueberry Shake (Lite)",
+          "pricePaise": 17500,
+          "veg": true,
+          "sort": 15
+        },
+        {
+          "id": "ba-shakes-16",
+          "name": "Blueberry Shake (Regular)",
+          "pricePaise": 23500,
+          "veg": true,
+          "sort": 16
+        }
+      ]
+    },
+    {
+      "id": "ba-protein",
+      "name": "High on Protein",
+      "sort": 7,
+      "items": [
+        {
+          "id": "ba-protein-1",
+          "name": "Strawberry Protein Lassi (200 ml)",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-protein-2",
+          "name": "Alphonso Mango Protein Lassi (200 ml)",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-protein-3",
+          "name": "Kesar Badam Protein Lassi (200 ml)",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-protein-4",
+          "name": "Choco Oats Banana Shake (Lite)",
+          "pricePaise": 24900,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-protein-5",
+          "name": "Choco Oats Banana Shake (Regular)",
+          "pricePaise": 30900,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-protein-6",
+          "name": "Strawberry Lean (Lite)",
+          "pricePaise": 24900,
+          "veg": true,
+          "sort": 6
+        },
+        {
+          "id": "ba-protein-7",
+          "name": "Strawberry Lean (Regular)",
+          "pricePaise": 30900,
+          "veg": true,
+          "sort": 7
+        },
+        {
+          "id": "ba-protein-8",
+          "name": "Gymer Special Shake (Lite)",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 8
+        },
+        {
+          "id": "ba-protein-9",
+          "name": "Gymer Special Shake (Regular)",
+          "pricePaise": 25900,
+          "veg": true,
+          "sort": 9
+        }
+      ]
+    },
+    {
+      "id": "ba-icedtea",
+      "name": "Iced Tea",
+      "sort": 8,
+      "items": [
+        {
+          "id": "ba-icedtea-1",
+          "name": "Lemon Iced Tea (Lite)",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-icedtea-2",
+          "name": "Lemon Iced Tea (Regular)",
+          "pricePaise": 12000,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-icedtea-3",
+          "name": "Watermelon Iced Tea (Lite)",
+          "pricePaise": 8900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-icedtea-4",
+          "name": "Watermelon Iced Tea (Regular)",
+          "pricePaise": 14900,
+          "veg": true,
+          "sort": 4
+        }
+      ]
+    },
+    {
+      "id": "ba-coldcoffee",
+      "name": "Classic Cold Coffee",
+      "sort": 9,
+      "items": [
+        {
+          "id": "ba-coldcoffee-1",
+          "name": "Cold Coffee with Honey (Lite)",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-coldcoffee-2",
+          "name": "Cold Coffee with Honey (Regular)",
+          "pricePaise": 13500,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-coldcoffee-3",
+          "name": "Cold Coffee with Dates (Lite)",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-coldcoffee-4",
+          "name": "Cold Coffee with Dates (Regular)",
+          "pricePaise": 13500,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-coldcoffee-5",
+          "name": "Cold Coffee with Almond Milk (Lite)",
+          "pricePaise": 18900,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-coldcoffee-6",
+          "name": "Cold Coffee with Almond Milk (Regular)",
+          "pricePaise": 24900,
+          "veg": true,
+          "sort": 6
+        }
+      ]
+    },
+    {
+      "id": "ba-chai",
+      "name": "Chai & Coffee",
+      "sort": 10,
+      "items": [
+        {
+          "id": "ba-chai-1",
+          "name": "Adrak Chai",
+          "pricePaise": 4900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-chai-2",
+          "name": "Masala Chai",
+          "pricePaise": 4900,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-chai-3",
+          "name": "Elaichi Chai",
+          "pricePaise": 4900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-chai-4",
+          "name": "Adrak + Elaichi Chai",
+          "pricePaise": 4900,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-chai-5",
+          "name": "Black Americano",
+          "pricePaise": 8900,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-chai-6",
+          "name": "Hot Coffee",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 6
+        }
+      ]
+    },
+    {
+      "id": "ba-sandwiches",
+      "name": "Sandwiches",
+      "sort": 11,
+      "items": [
+        {
+          "id": "ba-sandwiches-1",
+          "name": "Millet Veggie Sandwich",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-sandwiches-2",
+          "name": "Creamy Pepper Pita Sandwich",
+          "pricePaise": 11900,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-sandwiches-3",
+          "name": "Paneer Tikka Millet Sandwich",
+          "pricePaise": 16900,
+          "veg": true,
+          "sort": 3
+        }
+      ]
+    },
+    {
+      "id": "ba-wraps",
+      "name": "Wraps",
+      "sort": 12,
+      "items": [
+        {
+          "id": "ba-wraps-1",
+          "name": "Fiery Soya Wrap",
+          "pricePaise": 13900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-wraps-2",
+          "name": "Beetroot Mexican Bean Wrap",
+          "pricePaise": 12500,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-wraps-3",
+          "name": "Beetroot Paneer Rara Wrap",
+          "pricePaise": 14900,
+          "veg": true,
+          "sort": 3
+        }
+      ]
+    },
+    {
+      "id": "ba-bowls",
+      "name": "Bowls",
+      "sort": 13,
+      "items": [
+        {
+          "id": "ba-bowls-4",
+          "name": "Fruit Bowl Lite",
+          "desc": "Guava, papaya, pineapple, California orange",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-bowls-5",
+          "name": "Custom Fruit Bowl",
+          "desc": "Guava, papaya, pineapple, California orange, apple",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-bowls-6",
+          "name": "Strawberry Smoothie Bowl",
+          "desc": "Frozen strawberry, frozen banana, pineapple, curd, soaked basil seeds, muesli mix, microgreens, jaggery, honey",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-bowls-1",
+          "name": "Alphonso Mango Smoothie Bowl",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-bowls-2",
+          "name": "Mixed Berry Smoothie Bowl",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-bowls-3",
+          "name": "Blueberry Fruit Punch Bowl",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 6
+        }
+      ]
+    },
+    {
+      "id": "ba-combos",
+      "name": "Combos",
+      "sort": 14,
+      "items": [
+        {
+          "id": "ba-combos-1",
+          "name": "Chai Toast Combo",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 1,
+          "desc": "Basil Ragi Garlic Toast (2 pcs) + any tea"
+        },
+        {
+          "id": "ba-combos-2",
+          "name": "Hot Beverage Cookie Combo",
+          "pricePaise": 10900,
+          "veg": true,
+          "sort": 2,
+          "desc": "Hot coffee or any tea + Ragi Almond Cookies (2 pcs)"
+        },
+        {
+          "id": "ba-combos-3",
+          "name": "Brownie Combo",
+          "pricePaise": 19900,
+          "veg": true,
+          "sort": 3,
+          "desc": "Hazelnut Brownie + hot coffee"
+        },
+        {
+          "id": "ba-combos-4",
+          "name": "Wrap Combo",
+          "pricePaise": 21900,
+          "veg": true,
+          "sort": 4,
+          "desc": "Any wrap + any tea or any Poppi"
+        },
+        {
+          "id": "ba-combos-5",
+          "name": "Sandwich Combo",
+          "pricePaise": 16900,
+          "veg": true,
+          "sort": 5,
+          "desc": "Millet Veggie Sandwich + any tea or any Poppi"
+        },
+        {
+          "id": "ba-combos-6",
+          "name": "Smoothie Combo",
+          "pricePaise": 21900,
+          "veg": true,
+          "sort": 6,
+          "desc": "Any smoothie (L) + Millet Veggie Sandwich"
+        }
+      ]
+    },
+    {
+      "id": "ba-gong",
+      "name": "Grab N Go",
+      "sort": 15,
+      "items": [
+        {
+          "id": "ba-gong-1",
+          "name": "Guilt Free Snack",
+          "pricePaise": 4900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-gong-2",
+          "name": "Basil Ragi Garlic Toast",
+          "pricePaise": 4900,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-gong-3",
+          "name": "Ragi Choco Almond Cookie",
+          "pricePaise": 8900,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-gong-4",
+          "name": "Basil Nutty Bar",
+          "pricePaise": 8900,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-gong-5",
+          "name": "Basil Multigrain Ragi Lavash",
+          "pricePaise": 7500,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-gong-6",
+          "name": "Hazelnut Brownie",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 6
+        }
+      ]
+    },
+    {
+      "id": "ba-vegan",
+      "name": "Vegan Base",
+      "sort": 16,
+      "items": [
+        {
+          "id": "ba-vegan-1",
+          "name": "Unsweetened Almond Milk (Lite)",
+          "pricePaise": 9900,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-vegan-2",
+          "name": "Unsweetened Almond Milk (Regular)",
+          "pricePaise": 12500,
+          "veg": true,
+          "sort": 2
+        }
+      ]
+    },
+    {
+      "id": "ba-addons",
+      "name": "Add-ons",
+      "sort": 17,
+      "items": [
+        {
+          "id": "ba-addons-1",
+          "name": "Basil Seeds",
+          "pricePaise": 2000,
+          "veg": true,
+          "sort": 1
+        },
+        {
+          "id": "ba-addons-2",
+          "name": "Almonds",
+          "pricePaise": 2000,
+          "veg": true,
+          "sort": 2
+        },
+        {
+          "id": "ba-addons-3",
+          "name": "Oats",
+          "pricePaise": 2000,
+          "veg": true,
+          "sort": 3
+        },
+        {
+          "id": "ba-addons-4",
+          "name": "Peanut",
+          "pricePaise": 2000,
+          "veg": true,
+          "sort": 4
+        },
+        {
+          "id": "ba-addons-5",
+          "name": "Walnut",
+          "pricePaise": 2000,
+          "veg": true,
+          "sort": 5
+        },
+        {
+          "id": "ba-addons-6",
+          "name": "Peanut Butter",
+          "pricePaise": 3000,
+          "veg": true,
+          "sort": 6
+        },
+        {
+          "id": "ba-addons-7",
+          "name": "Whey Protein (25 g)",
+          "pricePaise": 3000,
+          "veg": true,
+          "sort": 7
+        },
+        {
+          "id": "ba-addons-8",
+          "name": "Muesli Mix (25 g)",
+          "pricePaise": 3000,
+          "veg": true,
+          "sort": 8
+        }
+      ]
+    }
+  ]
+}

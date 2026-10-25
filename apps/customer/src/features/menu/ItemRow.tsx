@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import { Heart, Plus } from 'lucide-react';
-import { favouriteKey, formatPaise, type MenuItem } from '@foodcourt/shared';
+import { favouriteKey, formatPaise, thumbUrlOf, type MenuItem } from '@foodcourt/shared';
 import { Button, QtyStepper, VegDot } from '@foodcourt/ui';
 import { useAuth } from '../../lib/authStore';
 import { cx, prefersReducedMotion } from '../../lib/format';
@@ -17,6 +17,23 @@ function asSet(list: string[]): Set<string> {
   let set = sets.get(list);
   if (!set) sets.set(list, (set = new Set(list)));
   return set;
+}
+
+/** Loads the small copy of a dish photo (about 10 KB); a photo that has none yet falls back to the full one. */
+function DishPhoto({ url, soldOut }: { url: string; soldOut: boolean }) {
+  const [src, setSrc] = useState(() => thumbUrlOf(url) ?? url);
+  return (
+    <img
+      src={src}
+      onError={() => setSrc(url)}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      width={76}
+      height={76}
+      className={cx('h-[76px] w-[76px] shrink-0 rounded-[14px] bg-surface-2 object-cover', soldOut && 'opacity-60 grayscale')}
+    />
+  );
 }
 
 export function FavouriteButton({ vendorId, itemId, name }: { vendorId: string; itemId: string; name: string }) {
@@ -81,17 +98,7 @@ export const ItemRow = memo(function ItemRow({ item, vendorId, soldOut, paused }
   return (
     <li className="flex items-start gap-3 px-4 py-3.5">
       {/* Shops add photos from Shop admin; rows without one stay text-first. */}
-      {item.imageUrl && (
-        <img
-          src={item.imageUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          width={76}
-          height={76}
-          className={cx('h-[76px] w-[76px] shrink-0 rounded-[14px] bg-surface-2 object-cover', soldOut && 'opacity-60 grayscale')}
-        />
-      )}
+      {item.imageUrl && <DishPhoto key={item.imageUrl} url={item.imageUrl} soldOut={soldOut} />}
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2.5">
           <VegDot veg={item.veg} size="sm" className="mt-[3px] shrink-0" />

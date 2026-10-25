@@ -97,8 +97,8 @@ export function useCheckout(tableSession: TableSession | null) {
       return;
     }
     const phone = useProfile.getState().profile?.phone;
-    // Cashfree needs a real mobile number for online payments; the details sheet collects it.
-    if (paymentsOn && !phone) {
+    // Table guests pay without a number (the server stands one in for Cashfree); only website accounts are asked.
+    if (isWebMode && paymentsOn && !phone) {
       useUi.getState().showDetails('checkout');
       notify('Add your mobile number to pay', { description: 'Your payment receipt is sent to it.' });
       return;

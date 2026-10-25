@@ -64,7 +64,7 @@ async function runSeed() {
       acceptSlaSec: 180,
       feePct: 3,
       perOrderFeePaise: 100,
-      hours: { open: '09:00', close: '22:00' },
+      hours: { open: '07:00', close: '21:00' },
     },
     {
       id: 'vendor-siddi-vinayaka',
@@ -77,7 +77,47 @@ async function runSeed() {
       acceptSlaSec: 180,
       feePct: 3,
       perOrderFeePaise: 100,
-      hours: { open: '08:00', close: '21:30' },
+      hours: { open: '07:00', close: '21:00' },
+    },
+    // Sweet Cravings, Basil and Yash Fruit Juice & Icecream Corner. The platform charge is ₹1 per order and no percentage; hours are 07:00 to 21:00.
+    {
+      id: 'vendor-sweet-cravings',
+      name: 'Sweet Cravings',
+      code: 'SC',
+      status: 'active',
+      acceptingOrders: true,
+      defaultPrepMin: 5,
+      fulfilmentMode: 'pickup',
+      acceptSlaSec: 180,
+      feePct: 0,
+      perOrderFeePaise: 100,
+      hours: { open: '07:00', close: '21:00' },
+    },
+    {
+      id: 'vendor-basil',
+      name: 'Basil',
+      code: 'BA',
+      status: 'active',
+      acceptingOrders: true,
+      defaultPrepMin: 8,
+      fulfilmentMode: 'pickup',
+      acceptSlaSec: 180,
+      feePct: 0,
+      perOrderFeePaise: 100,
+      hours: { open: '07:00', close: '21:00' },
+    },
+    {
+      id: 'vendor-yash-fruit-juice',
+      name: 'Yash Fruit Juice & Icecream Corner',
+      code: 'YF',
+      status: 'active',
+      acceptingOrders: true,
+      defaultPrepMin: 8,
+      fulfilmentMode: 'pickup',
+      acceptSlaSec: 180,
+      feePct: 0,
+      perOrderFeePaise: 100,
+      hours: { open: '07:00', close: '21:00' },
     },
   ];
 
@@ -93,17 +133,16 @@ async function runSeed() {
 
   // 4. Menus from docs/menus/*.json
   const docsDir = path.resolve(__dirname, '../../docs/menus');
-  const rollMePath = path.join(docsDir, 'roll-me.json');
-  const siddiPath = path.join(docsDir, 'siddi-vinayaka.json');
-
-  if (fs.existsSync(rollMePath)) {
-    const rmMenu = JSON.parse(fs.readFileSync(rollMePath, 'utf8'));
-    await db.collection('menus').doc('vendor-roll-me').set(rmMenu);
-  }
-
-  if (fs.existsSync(siddiPath)) {
-    const svMenu = JSON.parse(fs.readFileSync(siddiPath, 'utf8'));
-    await db.collection('menus').doc('vendor-siddi-vinayaka').set(svMenu);
+  const menuFiles: Record<string, string> = {
+    'vendor-roll-me': 'roll-me.json',
+    'vendor-siddi-vinayaka': 'siddi-vinayaka.json',
+    'vendor-sweet-cravings': 'sweet-cravings.json',
+    'vendor-basil': 'basil.json',
+    'vendor-yash-fruit-juice': 'yash-fruit-juice.json',
+  };
+  for (const [vendorId, file] of Object.entries(menuFiles)) {
+    const menuPath = path.join(docsDir, file);
+    if (fs.existsSync(menuPath)) await db.collection('menus').doc(vendorId).set(JSON.parse(fs.readFileSync(menuPath, 'utf8')));
   }
   console.log('✔ Menus seeded from Appendix A');
 

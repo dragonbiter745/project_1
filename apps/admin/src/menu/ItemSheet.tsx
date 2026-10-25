@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Field, FormError, inputClass, parseRupees } from '@foodcourt/finance-ui';
-import { newRequestKey, shopAdmin } from '@foodcourt/firebase-client/shop-admin';
+import { deleteShopImage, newRequestKey, shopAdmin } from '@foodcourt/firebase-client/shop-admin';
 import { MENU_PRICE_MAX_PAISE, MENU_PRICE_MIN_PAISE, type MenuCategory, type MenuItem } from '@foodcourt/shared';
 import { Button, Sheet, cx, run } from '@foodcourt/ui';
 import { PhotoField } from './PhotoField';
@@ -46,7 +46,11 @@ function ItemForm({ target, categories, vendorId, onDone }: { target: ItemTarget
       shopAdmin({ action: 'SAVE_ITEM', requestKey: requestKey.current, categoryId, itemId: item?.id, name, pricePaise, veg, desc: desc.trim() || null, imageUrl: photo })
     );
     setSaving(false);
-    if (ok) onDone();
+    if (ok) {
+      // The old picture is only deleted once the server has taken the new one.
+      if (item?.imageUrl && item.imageUrl !== photo) void deleteShopImage(item.imageUrl);
+      onDone();
+    }
   };
 
   const remove = async () => {
@@ -54,7 +58,10 @@ function ItemForm({ target, categories, vendorId, onDone }: { target: ItemTarget
     setSaving(true);
     const ok = await run(shopAdmin({ action: 'DELETE_ITEM', itemId: item.id }));
     setSaving(false);
-    if (ok) onDone();
+    if (ok) {
+      void deleteShopImage(item.imageUrl);
+      onDone();
+    }
   };
 
   return (

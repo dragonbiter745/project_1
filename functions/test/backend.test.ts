@@ -99,10 +99,21 @@ describe('createCheckout · online payment', () => {
     await seed({ paymentsEnabled: true });
   });
 
-  it('needs a phone number, then creates a Cashfree order for the server total', async () => {
+  it('lets a guest pay with no phone number: Cashfree gets a placeholder and nothing is stored', async () => {
     const uid = uniqueUid();
     const sessionId = await sessionFor(startSession, uid);
-    await expect(call(createCheckout, { sessionId, checkoutKey: 'online-key-01', items: cart }, uid)).rejects.toMatchObject({ code: 'invalid-argument' });
+    const calls = fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps_guest', cf_order_id: 98, order_status: 'ACTIVE' } }) });
+    const res = await call(createCheckout, { sessionId, checkoutKey: 'online-key-01', items: cart }, uid);
+    expect(res).toMatchObject({ status: 'PENDING_PAYMENT', paymentSessionId: 'ps_guest' });
+    expect(calls[0]!.body.customer_details.customer_phone).toMatch(/^\d{10}$/);
+    const order = (await db.collection('orders').doc(res.orderId).get()).data()!;
+    expect(order.customerPhone).toBeUndefined();
+    expect(order.status).toBe('PENDING_PAYMENT');
+  });
+
+  it('creates a Cashfree order for the server total and keeps a real phone number', async () => {
+    const uid = uniqueUid();
+    const sessionId = await sessionFor(startSession, uid);
     const calls = fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps_123', cf_order_id: 99, order_status: 'ACTIVE' } }) });
     const res = await call(createCheckout, { sessionId, checkoutKey: 'online-key-02', items: cart, customerPhone: '9123456780' }, uid);
     expect(res).toMatchObject({ status: 'PENDING_PAYMENT', paymentSessionId: 'ps_123', cashfreeMode: 'sandbox' });

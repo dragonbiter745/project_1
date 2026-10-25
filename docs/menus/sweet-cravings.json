@@ -1,0 +1,781 @@
+{
+  "vendorId": "vendor-sweet-cravings",
+  "vendorName": "Sweet Cravings",
+  "vendorCode": "SC",
+  "version": 2,
+  "categories": [
+    {
+      "id": "sc-cakes",
+      "name": "Cakes",
+      "sort": 1,
+      "items": [
+        {
+          "id": "sc-cakes-1",
+          "name": "Vanilla Cake (½ kg)",
+          "pricePaise": 40000,
+          "veg": false,
+          "sort": 1,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-2",
+          "name": "Vanilla Cake (1 kg)",
+          "pricePaise": 70000,
+          "veg": false,
+          "sort": 2,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-3",
+          "name": "Mango Cake (½ kg)",
+          "pricePaise": 40000,
+          "veg": false,
+          "sort": 3,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-4",
+          "name": "Mango Cake (1 kg)",
+          "pricePaise": 70000,
+          "veg": false,
+          "sort": 4,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-5",
+          "name": "Strawberry Cake (½ kg)",
+          "pricePaise": 40000,
+          "veg": false,
+          "sort": 5,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-6",
+          "name": "Strawberry Cake (1 kg)",
+          "pricePaise": 70000,
+          "veg": false,
+          "sort": 6,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-7",
+          "name": "Pineapple Cake (½ kg)",
+          "pricePaise": 43000,
+          "veg": false,
+          "sort": 7,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-8",
+          "name": "Pineapple Cake (1 kg)",
+          "pricePaise": 74000,
+          "veg": false,
+          "sort": 8,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-9",
+          "name": "Butterscotch Cake (½ kg)",
+          "pricePaise": 43000,
+          "veg": false,
+          "sort": 9,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-10",
+          "name": "Butterscotch Cake (1 kg)",
+          "pricePaise": 74000,
+          "veg": false,
+          "sort": 10,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-11",
+          "name": "Caramel Crunch Cake (½ kg)",
+          "pricePaise": 43000,
+          "veg": false,
+          "sort": 11,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-12",
+          "name": "Caramel Crunch Cake (1 kg)",
+          "pricePaise": 74000,
+          "veg": false,
+          "sort": 12,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-13",
+          "name": "Blueberry Cake (½ kg)",
+          "pricePaise": 43000,
+          "veg": false,
+          "sort": 13,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-14",
+          "name": "Blueberry Cake (1 kg)",
+          "pricePaise": 74000,
+          "veg": false,
+          "sort": 14,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-15",
+          "name": "Black Currant Cake (½ kg)",
+          "pricePaise": 43000,
+          "veg": false,
+          "sort": 15,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-16",
+          "name": "Black Currant Cake (1 kg)",
+          "pricePaise": 74000,
+          "veg": false,
+          "sort": 16,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-17",
+          "name": "Irish Coffee Cake (½ kg)",
+          "pricePaise": 43000,
+          "veg": false,
+          "sort": 17,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-18",
+          "name": "Irish Coffee Cake (1 kg)",
+          "pricePaise": 74000,
+          "veg": false,
+          "sort": 18,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-19",
+          "name": "Black Forest Cake (½ kg)",
+          "pricePaise": 43000,
+          "veg": false,
+          "sort": 19,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-20",
+          "name": "Black Forest Cake (1 kg)",
+          "pricePaise": 74000,
+          "veg": false,
+          "sort": 20,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-21",
+          "name": "Dark Forest Cake (½ kg)",
+          "pricePaise": 45000,
+          "veg": false,
+          "sort": 21,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-22",
+          "name": "Dark Forest Cake (1 kg)",
+          "pricePaise": 76000,
+          "veg": false,
+          "sort": 22,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-23",
+          "name": "Chocolate Truffle Cake (½ kg)",
+          "pricePaise": 45000,
+          "veg": false,
+          "sort": 23,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-24",
+          "name": "Chocolate Truffle Cake (1 kg)",
+          "pricePaise": 76000,
+          "veg": false,
+          "sort": 24,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-25",
+          "name": "Choco-Mocha Truffle Cake (½ kg)",
+          "pricePaise": 45000,
+          "veg": false,
+          "sort": 25,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-26",
+          "name": "Choco-Mocha Truffle Cake (1 kg)",
+          "pricePaise": 76000,
+          "veg": false,
+          "sort": 26,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-27",
+          "name": "Red Velvet Cake (½ kg)",
+          "pricePaise": 47000,
+          "veg": false,
+          "sort": 27,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-28",
+          "name": "Red Velvet Cake (1 kg)",
+          "pricePaise": 81000,
+          "veg": false,
+          "sort": 28,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-29",
+          "name": "White Forest Cake (½ kg)",
+          "pricePaise": 47000,
+          "veg": false,
+          "sort": 29,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-30",
+          "name": "White Forest Cake (1 kg)",
+          "pricePaise": 81000,
+          "veg": false,
+          "sort": 30,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-31",
+          "name": "Chocolava Cake (½ kg)",
+          "pricePaise": 47000,
+          "veg": false,
+          "sort": 31,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-32",
+          "name": "Chocolava Cake (1 kg)",
+          "pricePaise": 81000,
+          "veg": false,
+          "sort": 32,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-33",
+          "name": "Chocolate Oreo Cake (½ kg)",
+          "pricePaise": 47000,
+          "veg": false,
+          "sort": 33,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-34",
+          "name": "Chocolate Oreo Cake (1 kg)",
+          "pricePaise": 81000,
+          "veg": false,
+          "sort": 34,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-35",
+          "name": "Choco Chip Cake (½ kg)",
+          "pricePaise": 47000,
+          "veg": false,
+          "sort": 35,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-36",
+          "name": "Choco Chip Cake (1 kg)",
+          "pricePaise": 81000,
+          "veg": false,
+          "sort": 36,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-37",
+          "name": "Kitkat Truffle Cake (½ kg)",
+          "pricePaise": 47000,
+          "veg": false,
+          "sort": 37,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-38",
+          "name": "Kitkat Truffle Cake (1 kg)",
+          "pricePaise": 81000,
+          "veg": false,
+          "sort": 38,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-39",
+          "name": "Caribbean Chocolate Cake (½ kg)",
+          "pricePaise": 50000,
+          "veg": false,
+          "sort": 39,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-40",
+          "name": "Caribbean Chocolate Cake (1 kg)",
+          "pricePaise": 85000,
+          "veg": false,
+          "sort": 40,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-41",
+          "name": "Chocolate Temptation Cake (½ kg)",
+          "pricePaise": 50000,
+          "veg": false,
+          "sort": 41,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-42",
+          "name": "Chocolate Temptation Cake (1 kg)",
+          "pricePaise": 85000,
+          "veg": false,
+          "sort": 42,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-43",
+          "name": "Swiss Chocolate Truffle Cake (½ kg)",
+          "pricePaise": 50000,
+          "veg": false,
+          "sort": 43,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-44",
+          "name": "Swiss Chocolate Truffle Cake (1 kg)",
+          "pricePaise": 85000,
+          "veg": false,
+          "sort": 44,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-45",
+          "name": "Belgium Chocolate Cake (½ kg)",
+          "pricePaise": 50000,
+          "veg": false,
+          "sort": 45,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-46",
+          "name": "Belgium Chocolate Cake (1 kg)",
+          "pricePaise": 85000,
+          "veg": false,
+          "sort": 46,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-47",
+          "name": "Vancho Cake (½ kg)",
+          "pricePaise": 50000,
+          "veg": false,
+          "sort": 47,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-48",
+          "name": "Vancho Cake (1 kg)",
+          "pricePaise": 85000,
+          "veg": false,
+          "sort": 48,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-49",
+          "name": "Mud Cake (½ kg)",
+          "pricePaise": 51000,
+          "veg": false,
+          "sort": 49,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-50",
+          "name": "Mud Cake (1 kg)",
+          "pricePaise": 86000,
+          "veg": false,
+          "sort": 50,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-51",
+          "name": "Chocolate Fantasy Cake (½ kg)",
+          "pricePaise": 51000,
+          "veg": false,
+          "sort": 51,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-52",
+          "name": "Chocolate Fantasy Cake (1 kg)",
+          "pricePaise": 86000,
+          "veg": false,
+          "sort": 52,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-53",
+          "name": "Chocolate Fudge Cake (½ kg)",
+          "pricePaise": 52000,
+          "veg": false,
+          "sort": 53,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-54",
+          "name": "Chocolate Fudge Cake (1 kg)",
+          "pricePaise": 88000,
+          "veg": false,
+          "sort": 54,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-55",
+          "name": "Death By Chocolate Cake (½ kg)",
+          "pricePaise": 52000,
+          "veg": false,
+          "sort": 55,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-56",
+          "name": "Death By Chocolate Cake (1 kg)",
+          "pricePaise": 88000,
+          "veg": false,
+          "sort": 56,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-57",
+          "name": "Brownie Cake (½ kg)",
+          "pricePaise": 52000,
+          "veg": false,
+          "sort": 57,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cakes-58",
+          "name": "Brownie Cake (1 kg)",
+          "pricePaise": 88000,
+          "veg": false,
+          "sort": 58,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        }
+      ]
+    },
+    {
+      "id": "sc-charlotte",
+      "name": "Charlotte",
+      "sort": 2,
+      "items": [
+        {
+          "id": "sc-charlotte-1",
+          "name": "Red Velvet Charlotte (½ kg)",
+          "pricePaise": 52000,
+          "veg": false,
+          "sort": 1,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-charlotte-2",
+          "name": "Red Velvet Charlotte (1 kg)",
+          "pricePaise": 88000,
+          "veg": false,
+          "sort": 2,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-charlotte-3",
+          "name": "Dark Fantasy Charlotte (½ kg)",
+          "pricePaise": 52000,
+          "veg": false,
+          "sort": 3,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-charlotte-4",
+          "name": "Dark Fantasy Charlotte (1 kg)",
+          "pricePaise": 88000,
+          "veg": false,
+          "sort": 4,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        }
+      ]
+    },
+    {
+      "id": "sc-cheesecake",
+      "name": "Cheesecake",
+      "sort": 3,
+      "items": [
+        {
+          "id": "sc-cheesecake-1",
+          "name": "Mango Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 1,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-2",
+          "name": "Mango Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 2,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-3",
+          "name": "Blueberry Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 3,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-4",
+          "name": "Blueberry Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 4,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-5",
+          "name": "Salted Caramel Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 5,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-6",
+          "name": "Salted Caramel Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 6,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-7",
+          "name": "White Chocolate Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 7,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-8",
+          "name": "White Chocolate Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 8,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-9",
+          "name": "Chocochip Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 9,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-10",
+          "name": "Chocochip Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 10,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-11",
+          "name": "Chocolate Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 11,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-12",
+          "name": "Chocolate Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 12,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-13",
+          "name": "Choco-Mocha Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 13,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-14",
+          "name": "Choco-Mocha Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 14,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-15",
+          "name": "Choco-Caramel Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 15,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-16",
+          "name": "Choco-Caramel Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 16,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-17",
+          "name": "Choco-Vanilla Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 17,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-18",
+          "name": "Choco-Vanilla Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 18,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-19",
+          "name": "Brownie Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 19,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-20",
+          "name": "Brownie Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 20,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-21",
+          "name": "Red Velvet Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 21,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-22",
+          "name": "Red Velvet Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 22,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-23",
+          "name": "Choco-Fantasy Cheesecake (½ kg)",
+          "pricePaise": 48000,
+          "veg": false,
+          "sort": 23,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-24",
+          "name": "Choco-Fantasy Cheesecake (1 kg)",
+          "pricePaise": 84000,
+          "veg": false,
+          "sort": 24,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-25",
+          "name": "Lotus Biscoff Cheesecake (½ kg)",
+          "pricePaise": 49000,
+          "veg": false,
+          "sort": 25,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-26",
+          "name": "Lotus Biscoff Cheesecake (1 kg)",
+          "pricePaise": 89000,
+          "veg": false,
+          "sort": 26,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-27",
+          "name": "Nutella Cheesecake (½ kg)",
+          "pricePaise": 49000,
+          "veg": false,
+          "sort": 27,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-28",
+          "name": "Nutella Cheesecake (1 kg)",
+          "pricePaise": 89000,
+          "veg": false,
+          "sort": 28,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-29",
+          "name": "New York Baked Cheese Cake (½ kg)",
+          "pricePaise": 49000,
+          "veg": false,
+          "sort": 29,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-30",
+          "name": "New York Baked Cheese Cake (1 kg)",
+          "pricePaise": 89000,
+          "veg": false,
+          "sort": 30,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-31",
+          "name": "Honey Sticky Pudding Cake (½ kg)",
+          "pricePaise": 49000,
+          "veg": false,
+          "sort": 31,
+          "desc": "Contains egg. Eggless +₹30. Custom design +₹200 per kg."
+        },
+        {
+          "id": "sc-cheesecake-32",
+          "name": "Honey Sticky Pudding Cake (1 kg)",
+          "pricePaise": 89000,
+          "veg": false,
+          "sort": 32,
+          "desc": "Contains egg. Eggless +₹50. Custom design +₹200 per kg."
+        }
+      ]
+    }
+  ]
+}
