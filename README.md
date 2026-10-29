@@ -56,3 +56,4 @@ pnpm dev
 3. **Multi-Vendor Single Cart:** Diners can order dishes from both Roll Me and Siddi Vinayaka Garden in one single payment.
 4. **Idempotency:** Unique `checkoutKey` ensures double taps never create duplicate orders.
 5. **Real-time Cross-Tab Synchronization:** Instant sync across Customer, Vendor KDS, and Master Admin out-of-the-box.
+6. **Role-Based Security:** Granular Firebase rules isolate diner, vendor, and master admin access.
