@@ -36,7 +36,7 @@ happens, what protects it **in the code or rules today**, and one of:
 | 16 | A diner edits the cart in the browser to price a dish at ₹1 | The server ignores prices from the phone and recomputes from the menu (`createCheckout`; tested: orders are created at the server total) | ✅ |
 | 17 | A diner orders a dish that has just sold out | Checked against stock on the server at checkout; the diner sees a clear message. The cached menu can be about 1 to 2 minutes behind, so this does happen and is handled there | ✅ |
 | 18 | A diner orders 50 of everything (40 lines at 50) | The schema caps a line at 50 and an order at 40 lines. Online it must be paid in full; the kitchen can reject and the money is refunded | ✅ |
-| 19 | Double-tap on Pay, or a retry after a flaky connection | The same checkout key always maps to the same order id, so no second order or second Cashfree order (tested) | ✅ |
+| 19 | Double-tap on Pay, or a retry after a flaky connection | The same checkout key always maps to the same order id. Two taps at the same instant used to give the second tap an error; now it waits for the first and gets the same order. One Cashfree order, never two (`rush.test.ts`) | ✅ |
 | 20 | A diner pays, then closes the browser or the phone dies | The order is created by Cashfree's **server-to-server** webhook, not by the browser, so it reaches the kitchen regardless. The diner reopens through the payment return link or the token on their screen. If they clear browser data they lose the tracking view (the kitchen still has the token and name) | ✅ |
 | 21 | The webhook never arrives | The reconciler asks Cashfree for orders still unpaid after 2 minutes and creates the tickets (tested) | ✅ |
 | 22 | Someone posts a fake "payment successful" webhook | Rejected with 401 unless it carries a valid HMAC signature made with your secret key (verified live: an unsigned request returned 401) | ✅ |
@@ -70,8 +70,8 @@ happens, what protects it **in the code or rules today**, and one of:
 
 | # | Scenario | What happens / protection | Status |
 |---|---|---|---|
-| 43 | 200 orders for one shop in two minutes | Each paid order bumps that shop's token counter, a single document that handles about one write a second. Bursts above that slow down by retrying, and Cashfree retries any webhook that fails. Watch for slow confirmations; if seen, split the counter | ⚠ |
-| 44 | Many website (pickup) orders at once | All pickup sessions share one daily counter document, a hotspot like case 43 | ⚠ |
+| 43 | 200 orders for one shop in two minutes | Each paid order takes that shop's next token in its own tiny transaction (the counter and that order's token hold, nothing else), counter first so duplicates queue instead of deadlocking; the payment transaction itself touches only the order's own documents and retries on contention. Tested: 200 diners at 0.5/s with double taps, lost and repeated webhooks, no errors, webhook p50 22 ms (`rush.test.ts`). Limit: a counter takes roughly 1 to 2 paid orders a second per shop; the emulator cannot model simultaneous writes, so a burst test needs a real test database | ⚠ |
+| 44 | Many website (pickup) orders at once, or a crowd scanning one QR (a demo screen) | The diner number is cosmetic and now uses a lock-free increment outside the session transaction, so a crowd on one QR no longer queues (tested) | ✅ |
 | 45 | The first order after a quiet spell | No server is kept warm now, so it can be 1 to 3 seconds slower. During a rush instances stay warm | ✅ |
 | 46 | The phone goes offline mid-checkout | The call fails, the cart is kept, nothing is charged, the diner sees "check your connection" | ✅ |
 | 47 | A kitchen marks a dish sold out and diners still see it for a while | The cached menu can lag by about 1 to 2 minutes (CDN 30 s, browser 15 s, refresh every 90 s). Checkout re-checks on the server, so nobody is charged for it | ✅ |

@@ -1,5 +1,5 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import { Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp, type DocumentReference } from 'firebase-admin/firestore';
 import { PICKUP_TABLE_ID, PICKUP_TABLE_LABEL, StartPickupSessionSchema, StartSessionSchema, generateDisplayName, getIstDateKey, type Table } from '@foodcourt/shared';
 import { REGION, SESSION_TTL_MS } from '../config';
 import { db } from '../db';
@@ -11,6 +11,15 @@ function hashSeed(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
   return h >>> 0;
+}
+
+/**
+ * The diner's number at this table today ("Diner #12"). It is cosmetic, so it uses a lock-free increment
+ * outside any transaction: a crowd scanning one QR at the same moment (a demo screen) never queues on it.
+ */
+async function takeDailyNo(counterRef: DocumentReference, now: number): Promise<number> {
+  await counterRef.set({ count: FieldValue.increment(1), updatedAt: now }, { merge: true });
+  return ((await counterRef.get()).data()?.count as number | undefined) ?? 1;
 }
 
 /**
@@ -55,8 +64,12 @@ export const startSession = onCall({ region: REGION, maxInstances: 100, concurre
   // Signed-in diners are called by their own name; guests get a generated one.
   const memberName = member ? ((await db.collection('users').doc(uid).get()).data()?.name as string | undefined) : undefined;
 
+  const before = await sessionRef.get();
+  const resuming = before.exists && (before.data()!.expiresAt as number) > now;
+  const takenNo = resuming ? 0 : await takeDailyNo(counterRef, now);
+
   return db.runTransaction(async (tx) => {
-    const [existing, counter, customer] = await Promise.all([tx.get(sessionRef), tx.get(counterRef), tx.get(customerRef(uid))]);
+    const [existing, customer] = await Promise.all([tx.get(sessionRef), tx.get(customerRef(uid))]);
     if (existing.exists && (existing.data()!.expiresAt as number) > now) {
       const s = existing.data()!;
       // A diner who signed in after scanning is called by their own name from now on.
@@ -65,12 +78,10 @@ export const startSession = onCall({ region: REGION, maxInstances: 100, concurre
       writeVisit(tx, customer, { uid, dateKey, now, displayName, member });
       return { sessionId: sessionRef.id, tableId, tableLabel: s.tableLabel, displayName, dailyNo: s.dailyNo };
     }
-    // Per-table daily number (a few diners a day per table, so no contention). The pickup counter only moves
-    // when a signed-in diner starts their first website order of the day.
-    const dailyNo = ((counter.data()?.count as number | undefined) ?? 0) + 1;
+    // Taken above, before the transaction; a race that lost to a resume above may skip one number, which is harmless.
+    const dailyNo = takenNo || 1;
     const displayName = memberName || generateDisplayName(hashSeed(uid));
     writeVisit(tx, customer, { uid, dateKey, now, displayName, member });
-    tx.set(counterRef, { count: dailyNo, updatedAt: now }, { merge: true });
     tx.set(sessionRef, {
       uid,
       tableId,

@@ -1,4 +1,4 @@
-import { FieldValue, type DocumentReference, type DocumentSnapshot, type Transaction } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp, type DocumentReference, type DocumentSnapshot, type Transaction } from 'firebase-admin/firestore';
 import { REFUNDABLE_STATUSES, commissionFor, deriveParentOrderStatus, formatVendorToken, type Order, type SubOrder, type Vendor } from '@foodcourt/shared';
 import { db } from '../db';
 import { releaseCouponUse, writeCouponUse } from './coupons';
@@ -16,17 +16,21 @@ interface TicketReads {
 }
 
 /** Every read the ticket writes need. Firestore transactions require all reads before any write. */
-export async function readForTickets(tx: Transaction, orderId: string, order: Pick<Order, 'items' | 'dateKey'>): Promise<TicketReads> {
-  const ids = vendorIdsOf(order);
-  const counterRefs = ids.map((v) => db.collection('counters').doc(`${order.dateKey}_${v}`));
+export async function readForTickets(tx: Transaction, orderId: string, order: Pick<Order, 'items' | 'dateKey'>, opts: { counters?: boolean } = {}): Promise<TicketReads> {
+  const ids = vendorIdsOf(order).sort();
   const vendorRefs = ids.map((v) => db.collection('vendors').doc(v));
   const ticketRefs = ids.map((v) => db.collection('subOrders').doc(subOrderId(orderId, v)));
-  const snaps = await Promise.all([...counterRefs, ...vendorRefs, ...ticketRefs].map((r) => tx.get(r)));
-  const n = ids.length;
+  // The shops' token counters are the only documents many orders fight over. Lock them one at a time,
+  // always in shop-id order: two multi-shop orders can then never wait on each other (no deadlock).
+  const counters: DocumentSnapshot[] = [];
+  if (opts.counters !== false) for (const v of ids) counters.push(await tx.get(db.collection('counters').doc(`${order.dateKey}_${v}`)));
+  // Shop profiles (name, token prefix, commission) are read outside the transaction: they barely change during
+  // service, and a transactional read would lock them, making every shop's profile a second point of contention.
+  const [vendorSnaps, ticketSnaps] = await Promise.all([db.getAll(...vendorRefs), Promise.all(ticketRefs.map((r) => tx.get(r)))]);
   return {
-    counters: new Map(ids.map((v, i) => [v, snaps[i]!])),
-    vendors: new Map(ids.map((v, i) => [v, snaps[n + i]!])),
-    existing: new Map(ids.map((v, i) => [v, snaps[2 * n + i]!])),
+    counters: new Map(counters.map((c, i) => [ids[i]!, c])),
+    vendors: new Map(ids.map((v, i) => [v, vendorSnaps[i]!])),
+    existing: new Map(ids.map((v, i) => [v, ticketSnaps[i]!])),
   };
 }
 
@@ -37,14 +41,19 @@ export function writeTickets(
   order: Pick<Order, 'items' | 'dateKey' | 'uid' | 'sessionId' | 'tableId' | 'tableLabel'> & { displayName?: string },
   reads: TicketReads,
   now: number,
-  paymentMode: 'ONLINE' | 'COUNTER'
+  paymentMode: 'ONLINE' | 'COUNTER',
+  reserved?: Map<string, string>
 ): void {
   for (const vendorId of vendorIdsOf(order)) {
     if (reads.existing.get(vendorId)?.exists) continue;
-    const counter = reads.counters.get(vendorId)!;
     const vendor = reads.vendors.get(vendorId)!.data() as Vendor | undefined;
-    const seq = ((counter.data()?.count as number | undefined) ?? 0) + 1;
-    tx.set(counter.ref, { count: seq, updatedAt: now }, { merge: true });
+    let token = reserved?.get(vendorId);
+    if (!token) {
+      const counter = reads.counters.get(vendorId)!;
+      const seq = ((counter.data()?.count as number | undefined) ?? 0) + 1;
+      tx.set(counter.ref, { count: seq, updatedAt: now }, { merge: true });
+      token = formatVendorToken(vendor?.code ?? 'FC', seq);
+    }
     const items = order.items.filter((i) => i.vendorId === vendorId);
     const subtotalPaise = items.reduce((n, i) => n + i.pricePaise * i.qty, 0);
     const ticket: Omit<SubOrder, 'id'> = {
@@ -55,7 +64,7 @@ export function writeTickets(
       dateKey: order.dateKey,
       vendorId,
       vendorName: vendor?.name ?? '',
-      token: formatVendorToken(vendor?.code ?? 'FC', seq),
+      token,
       tableLabel: order.tableLabel,
       customerDisplay: order.displayName ?? '',
       items: items.map((i) => ({ id: i.itemId, name: i.name, qty: i.qty, pricePaise: i.pricePaise, ...(i.note ? { note: i.note } : {}) })),
@@ -72,18 +81,77 @@ export function writeTickets(
 export type Materialized = 'created' | 'already' | 'missing' | 'amount-mismatch';
 
 /**
+ * Retries a transaction that lost a lock race, with jitter. A burst of payments for one shop all take
+ * that shop's token counter; without this, the losers fail and wait minutes for Cashfree to retry.
+ */
+export async function retryContention<T>(fn: () => Promise<T>, attempts = 5): Promise<T> {
+  for (let i = 1; ; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const code = (err as { code?: number | string }).code;
+      const contended = code === 10 || code === 4 || code === 'aborted' || code === 'deadline-exceeded';
+      if (!contended || i >= attempts) throw err;
+      await new Promise((r) => setTimeout(r, 120 * i + Math.random() * 400));
+    }
+  }
+}
+
+const DONE = new Set(['PAID', 'COMPLETED', 'PARTIALLY_REFUNDED']);
+
+/**
+ * Takes this order's token at each of its shops, one tiny transaction per shop (that shop's counter and
+ * this order's hold for it, nothing else). The hold keeps the token, so a retry or a duplicate webhook reuses it and
+ * a number is never given out twice. Kept apart from the payment transaction so a burst of payments for one
+ * shop queues only on this small step and never deadlocks.
+ */
+async function reserveTokens(orderId: string, order: Pick<Order, 'items' | 'dateKey'>): Promise<Map<string, string>> {
+  const ids = vendorIdsOf(order).sort();
+  const vendorSnaps = await db.getAll(...ids.map((v) => db.collection('vendors').doc(v)));
+  const out = new Map<string, string>();
+  for (const [i, vendorId] of ids.entries()) {
+    const code = (vendorSnaps[i]!.data() as Vendor | undefined)?.code ?? 'FC';
+    const counterRef = db.collection('counters').doc(`${order.dateKey}_${vendorId}`);
+    const holdRef = db.collection('tokenHolds').doc(subOrderId(orderId, vendorId));
+    const token = await retryContention(() =>
+      db.runTransaction(async (tx) => {
+        // Counter first, always: duplicates of this order queue here and then find their token already held.
+        const counter = await tx.get(counterRef);
+        const held = (await tx.get(holdRef)).data()?.token as string | undefined;
+        if (held) return held;
+        const seq = ((counter.data()?.count as number | undefined) ?? 0) + 1;
+        const next = formatVendorToken(code, seq);
+        const now = Date.now();
+        tx.set(counterRef, { count: seq, updatedAt: now }, { merge: true });
+        // TTL policy field: Firestore removes the hold two days later; the ticket keeps the token.
+        tx.create(holdRef, { token: next, orderId, vendorId, at: now, expireAt: Timestamp.fromMillis(now + 2 * 86_400_000) });
+        return next;
+      })
+    );
+    out.set(vendorId, token);
+  }
+  return out;
+}
+
+/**
  * Marks an online order paid and creates its shop tickets, atomically and idempotently.
  * Safe to call from the webhook and the reconciler for the same payment.
  */
 export async function materializePaidOrder(orderId: string, payment: { amountPaise: number; cfPaymentId?: string | null; method?: string | null }): Promise<Materialized> {
   const orderRef = db.collection('orders').doc(orderId);
-  return db.runTransaction(async (tx) => {
+  const before = await orderRef.get();
+  if (!before.exists) return 'missing';
+  const first = before.data() as Order;
+  if (DONE.has(first.status)) return 'already';
+  if (payment.amountPaise !== first.totals.totalPaise) return 'amount-mismatch';
+  const tokens = await reserveTokens(orderId, first);
+  return retryContention(() => db.runTransaction(async (tx): Promise<Materialized> => {
     const snap = await tx.get(orderRef);
     if (!snap.exists) return 'missing';
     const order = snap.data() as Order & { displayName?: string };
-    if (order.status === 'PAID' || order.status === 'COMPLETED' || order.status === 'PARTIALLY_REFUNDED') return 'already';
+    if (DONE.has(order.status)) return 'already';
     if (payment.amountPaise !== order.totals.totalPaise) return 'amount-mismatch';
-    const reads = await readForTickets(tx, orderId, order);
+    const reads = await readForTickets(tx, orderId, order, { counters: false });
     const now = Date.now();
     tx.update(orderRef, {
       status: 'PAID',
@@ -93,11 +161,11 @@ export async function materializePaidOrder(orderId: string, payment: { amountPai
       'payment.method': payment.method ?? 'UPI',
       updatedAt: now,
     });
-    writeTickets(tx, orderId, order, reads, now, 'ONLINE');
+    writeTickets(tx, orderId, order, reads, now, 'ONLINE', tokens);
     writeCustomerOrder(tx, order, now);
     writeCouponUse(tx, order, now);
     return 'created';
-  });
+  }));
 }
 
 /** Recomputes an order's status from its tickets after any ticket changes. */

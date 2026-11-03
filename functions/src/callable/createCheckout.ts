@@ -20,7 +20,7 @@ import { clientIp, limitLocal, limitShared, requireUid } from '../lib/guard';
 import { discountForCheckout, holdCoupon, releaseHold } from '../lib/coupons';
 import { writeCustomerOrder } from '../lib/customers';
 import { signInProvider } from './account';
-import { readForTickets, writeTickets } from '../lib/orders';
+import { readForTickets, retryContention, writeTickets } from '../lib/orders';
 
 /** Cashfree insists on a mobile number; guests give none, so this stands in and is never stored on the order. */
 const GUEST_PHONE = '9999999999';
@@ -39,6 +39,18 @@ const FALLBACK_CONFIG: GlobalConfig = {
  * money is trusted. The same (diner, checkoutKey) always maps to the same order, so double taps and
  * retries cannot create a second order or a second payment.
  */
+/** The first of two simultaneous checkouts is creating the Cashfree order: wait (briefly) for its payment session. */
+async function awaitFirstCheckout(orderRef: FirebaseFirestore.DocumentReference, orderId: string) {
+  for (let i = 0; i < 16; i++) {
+    const o = (await orderRef.get()).data() as Order | undefined;
+    if (o && (o.payment.paymentSessionId || o.status !== 'PENDING_PAYMENT')) {
+      return { orderId, status: o.status, paymentSessionId: o.payment.paymentSessionId ?? null, cashfreeMode: isProduction() ? 'production' : 'sandbox', totalPaise: o.totals.totalPaise };
+    }
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  throw new HttpsError('aborted', 'Your order is still being set up. Tap Pay again in a moment.');
+}
+
 export const createCheckout = onCall(
   { region: REGION, secrets: CASHFREE_SECRETS, maxInstances: 100, concurrency: 80, timeoutSeconds: 30, memory: '512MiB' },
   async (req) => {
@@ -126,21 +138,27 @@ export const createCheckout = onCall(
       // (a table of six ordering twice each fits well inside it). Retries of the same order never reach this line.
       await limitShared(`counter:session:${sessionId}`, 3, 900);
       await limitShared(`counter:table:${session.tableId as string}`, 30, 900);
-      await db.runTransaction(async (tx) => {
+      await retryContention(() => db.runTransaction(async (tx) => {
         const fresh = await tx.get(orderRef);
         if (fresh.exists) return;
         const reads = await readForTickets(tx, orderId, base);
         tx.set(orderRef, { ...base, status: 'PAID', payment: { status: 'PENDING', mode: 'COUNTER' } });
         writeTickets(tx, orderId, base, reads, now, 'COUNTER');
         writeCustomerOrder(tx, base, now);
-      });
+      }));
       return { orderId, status: 'PAID', paymentSessionId: null, cashfreeMode: null, totalPaise: totals.totalPaise };
     }
 
     const expiresAt = now + PAYMENT_WINDOW_MS;
     if (coupon) await holdCoupon(coupon.code, uid, orderId, expiresAt, now);
     // Guests pay without giving a number (PRD §6.2): Cashfree still needs one, so it gets a placeholder and none is stored.
-    await orderRef.create({ ...base, status: 'PENDING_PAYMENT', payment: { status: 'PENDING', mode: 'ONLINE' }, ...(customerPhone ? { customerPhone } : {}), expiresAt });
+    try {
+      await orderRef.create({ ...base, status: 'PENDING_PAYMENT', payment: { status: 'PENDING', mode: 'ONLINE' }, ...(customerPhone ? { customerPhone } : {}), expiresAt });
+    } catch (err) {
+      if ((err as { code?: number }).code !== 6) throw err; // 6 = ALREADY_EXISTS
+      // A double tap (or a network retry) raced the first request: wait for it and hand back the same order.
+      return awaitFirstCheckout(orderRef, orderId);
+    }
 
     try {
       const cf = await createOrder({

@@ -188,6 +188,9 @@ service cloud.firestore {
     match /counters/{id} {
       allow read, write: if false;
     }
+    match /tokenHolds/{id} {
+      allow read, write: if false;
+    }
     match /rateLimits/{id} {
       allow read, write: if false;
     }
