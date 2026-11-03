@@ -3,9 +3,9 @@ import { spotlight, useReveal, useScrollProgress } from '../../lib/hooks';
 import { RevealWords } from './ScrollFx';
 
 const POINTS = [
-  { icon: Smartphone, title: 'Nothing to install', body: 'It opens in the phone’s browser from the table QR. Any phone, any network.' },
-  { icon: Wallet, title: 'One payment for everything', body: 'Diners pay once by UPI; every kitchen receives exactly its own share.' },
-  { icon: Zap, title: 'Made for the rush hour', body: 'Light pages, instant tickets and kitchens that never miss an order when the hall fills up.' },
+  { icon: Smartphone, title: 'Nothing to install', body: 'It opens in the phone’s browser from the table QR. No app to download.' },
+  { icon: Wallet, title: 'One payment for everything', body: 'Diners pay once; each kitchen’s share is worked out separately, to the paisa.' },
+  { icon: Zap, title: 'Made for the rush hour', body: 'Light pages, and tickets that keep ringing until a kitchen accepts them.' },
   { icon: ShieldCheck, title: 'Prices checked on the server', body: 'Menus, availability and totals are recalculated server-side, never trusted from the phone.' },
 ];
 

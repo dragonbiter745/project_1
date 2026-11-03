@@ -31,3 +31,6 @@ secrets/
 
 # Staff login handover (never commit)
 staff-credentials.local.txt
+
+# Launch videos from /brag (hundreds of MB each); never commit them.
+brag-output*/

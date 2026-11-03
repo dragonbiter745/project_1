@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { flushSync } from 'react-dom';
 import { Store, UserRound, UtensilsCrossed } from 'lucide-react';
 import { formatDailyCustomerNo, placeName } from '@foodcourt/shared';
+import { LegalLinks } from '../ui/LegalLinks';
 import { useAuth } from '../../lib/authStore';
 import { cleanLabel, cx } from '../../lib/format';
 import { jsonEqual, useLocal } from '../../lib/store';
@@ -193,6 +194,7 @@ export function MenuScreen({ session, web }: MenuScreenProps) {
           ))
         )}
         <div id={MENU_END_ID} aria-hidden className="h-px" />
+        <LegalLinks className="mt-10" />
       </main>
 
       <SearchOverlay

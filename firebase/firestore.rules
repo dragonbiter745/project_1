@@ -173,6 +173,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Proof of consent (DPDP s.6): written only by accountAction, readable by the court manager for audits.
+    match /consentLog/{id} {
+      allow read: if isMaster();
+      allow write: if false;
+    }
+
     // The cached catalogue the /api endpoints serve: written and read by functions only.
     match /publicCatalog/{id} {
       allow read, write: if false;

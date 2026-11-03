@@ -1,8 +1,8 @@
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import { getAuth } from 'firebase-admin/auth';
-import { FieldValue, type DocumentReference } from 'firebase-admin/firestore';
-import { AccountActionSchema, MAX_FAVOURITES, favouriteKey, type UserProfile } from '@foodcourt/shared';
+import { FieldValue, type DocumentReference, type Transaction } from 'firebase-admin/firestore';
+import { AccountActionSchema, MAX_FAVOURITES, POLICY_VERSION, favouriteKey, type ConsentLogEntry, type UserProfile } from '@foodcourt/shared';
 import { REGION } from '../config';
 import { app, db } from '../db';
 import { customerRef, mergeCustomer } from '../lib/customers';
@@ -19,6 +19,11 @@ async function mirrorToCustomer(uid: string, p: Partial<UserProfile>, now: numbe
 }
 
 const FORMER_DINER = 'Former diner';
+
+/** Append-only proof of consent. It outlives account deletion, holding only the uid. */
+function logConsent(tx: Transaction, entry: ConsentLogEntry): void {
+  tx.create(db.collection('consentLog').doc(), entry);
+}
 
 /** Guests are anonymous Firebase users; an account is any other provider (Google today). */
 export function signInProvider(req: Pick<CallableRequest, 'auth'>): string | null {
@@ -104,6 +109,13 @@ export const accountAction = onCall({ region: REGION, maxInstances: 50, concurre
   const token = req.auth!.token as { email?: string; name?: string; picture?: string };
 
   if (input.action === 'SYNC') {
+    // No account without consent to the current Terms and Privacy Policy, given by an 18+ diner (DPDP s.6, s.9).
+    // Checked before anything moves, so a refused sign-in changes nothing.
+    const accept = input.accept;
+    if (accept && accept.version !== POLICY_VERSION) throw new HttpsError('failed-precondition', 'Our Terms have changed. Reload the page and agree to the latest version.');
+    if (!accept && ((await ref.get()).data() as Partial<UserProfile> | undefined)?.consent?.terms?.version !== POLICY_VERSION) {
+      throw new HttpsError('failed-precondition', 'Agree to the Terms and Privacy Policy to continue.');
+    }
     let merged = 0;
     if (input.guestToken) {
       try {
@@ -117,6 +129,9 @@ export const accountAction = onCall({ region: REGION, maxInstances: 50, concurre
     const { profile, firstSignIn } = await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       const existing = (snap.data() ?? {}) as Partial<UserProfile>;
+      // Recorded once per policy version, so signing in again doesn't grow the log.
+      const recordTerms = accept !== undefined && existing.consent?.terms?.version !== accept.version;
+      if (recordTerms) logConsent(tx, { uid, purpose: 'terms', granted: true, version: accept.version, at: now, source: signInProvider(req) ?? 'unknown' });
       const next: Partial<UserProfile> = {
         member: true,
         email: token.email ?? existing.email ?? null,
@@ -128,6 +143,7 @@ export const accountAction = onCall({ region: REGION, maxInstances: 50, concurre
         ...(existing.prefs ? {} : { prefs: { orderUpdates: true } }),
         ...(existing.pointsBalance === undefined ? { pointsBalance: 0 } : {}),
         ...(existing.lifetimeSpendPaise === undefined ? { lifetimeSpendPaise: 0 } : {}),
+        ...(recordTerms ? { consent: { ...existing.consent, terms: { version: accept.version, adult: true as const, at: now } } } : {}),
       };
       tx.set(ref, next, { merge: true });
       return { profile: { ...existing, ...next }, firstSignIn: !existing.member };
@@ -149,7 +165,13 @@ export const accountAction = onCall({ region: REGION, maxInstances: 50, concurre
 
   if (input.action === 'SET_PREFS') {
     const prefs = Object.fromEntries(Object.entries({ vegOnly: input.vegOnly, offers: input.offers, orderUpdates: input.orderUpdates }).filter(([, v]) => v !== undefined));
-    await ref.set({ prefs, updatedAt: now }, { merge: true });
+    await db.runTransaction(async (tx) => {
+      const before = ((await tx.get(ref)).data() as Partial<UserProfile> | undefined)?.prefs?.offers === true;
+      // Offers are marketing: a separate consent, logged every time it is given or withdrawn.
+      const offersChanged = input.offers !== undefined && input.offers !== before;
+      if (offersChanged) logConsent(tx, { uid, purpose: 'offers', granted: input.offers!, version: POLICY_VERSION, at: now, source: 'settings' });
+      tx.set(ref, { prefs, updatedAt: now, ...(offersChanged ? { consent: { offers: { granted: input.offers!, version: POLICY_VERSION, at: now } } } : {}) }, { merge: true });
+    });
     return { prefs };
   }
 

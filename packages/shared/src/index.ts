@@ -14,3 +14,4 @@ export * from './coupons';
 export * from './messages';
 export * from './images';
 export * from './catalog';
+export * from './legal';

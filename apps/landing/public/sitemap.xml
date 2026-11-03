@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://reva-nest-landing.web.app/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://getqrave.in/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://getqrave.in/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://getqrave.in/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://getqrave.in/refunds</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://getqrave.in/cookies</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://getqrave.in/grievance</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>

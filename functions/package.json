@@ -10,7 +10,7 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "firebase emulators:exec --only firestore --project demo-foodcourt \"vitest run\"",
+    "test": "firebase emulators:exec --only firestore,storage --project demo-foodcourt \"vitest run\"",
     "lint": "tsc --noEmit"
   },
   "engines": {

@@ -1,12 +1,11 @@
-import { AlertTriangle, LayoutGrid, PauseCircle, QrCode, Radio } from 'lucide-react';
+import { AlertTriangle, PauseCircle, QrCode, Radio } from 'lucide-react';
 import { cx } from '@foodcourt/ui';
 import { spotlight, useScrollProgress } from '../../lib/hooks';
 import { RevealWords } from './ScrollFx';
 
 const FEATURES = [
   { icon: Radio, title: 'Every order, as it happens', body: 'One live list across all shops, filterable by kitchen and status, with a cancel when something goes wrong.' },
-  { icon: LayoutGrid, title: 'Tables at a glance', body: 'See which tables are taken, waiting to be cleaned or free, and send housekeeping where they are needed.' },
-  { icon: AlertTriangle, title: 'Alerts before complaints', body: 'A long line at one counter, an order nobody accepted, a dish that ran out: it surfaces before diners notice.' },
+    { icon: AlertTriangle, title: 'Spot stuck orders', body: 'Orders a kitchen has not accepted yet stand out on the live list, so you can step in early.' },
   { icon: PauseCircle, title: 'Pause a shop, or the court', body: 'Take one kitchen offline for a while, or switch the whole court to maintenance with a single toggle.' },
   { icon: QrCode, title: 'Print table QR codes', body: 'Generate and reprint the code for any table; each one carries its table number into every order.' },
 ];

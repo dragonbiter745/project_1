@@ -10,6 +10,7 @@ import { signOutToGuest } from '../auth/account';
 import { useProfile } from '../auth/profileStore';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
+import { LegalLinks } from '../ui/LegalLinks';
 import { Avatar } from './Avatar';
 import { HubContext, track, useHub, useInbox, useMyOrders, useMyProfile, useVendorNames, type Hub, type Route } from './data';
 import { Group, Panel, Row, isLive, isPaid, monthFormat, shortOrderNo } from './hubParts';
@@ -262,7 +263,7 @@ function Home() {
           Sign out
         </Button>
       )}
-      <p className="mt-6 text-center text-xs text-ink-3">Qrave</p>
+      <LegalLinks className="mt-8" />
     </>
   );
 }

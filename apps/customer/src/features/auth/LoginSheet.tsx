@@ -12,6 +12,7 @@ import {
   signUpWithEmail,
   type SignInResult,
 } from './account';
+import { ACCEPT, ConsentCheck, useConsent, type Consent } from './ConsentCheck';
 import { PerkList } from './perks';
 import { TextField } from './TextField';
 import { Button, Sheet } from '@foodcourt/ui';
@@ -73,6 +74,7 @@ export function LoginSheet({ session }: { session: TableSession | null }) {
   const hide = useUi((s) => s.hide);
   const [mode, setMode] = useState<Mode>(startMode);
   const [googlePending, setGooglePending] = useState(false);
+  const consent = useConsent();
   const close = () => hide('login');
 
   useEffect(() => {
@@ -80,10 +82,10 @@ export function LoginSheet({ session }: { session: TableSession | null }) {
   }, [open, startMode]);
 
   const google = async () => {
-    if (googlePending) return;
+    if (googlePending || !consent.ensure()) return;
     setGooglePending(true);
     try {
-      welcomeBack(await signInWithGoogle(session?.id), close);
+      welcomeBack(await signInWithGoogle(ACCEPT, session?.id), close);
     } catch (err) {
       if (err instanceof SignInCancelled) return;
       console.error('Google sign-in failed', err);
@@ -111,6 +113,7 @@ export function LoginSheet({ session }: { session: TableSession | null }) {
       footer={
         mode === 'choose' ? (
           <ChooseFooter
+            consent={consent}
             required={required}
             googlePending={googlePending}
             onGoogle={() => void google()}
@@ -132,6 +135,7 @@ export function LoginSheet({ session }: { session: TableSession | null }) {
         <EmailForm
           key={mode}
           mode={mode}
+          consent={consent}
           session={session}
           googlePending={googlePending}
           onGoogle={() => void google()}
@@ -150,6 +154,7 @@ export function LoginSheet({ session }: { session: TableSession | null }) {
 }
 
 interface ChooseFooterProps {
+  consent: Consent;
   required: boolean;
   googlePending: boolean;
   onGoogle: () => void;
@@ -158,9 +163,10 @@ interface ChooseFooterProps {
   onGuest: () => void;
 }
 
-function ChooseFooter({ required, googlePending, onGoogle, onEmail, onLogin, onGuest }: ChooseFooterProps) {
+function ChooseFooter({ consent, required, googlePending, onGoogle, onEmail, onLogin, onGuest }: ChooseFooterProps) {
   return (
     <div className="space-y-2 pb-1">
+      <ConsentCheck consent={consent} className="pb-2" />
       <Button size="lg" variant="outline" block loading={googlePending} onClick={onGoogle} icon={<GoogleMark />}>
         Continue with Google
       </Button>
@@ -194,6 +200,7 @@ function TextLink({ onClick, children }: { onClick: () => void; children: string
 
 interface EmailFormProps {
   mode: 'signup' | 'login';
+  consent: Consent;
   session: TableSession | null;
   googlePending: boolean;
   onGoogle: () => void;
@@ -201,7 +208,7 @@ interface EmailFormProps {
   onDone: (result: SignInResult) => void;
 }
 
-function EmailForm({ mode, session, googlePending, onGoogle, onSwitch, onDone }: EmailFormProps) {
+function EmailForm({ mode, consent, session, googlePending, onGoogle, onSwitch, onDone }: EmailFormProps) {
   const signup = mode === 'signup';
   const formId = useId();
   const [name, setName] = useState('');
@@ -226,11 +233,12 @@ function EmailForm({ mode, session, googlePending, onGoogle, onSwitch, onDone }:
     if (signup ? password.length < 8 : password.length === 0) next.password = signup ? 'Use at least 8 characters.' : 'Enter your password.';
     setErrors(next);
     if (Object.keys(next).length > 0) return;
+    if (!consent.ensure()) return;
     setPending(true);
     try {
       const result = signup
-        ? await signUpWithEmail({ name, email, phone, password }, session?.id)
-        : await logInWithEmail(email, password, session?.id);
+        ? await signUpWithEmail({ name, email, phone, password }, ACCEPT, session?.id)
+        : await logInWithEmail(email, password, ACCEPT, session?.id);
       onDone(result);
     } catch (err) {
       console.error(signup ? 'Email sign-up failed' : 'Email log-in failed', err);
@@ -304,6 +312,7 @@ function EmailForm({ mode, session, googlePending, onGoogle, onSwitch, onDone }:
             <TextLink onClick={() => onSwitch('reset')}>Forgot password?</TextLink>
           </div>
         )}
+        <ConsentCheck consent={consent} />
         <Button type="submit" size="lg" block loading={pending}>
           {signup ? 'Create account' : 'Log in'}
         </Button>

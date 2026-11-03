@@ -59,20 +59,20 @@ export function OrderOnline() {
             </a>
             <p className="mt-5 max-w-sm text-xs text-white/60">Coupons and offers depend on what the court and its shops run. Loyalty points are not live yet.</p>
           </div>
-          <dl className="grid gap-x-8 sm:grid-cols-2">
+          <ul className="grid gap-x-8 sm:grid-cols-2">
             {PERKS.map(({ icon: Icon, title, text, soon }) => (
-              <div key={title} className="flex gap-4 border-b border-white/15 py-5">
-                <Icon className="mt-0.5 h-6 w-6 shrink-0 text-[rgb(var(--accent-line))]" strokeWidth={1.5} />
+              <li key={title} className="flex gap-4 border-b border-white/15 py-5">
+                <Icon className="mt-0.5 h-6 w-6 shrink-0 text-[rgb(var(--accent-line))]" strokeWidth={1.5} aria-hidden />
                 <div>
-                  <dt className="text-base font-semibold">
+                  <p className="text-base font-semibold">
                     {title}
                     {soon && <span className="ml-1.5 inline-flex h-5 items-center rounded-full bg-accent px-2 align-middle text-[11px] font-semibold text-on-accent">Coming soon</span>}
-                  </dt>
-                  <dd className="mt-1 text-sm text-white/70">{text}</dd>
+                  </p>
+                  <p className="mt-1 text-sm text-white/70">{text}</p>
                 </div>
-              </div>
+              </li>
             ))}
-          </dl>
+          </ul>
         </div>
 
         <p className="mt-8 flex items-start gap-3 text-base text-ink-2">

@@ -626,6 +626,7 @@ export function PrivacyScreen() {
         studentId: profile?.studentId,
         prefs: profile?.prefs,
         favourites: profile?.favourites,
+        consent: profile?.consent,
         memberSince: profile?.createdAt ? new Date(profile.createdAt).toISOString() : null,
       },
       orders: orders.map((o) => ({

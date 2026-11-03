@@ -257,8 +257,29 @@ export interface UserProfile {
   favourites?: string[];
   lastLoginAt?: number;
   updatedAt?: number;
+  /** Latest consent given; every change is also appended to consentLog (server-only). */
+  consent?: UserConsent;
   /** Set on a guest uid whose orders were moved into a signed-in account. */
   mergedInto?: string;
+}
+
+/** Consent the diner gave, and when (DPDP Act s.6: the fiduciary must be able to prove it). */
+export interface UserConsent {
+  /** Agreed to the Terms and Privacy Policy, confirming they are 18 or older. */
+  terms?: { version: string; adult: true; at: number };
+  /** Offers and announcements: separate, optional, off unless switched on. */
+  offers?: { granted: boolean; version: string; at: number };
+}
+
+/** One append-only row in consentLog. Kept after account deletion as proof, with the uid only. */
+export interface ConsentLogEntry {
+  uid: string;
+  purpose: 'terms' | 'offers';
+  granted: boolean;
+  version: string;
+  at: number;
+  /** How it was given, e.g. the sign-in provider or "settings". */
+  source: string;
 }
 
 export interface UserPrefs {

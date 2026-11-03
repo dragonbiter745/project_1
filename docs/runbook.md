@@ -125,3 +125,23 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
   when one takes money out, **Edit shares** for the profit split. **Print or save PDF** gives the
   partner share report for the chosen period.
 - Mistakes are voided with a reason, never deleted. Export any table as CSV if you need it.
+
+## 7. Personal data breach and cyber incident response (DPDP Act 2023, CERT-In Directions 2022)
+
+A breach is any unauthorised access, loss, change or disclosure of personal data (names, emails, phone numbers,
+orders), including a leaked key, an open database rule, or a lost founder laptop with console access.
+
+1. **Contain (first hour).** Revoke or rotate the leaked credential (Secret Manager, Firebase service accounts,
+   Cashfree keys), redeploy tightened rules, switch on maintenance mode if orders are at risk. Do not delete logs.
+2. **CERT-In within 6 hours** of noticing a reportable cyber incident (incident@cert-in.org.in, form on
+   cert-in.org.in). Send what you know; update later.
+3. **Data Protection Board without delay**, and a detailed report **within 72 hours**: what happened, when, data
+   and people affected, likely impact, what we did, how we will stop it happening again, and contact details.
+4. **Tell every affected diner without delay**, in plain words: what happened, what data, likely consequences,
+   what we did, what they should do (e.g. watch for phishing), and the Grievance Officer's contact. Use email
+   where we have it, and the in-app inbox.
+5. **Record** a timeline in `auditLogs` and a written post-mortem in `docs/` within a week.
+
+Keep: Cloud Logging and audit logs for at least **180 days** (CERT-In) and ideally 1 year; check the log bucket
+retention in Google Cloud Console → Logging → Log storage. Staff consoles must use strong passwords and Google
+2-step verification for every founder account with Firebase or Cashfree access.

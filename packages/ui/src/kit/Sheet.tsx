@@ -15,6 +15,11 @@ interface SheetProps {
 }
 
 const EXIT_MS = 280;
+
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+/** Open sheets, newest last: only the top one traps Tab, so stacked sheets never fight over focus. */
+const openSheets: HTMLElement[] = [];
 const DISMISS_VELOCITY = 0.11; // px per ms; a quick flick closes regardless of distance
 
 export function Sheet({ open, onClose, title, description, children, footer }: SheetProps) {
@@ -50,14 +55,38 @@ export function Sheet({ open, onClose, title, description, children, footer }: S
     if (!open || !mounted) return;
     lockScroll();
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus({ preventScroll: true });
+    const self = panelRef.current;
+    if (self) openSheets.push(self);
+    self?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
+      const panel = panelRef.current;
+      // Only the top sheet answers the keyboard, so Escape closes one sheet at a time.
+      if (!panel || openSheets[openSheets.length - 1] !== panel) return;
       if (e.key === 'Escape') onCloseRef.current();
+      // Keyboard focus stays inside the open sheet (WCAG 2.4.3), wrapping at either end.
+      if (e.key !== 'Tab') return;
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.offsetParent !== null);
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === panel || !panel.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !panel.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => {
       unlockScroll();
       window.removeEventListener('keydown', onKey);
+      const at = self ? openSheets.lastIndexOf(self) : -1;
+      if (at !== -1) openSheets.splice(at, 1);
       previouslyFocused?.focus?.({ preventScroll: true });
     };
   }, [open, mounted]);

@@ -3,6 +3,7 @@ import { useAuth } from '../../lib/authStore';
 import { ensureAnonymousUser, getCallable } from '../../lib/firebase';
 import { liveStore } from '../../lib/store';
 import { renameTableSession } from '../session/useTableSession';
+import type { Acceptance } from './ConsentCheck';
 import { useProfile } from './profileStore';
 
 export interface AccountProfile {
@@ -59,13 +60,14 @@ export interface SignInResult {
 type AuthModule = typeof import('@foodcourt/firebase-client/auth');
 
 /** After any sign-in: refresh the token, sync the account and move this phone's guest orders across. */
-async function finishSignIn(auth: ReturnType<AuthModule['getAuthClient']>, sessionId?: string, guestToken?: string): Promise<SignInResult> {
+async function finishSignIn(auth: ReturnType<AuthModule['getAuthClient']>, accept: Acceptance, sessionId?: string, guestToken?: string): Promise<SignInResult> {
   const user = auth.currentUser!;
   // The sign-in provider claim the server checks is only in a fresh token.
   await user.getIdToken(true);
   useAuth.setState({ user: { uid: user.uid, member: true, email: user.email, photoURL: user.photoURL, name: user.displayName } });
   const result = await accountCall<SignInResult>({
     action: 'SYNC',
+    accept,
     ...(sessionId ? { sessionId } : {}),
     ...(guestToken ? { guestToken } : {}),
   });
@@ -79,7 +81,7 @@ async function finishSignIn(auth: ReturnType<AuthModule['getAuthClient']>, sessi
  * and today's orders stay put. If that Google account already exists (a returning diner on a new
  * phone), it signs into it and the server moves this phone's guest orders across.
  */
-export async function signInWithGoogle(sessionId?: string): Promise<SignInResult> {
+export async function signInWithGoogle(accept: Acceptance, sessionId?: string): Promise<SignInResult> {
   await ensureAnonymousUser();
   const { getAuthClient, GoogleAuthProvider, linkWithPopup, signInWithCredential } = await import('@foodcourt/firebase-client/auth');
   const auth = getAuthClient();
@@ -102,7 +104,7 @@ export async function signInWithGoogle(sessionId?: string): Promise<SignInResult
       await signInWithCredential(auth, credential);
     }
   }
-  return finishSignIn(auth, sessionId, guestToken);
+  return finishSignIn(auth, accept, sessionId, guestToken);
 }
 
 export interface SignUpDetails {
@@ -116,7 +118,7 @@ export interface SignUpDetails {
  * A new account from the diner's own details. The guest is upgraded in place (same uid), so the
  * cart and anything ordered at this table stay with the new account.
  */
-export async function signUpWithEmail(details: SignUpDetails, sessionId?: string): Promise<SignInResult> {
+export async function signUpWithEmail(details: SignUpDetails, accept: Acceptance, sessionId?: string): Promise<SignInResult> {
   await ensureAnonymousUser();
   const { getAuthClient, EmailAuthProvider, linkWithCredential, updateProfile } = await import('@foodcourt/firebase-client/auth');
   const auth = getAuthClient();
@@ -126,7 +128,7 @@ export async function signUpWithEmail(details: SignUpDetails, sessionId?: string
   // A signed-in diner never reaches the sign-up form, so this is always the guest being upgraded.
   await linkWithCredential(current, EmailAuthProvider.credential(details.email.trim(), details.password));
   await updateProfile(auth.currentUser!, { displayName: name });
-  await finishSignIn(auth, sessionId);
+  await finishSignIn(auth, accept, sessionId);
   const { profile } = await accountCall<{ profile: AccountProfile }>({ action: 'UPDATE_PROFILE', name, phone: details.phone, ...(sessionId ? { sessionId } : {}) });
   rememberDetails(profile);
   renameTableSession(profile.name);
@@ -134,14 +136,14 @@ export async function signUpWithEmail(details: SignUpDetails, sessionId?: string
 }
 
 /** Logs into an existing email account; this phone's guest orders move across to it. */
-export async function logInWithEmail(email: string, password: string, sessionId?: string): Promise<SignInResult> {
+export async function logInWithEmail(email: string, password: string, accept: Acceptance, sessionId?: string): Promise<SignInResult> {
   await ensureAnonymousUser();
   const { getAuthClient, signInWithEmailAndPassword } = await import('@foodcourt/firebase-client/auth');
   const auth = getAuthClient();
   const current = auth.currentUser;
   const guestToken = current?.isAnonymous ? await current.getIdToken() : undefined;
   await signInWithEmailAndPassword(auth, email.trim(), password);
-  return finishSignIn(auth, sessionId, guestToken);
+  return finishSignIn(auth, accept, sessionId, guestToken);
 }
 
 /** Firebase emails a reset link; the reply never says whether the address has an account. */

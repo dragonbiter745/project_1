@@ -1,3 +1,4 @@
+import { LEGAL_LABELS, LEGAL_PAGES } from '@foodcourt/shared';
 import { orderOnline } from '../../lib/links';
 
 export function Footer() {
@@ -5,7 +6,10 @@ export function Footer() {
     <footer className="bg-bg px-5 pb-10 pt-8 md:px-10">
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 border-t border-line pt-8 text-sm text-ink-3">
         <p className="flex items-center gap-4">
-          <img src="/qrave-lockup.png" alt="Qrave. Scan it. Crave it." width="560" height="345" className="h-16 w-auto select-none" draggable={false} />
+          <picture>
+            <source srcSet="/qrave-lockup.webp" type="image/webp" />
+            <img src="/qrave-lockup.png" alt="Qrave. Scan it. Crave it." width="560" height="307" loading="lazy" decoding="async" className="h-16 w-auto select-none" draggable={false} />
+          </picture>
           <span className="hidden sm:inline">Every kitchen, one QR, one payment</span>
         </p>
         <nav aria-label="Footer" className="flex flex-wrap gap-5">
@@ -20,7 +24,14 @@ export function Footer() {
           </a>
         </nav>
       </div>
-      <p className="mx-auto mt-6 max-w-[1240px] text-xs text-ink-3">The 3D court is a simulated preview. Its shops, dishes, prices, diners and orders are illustrative and not real activity.</p>
+      <nav aria-label="Legal" className="mx-auto mt-6 flex max-w-[1240px] flex-wrap gap-x-5 gap-y-2 text-sm text-ink-2">
+        {LEGAL_PAGES.map((page) => (
+          <a key={page} href={`/${page}`} className="underline-offset-4 hover:text-ink hover:underline">
+            {LEGAL_LABELS[page]}
+          </a>
+        ))}
+      </nav>
+      <p className="mx-auto mt-4 max-w-[1240px] text-xs text-ink-3">The 3D court is a simulated preview. Its shops, dishes, prices, diners and orders are illustrative and not real activity.</p>
     </footer>
   );
 }

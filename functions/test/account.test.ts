@@ -3,10 +3,13 @@ import { db } from '../src/db';
 import { startSession } from '../src/callable/startSession';
 import { createCheckout } from '../src/callable/createCheckout';
 import { accountAction, mergeGuest } from '../src/callable/account';
+import { POLICY_VERSION } from '@foodcourt/shared';
 import { QR, call, resetDb, seed, sessionFor, uniqueUid } from './helpers';
 
 const google = (email = 'diner@example.test', name = 'Ananya Rao') => ({ firebase: { sign_in_provider: 'google.com' }, email, name, picture: 'https://example.test/a.png' });
 const guest = { firebase: { sign_in_provider: 'anonymous' } };
+const accept = { version: POLICY_VERSION, adult: true as const };
+const consentLog = async (uid: string) => (await db.collection('consentLog').where('uid', '==', uid).get()).docs.map((d) => d.data());
 const cart = [{ itemId: 'rm-1', vendorId: 'v-rm', name: 'Paneer Roll', pricePaise: 1, veg: true, qty: 1 }];
 
 describe('accountAction', () => {
@@ -22,14 +25,14 @@ describe('accountAction', () => {
 
   it('creates the profile from Google on first sign-in and keeps an edited name after', async () => {
     const uid = uniqueUid();
-    const first = await call(accountAction, { action: 'SYNC' }, uid, google());
+    const first = await call(accountAction, { action: 'SYNC', accept }, uid, google());
     expect(first.firstSignIn).toBe(true);
     expect(first.profile).toMatchObject({ name: 'Ananya Rao', email: 'diner@example.test' });
     const user = (await db.doc(`users/${uid}`).get()).data()!;
     expect(user).toMatchObject({ member: true, pointsBalance: 0, prefs: { orderUpdates: true } });
 
     await call(accountAction, { action: 'UPDATE_PROFILE', name: 'Annu', phone: '9876543210', studentId: 'r20ea123' }, uid, google());
-    const again = await call(accountAction, { action: 'SYNC' }, uid, google('diner@example.test', 'Ananya R'));
+    const again = await call(accountAction, { action: 'SYNC', accept }, uid, google('diner@example.test', 'Ananya R'));
     expect(again.firstSignIn).toBe(false);
     expect(again.profile).toMatchObject({ name: 'Annu', phone: '9876543210', studentId: 'R20EA123' });
   });
@@ -42,6 +45,48 @@ describe('accountAction', () => {
     await db.doc(`sessions/${sessionId}`).delete();
     const fresh = await call(startSession, { qrToken: QR }, uid, google());
     expect(fresh.displayName).toBe('Kiran');
+  });
+
+  it('refuses an account without consent to the current Terms, and records consent once per version', async () => {
+    const uid = uniqueUid();
+    await expect(call(accountAction, { action: 'SYNC' }, uid, google())).rejects.toMatchObject({ code: 'failed-precondition' });
+    expect((await db.doc(`users/${uid}`).get()).exists).toBe(false);
+    await expect(call(accountAction, { action: 'SYNC', accept: { version: '2000-01-01', adult: true } }, uid, google())).rejects.toMatchObject({ code: 'failed-precondition' });
+    await expect(call(accountAction, { action: 'SYNC', accept: { version: POLICY_VERSION, adult: false } }, uid, google())).rejects.toMatchObject({ code: 'invalid-argument' });
+
+    await call(accountAction, { action: 'SYNC', accept }, uid, google());
+    await call(accountAction, { action: 'SYNC', accept }, uid, google());
+    // Already agreed to this version: a later sign-in without the box still works.
+    await call(accountAction, { action: 'SYNC' }, uid, google());
+    const user = (await db.doc(`users/${uid}`).get()).data()!;
+    expect(user.consent.terms).toMatchObject({ version: POLICY_VERSION, adult: true });
+    expect(user.consent.terms.at).toBeTypeOf('number');
+    const log = await consentLog(uid);
+    expect(log).toHaveLength(1);
+    expect(log[0]).toMatchObject({ uid, purpose: 'terms', granted: true, version: POLICY_VERSION, source: 'google.com' });
+  });
+
+  it('logs every change to offers consent, and only real changes', async () => {
+    const uid = uniqueUid();
+    await call(accountAction, { action: 'SYNC', accept }, uid, google());
+    expect((await db.doc(`users/${uid}`).get()).data()!.prefs.offers).toBeUndefined();
+    await call(accountAction, { action: 'SET_PREFS', offers: true }, uid, google());
+    await call(accountAction, { action: 'SET_PREFS', offers: true }, uid, google());
+    await call(accountAction, { action: 'SET_PREFS', vegOnly: true }, uid, google());
+    await call(accountAction, { action: 'SET_PREFS', offers: false }, uid, google());
+    const offers = (await consentLog(uid)).filter((e) => e.purpose === 'offers');
+    expect(offers.map((e) => e.granted).sort()).toEqual([false, true]);
+    expect(offers.every((e) => e.source === 'settings' && e.version === POLICY_VERSION)).toBe(true);
+    expect((await db.doc(`users/${uid}`).get()).data()!.consent.offers).toMatchObject({ granted: false });
+  });
+
+  it('keeps the consent log after the account is deleted, as proof', async () => {
+    const uid = uniqueUid();
+    await call(accountAction, { action: 'SYNC', accept }, uid, google());
+    await call(accountAction, { action: 'DELETE_ACCOUNT', confirm: 'DELETE' }, uid, google());
+    const log = await consentLog(uid);
+    expect(log).toHaveLength(1);
+    expect(Object.keys(log[0]!).sort()).toEqual(['at', 'granted', 'purpose', 'source', 'uid', 'version']);
   });
 
   it('rejects bad profile input', async () => {
@@ -67,7 +112,7 @@ describe('accountAction', () => {
 
   it('deletes the profile and strips contact details from orders', async () => {
     const uid = uniqueUid();
-    await call(accountAction, { action: 'SYNC' }, uid, google());
+    await call(accountAction, { action: 'SYNC', accept }, uid, google());
     await db.doc('orders/o-del').set({ uid, customerPhone: '9876543210', displayName: 'Ananya Rao', totals: { totalPaise: 100 } });
     await db.doc('subOrders/o-del__v-rm').set({ uid, orderId: 'o-del', vendorId: 'v-rm', customerDisplay: 'Ananya Rao' });
     await call(accountAction, { action: 'DELETE_ACCOUNT', confirm: 'DELETE' }, uid, google());

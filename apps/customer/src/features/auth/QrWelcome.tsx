@@ -7,6 +7,7 @@ import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 import { SignInCancelled, signInErrorMessage, signInWithGoogle } from './account';
 import { GoogleMark, welcomeBack } from './LoginSheet';
+import { ACCEPT, ConsentCheck, useConsent } from './ConsentCheck';
 import { PerkList } from './perks';
 import { Button, Sheet } from '@foodcourt/ui';
 
@@ -37,6 +38,7 @@ export function QrWelcome({ session }: { session: TableSession }) {
   const showLogin = useUi((s) => s.showLogin);
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const consent = useConsent();
 
   // Waits for auth to settle so a returning member is never asked.
   useEffect(() => {
@@ -50,10 +52,10 @@ export function QrWelcome({ session }: { session: TableSession }) {
   };
 
   const google = async () => {
-    if (pending) return;
+    if (pending || !consent.ensure()) return;
     setPending(true);
     try {
-      welcomeBack(await signInWithGoogle(session.id), close);
+      welcomeBack(await signInWithGoogle(ACCEPT, session.id), close);
     } catch (err) {
       if (err instanceof SignInCancelled) return;
       console.error('Google sign-in failed', err);
@@ -77,6 +79,7 @@ export function QrWelcome({ session }: { session: TableSession }) {
       description={`Table ${session.tableLabel}. Order from every shop in one cart.`}
       footer={
         <div className="space-y-2 pb-1">
+          <ConsentCheck consent={consent} className="pb-2" />
           <Button size="lg" variant="outline" block loading={pending} onClick={() => void google()} icon={<GoogleMark />}>
             Continue with Google
           </Button>

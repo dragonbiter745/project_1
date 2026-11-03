@@ -299,3 +299,25 @@ design rule is: **cost follows orders, never visitors or open tabs.** Full numbe
 - **Honest limit.** At about 60 reads and 16 writes per order the free quota covers roughly 620 to 750 orders a day;
   beyond that the bill grows by about ₹85 a month per extra 1,000 orders a day. Moving the live ticket stream to
   Realtime Database (billed by data, not operation) is the next step if volume makes that matter.
+
+## ADR 025: Legal pages, consent record and the 18+ account rule (DPDP Act 2023)
+
+Qrave handles personal data of diners in India, so the DPDP Act 2023 and Rules, the IT Rules 2011 and the Consumer
+Protection (E-Commerce) Rules 2020 apply. Decisions:
+
+- **Legal pages are static HTML** in `apps/landing/public` (`/privacy`, `/terms`, `/refunds`, `/cookies`,
+  `/grievance`, with `cleanUrls`). They load without JavaScript, print cleanly and never touch the customer bundle.
+  Apps link to them through `packages/shared/src/legal.ts`. Business details the founders must supply are marked
+  `<mark class="tbd">`; `grep -l 'class="tbd"' apps/landing/public/*.html` must be empty before launch.
+- **Consent to make an account** is an unticked "I'm 18 or older and agree to the Terms and Privacy Policy" box on
+  every sign-in path. `accountAction` SYNC refuses without consent to the current `POLICY_VERSION`, records it on
+  `users/{uid}.consent.terms`, and appends one row to `consentLog` per version. Bumping `POLICY_VERSION` asks every
+  diner to agree again at their next sign-in, as the Privacy Policy promises.
+- **Offers are a separate consent**, off by default. Every real change is appended to `consentLog` with source
+  `settings`. `consentLog` is server-only (master read) and survives account deletion holding the uid only, as proof.
+- **Accounts are 18+.** Under-18 diners can still order as guests at a table, so we never need verifiable parental
+  consent (DPDP s.9). No tracking, profiling or targeted offers for anyone.
+- **No cookie banner** because the apps set only strictly necessary storage (sign-in, cart, session, menu cache) and
+  no analytics, ads or pixels. Adding any optional tracker requires a consent banner first (Accept, Reject, Choose
+  equally easy) and a Cookie settings link; update `/cookies` and `/privacy` in the same change.
+- **Sheets trap focus** (Tab and Escape act only on the top sheet) so every form is usable by keyboard.

@@ -36,6 +36,15 @@ const staff = (vendorId = 'v-rm') => env.authenticatedContext(`staff-${vendorId}
 const master = () => env.authenticatedContext('boss', { role: 'master' }).firestore();
 
 describe('firestore.rules', () => {
+  it('keeps the consent log server-written: diners and kitchens can neither read nor forge it', async () => {
+    await env.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), 'consentLog/c1'), { uid: 'alice', purpose: 'terms', granted: true, version: 'v', at: 1, source: 'google.com' }));
+    await assertFails(getDoc(doc(diner(), 'consentLog/c1')));
+    await assertFails(setDoc(doc(diner(), 'consentLog/c2'), { uid: 'alice', purpose: 'offers', granted: true, version: 'v', at: 2, source: 'settings' }));
+    await assertFails(getDoc(doc(staff(), 'consentLog/c1')));
+    await assertSucceeds(getDoc(doc(master(), 'consentLog/c1')));
+    await assertFails(setDoc(doc(master(), 'consentLog/c3'), { uid: 'alice' }));
+  });
+
   it('keeps the secret table QR tokens away from everyone but the master', async () => {
     await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'tables/tbl-14')));
     await assertFails(getDoc(doc(diner(), 'tables/tbl-14')));

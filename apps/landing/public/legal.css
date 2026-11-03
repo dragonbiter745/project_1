@@ -1,0 +1,55 @@
+/* Qrave legal pages: plain static HTML so they load fast, work without JavaScript and print cleanly. */
+:root {
+  --bg: #faf9f6;
+  --surface: #ffffff;
+  --ink: #343a36;
+  --ink-2: #545955;
+  --ink-3: #6f746f;
+  --line: #e4e1da;
+  --accent: #b95c3c;
+  --tbd: #fde7b0;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.65 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+.wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+header.top img { height: 32px; width: auto; display: block; }
+header.top a { color: var(--ink-2); font-size: 14px; }
+h1 { font-size: 32px; line-height: 1.2; letter-spacing: -0.02em; margin: 32px 0 4px; }
+.updated { color: var(--ink-3); font-size: 14px; margin: 0 0 24px; }
+.lede { font-size: 18px; color: var(--ink-2); }
+h2 { font-size: 21px; letter-spacing: -0.01em; margin: 40px 0 8px; scroll-margin-top: 16px; }
+h3 { font-size: 17px; margin: 24px 0 4px; }
+p, li { color: var(--ink-2); }
+ul { padding-left: 22px; }
+li { margin: 4px 0; }
+a { color: var(--ink); text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+strong { color: var(--ink); }
+.toc { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 20px; }
+.toc ol { margin: 8px 0; padding-left: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; margin: 16px 0; }
+.card p { margin: 4px 0; }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 15px; background: var(--surface); }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border: 1px solid var(--line); color: var(--ink-2); }
+th { color: var(--ink); background: #f3f1ec; font-weight: 600; }
+mark.tbd { background: var(--tbd); color: #5b4300; padding: 0 4px; border-radius: 4px; }
+footer.legal { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 14px; }
+footer.legal nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+footer.legal a { color: var(--ink-2); }
+footer.legal p { color: var(--ink-3); }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #171917; --surface: #1f221f; --ink: #eceae4; --ink-2: #c9c7c0; --ink-3: #9a9d97; --line: #343834; --tbd: #5b4300; }
+  th { background: #262926; }
+  mark.tbd { color: #fde7b0; }
+}
+@media print {
+  header.top a, footer.legal nav { display: none; }
+  body { background: #fff; }
+}

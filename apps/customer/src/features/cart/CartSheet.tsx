@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { notify } from '../../lib/toast';
 import { ChevronRight, Gift, NotebookPen, ShoppingBag, TicketPercent, X } from 'lucide-react';
+import { LegalLink } from '../ui/LegalLinks';
 import { calculatePointsEarned, computeOrderTotals, formatPaise, withDiscount, type CartItem } from '@foodcourt/shared';
 import { couponLines, previewSaving, useCoupon } from '../coupons/couponStore';
 import { Button, QtyStepper, Sheet, VegDot } from '@foodcourt/ui';
@@ -119,6 +120,9 @@ export function CartSheet({ session }: { session: TableSession | null }) {
             {isWebMode && (
               <p className="mt-2 text-center text-xs text-ink-3">Collect at the shop counter when your token is ready.</p>
             )}
+            <p className="mt-2 text-center text-xs text-ink-3">
+              By paying, you agree to the <LegalLink page="terms" /> and <LegalLink page="refunds">refund policy</LegalLink>.
+            </p>
           </div>
         ) : undefined
       }

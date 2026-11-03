@@ -8,3 +8,8 @@ allowBuilds:
   '@firebase/util': true
   esbuild: true
   protobufjs: true
+
+# Security pins for known advisories in transitive dependencies (2026-11-01 security review).
+overrides:
+  '@grpc/grpc-js@<1.13.6': '^1.14.6'
+  'body-parser@>=2.0.0 <2.4.0': '^2.4.0'

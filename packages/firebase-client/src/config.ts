@@ -17,14 +17,15 @@ export const getEnvVar = (key: string, fallback: string = ''): string => {
   return fallback;
 };
 
-// Default config for REVA Nest FoodCourt
+// Firebase web config comes only from env (apps/*/.env locally, GitHub repo variables in CI).
+// These values are public by design once built, but they are not kept in the source.
 export const defaultFirebaseConfig = {
-  apiKey: getEnvVar('VITE_FIREBASE_API_KEY', 'AIzaSyATt7HT-b9MiY3-JNQZDqfOuSTe6t9AxMg'),
-  authDomain: getEnvVar('VITE_FIREBASE_AUTH_DOMAIN', 'reva-nest-foodcourt.firebaseapp.com'),
-  projectId: getEnvVar('VITE_FIREBASE_PROJECT_ID', 'reva-nest-foodcourt'),
-  storageBucket: getEnvVar('VITE_FIREBASE_STORAGE_BUCKET', 'reva-nest-foodcourt.firebasestorage.app'),
-  messagingSenderId: getEnvVar('VITE_FIREBASE_MESSAGING_SENDER_ID', '298874069682'),
-  appId: getEnvVar('VITE_FIREBASE_APP_ID', '1:298874069682:web:dae818bd8d6f6c1c9fdfab'),
-  measurementId: getEnvVar('VITE_FIREBASE_MEASUREMENT_ID', 'G-2CLZWS3LDE'),
+  apiKey: getEnvVar('VITE_FIREBASE_API_KEY'),
+  authDomain: getEnvVar('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: getEnvVar('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: getEnvVar('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: getEnvVar('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: getEnvVar('VITE_FIREBASE_APP_ID'),
+  measurementId: getEnvVar('VITE_FIREBASE_MEASUREMENT_ID'),
 };
 

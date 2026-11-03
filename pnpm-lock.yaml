@@ -162,6 +162,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@grpc/grpc-js@<1.13.6': ^1.14.6
+  body-parser@>=2.0.0 <2.4.0: ^2.4.0
+
 importers:
 
   .:
@@ -611,9 +615,6 @@ importers:
 
   scripts:
     dependencies:
-      '@foodcourt/firebase-client':
-        specifier: workspace:*
-        version: link:../packages/firebase-client
       '@foodcourt/shared':
         specifier: workspace:*
         version: link:../packages/shared
@@ -1162,7 +1163,7 @@ packages:
     resolution: {integrity: sha512-j0m+vLQuG5XAYoHtGCVu0spvlGreR3EzpECUVzkFmI1mTVnAO38l/NEPDCFgZ177JxzYJCLSmTQibIiYPilGrA==}
 
   '@foodcourt/shared@file:functions/foodcourt-shared-0.1.0.tgz':
-    resolution: {integrity: sha512-WSWNHun/ULfLIQ58+nVEeUNv4RqbGaC69y8uH/q4oefcqy6hXElkkW68xSYl1MkG9zXYsWX/s8cgGOITQLr0Bw==, tarball: file:functions/foodcourt-shared-0.1.0.tgz}
+    resolution: {integrity: sha512-HgL4MDHSQwUAsDn/3P4IIdjNIoZW+cLob+tGVhJGOl1RrGg2qHXp7ZHe/56V/znuT2+AHl7Wjm3cFAPJG2ewEA==, tarball: file:functions/foodcourt-shared-0.1.0.tgz}
     version: 0.1.0
 
   '@google-cloud/firestore@7.11.6':
@@ -1188,10 +1189,6 @@ packages:
   '@grpc/grpc-js@1.14.6':
     resolution: {integrity: sha512-SgC/B3/VZ8lTyOZ4Cwk6f1skWhmkNAaVfiX90qd5u1rRXGKk1//8FTUEN9GvOUq7rfWIqAYkA3CoyumYVpOS6g==}
     engines: {node: '>=12.10.0'}
-
-  '@grpc/grpc-js@1.9.16':
-    resolution: {integrity: sha512-wE4Ut/olIzfKqp631XrG+wbF0v1vWFN4YL9FyXC2LJiG33DsV7PLzURjrCvY/6je2ntdRkeLpPDluzSRGaVltQ==}
-    engines: {node: ^8.13.0 || >=10.10.0}
 
   '@grpc/proto-loader@0.7.15':
     resolution: {integrity: sha512-tMXdRCfYVixjuFK+Hk0Q1s38gV9zDiDJfWL3h1rv4Qc39oILCu1TRTDt7+fGUI8K4G1Fj125Hx/ru3azECWTyQ==}
@@ -1763,8 +1760,8 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
-  body-parser@2.3.0:
-    resolution: {integrity: sha512-2cGmJupaNgg+QUwVLAucDuWuoMZ6EX9iHDRswZ5lsNYEmwPaRknMPCLZz07yTzVq/83p4o/wzbDZbBrTvGGTIw==}
+  body-parser@2.4.0:
+    resolution: {integrity: sha512-Ifk1KcLrxaGt1occQagQNFNNOqRt1LFuehEnHHzB8Z6cRgIxRU1TBaiIsUiCdA+gy5PL7Y1IX31DNKkRmxtXjQ==}
     engines: {node: '>=18'}
 
   braces@3.0.3:
@@ -3657,7 +3654,7 @@ snapshots:
       '@firebase/logger': 0.4.4
       '@firebase/util': 1.12.1
       '@firebase/webchannel-wrapper': 1.0.3
-      '@grpc/grpc-js': 1.9.16
+      '@grpc/grpc-js': 1.14.6
       '@grpc/proto-loader': 0.7.15
       tslib: 2.8.1
 
@@ -3882,12 +3879,6 @@ snapshots:
     dependencies:
       '@grpc/proto-loader': 0.8.1
       '@js-sdsl/ordered-map': 4.4.2
-    optional: true
-
-  '@grpc/grpc-js@1.9.16':
-    dependencies:
-      '@grpc/proto-loader': 0.7.15
-      '@types/node': 20.19.43
 
   '@grpc/proto-loader@0.7.15':
     dependencies:
@@ -3902,7 +3893,6 @@ snapshots:
       long: 5.3.2
       protobufjs: 7.6.6
       yargs: 17.7.3
-    optional: true
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -3928,8 +3918,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@js-sdsl/ordered-map@4.4.2':
-    optional: true
+  '@js-sdsl/ordered-map@4.4.2': {}
 
   '@mediapipe/tasks-vision@0.10.17': {}
 
@@ -4175,7 +4164,7 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 20.19.43
+      '@types/node': 22.20.5
 
   '@types/canvas-confetti@1.9.0': {}
 
@@ -4189,11 +4178,11 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 20.19.43
+      '@types/node': 22.20.5
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 20.19.43
+      '@types/node': 22.20.5
 
   '@types/deep-eql@4.0.2': {}
 
@@ -4203,7 +4192,7 @@ snapshots:
 
   '@types/express-serve-static-core@5.1.3':
     dependencies:
-      '@types/node': 20.19.43
+      '@types/node': 22.20.5
       '@types/qs': 6.15.1
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
@@ -4219,7 +4208,7 @@ snapshots:
   '@types/jsonwebtoken@9.0.10':
     dependencies:
       '@types/ms': 2.1.0
-      '@types/node': 20.19.43
+      '@types/node': 22.20.5
 
   '@types/long@4.0.2':
     optional: true
@@ -4259,19 +4248,19 @@ snapshots:
   '@types/request@2.48.13':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 20.19.43
+      '@types/node': 22.20.5
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.6
     optional: true
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 20.19.43
+      '@types/node': 22.20.5
 
   '@types/serve-static@2.2.0':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 20.19.43
+      '@types/node': 22.20.5
 
   '@types/stats.js@0.17.4': {}
 
@@ -4453,7 +4442,7 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  body-parser@2.3.0:
+  body-parser@2.4.0:
     dependencies:
       bytes: 3.1.2
       content-type: 2.1.0
@@ -4715,7 +4704,7 @@ snapshots:
   express@5.3.0:
     dependencies:
       accepts: 2.0.0
-      body-parser: 2.3.0
+      body-parser: 2.4.0
       content-disposition: 2.0.1
       content-type: 2.1.0
       cookie: 0.7.2
@@ -5445,7 +5434,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.2
-      '@types/node': 20.19.43
+      '@types/node': 22.20.5
       long: 5.3.2
 
   proxy-addr@2.0.8:

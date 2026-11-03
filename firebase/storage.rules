@@ -4,7 +4,7 @@ service firebase.storage {
     // Menu images & QR codes: publicly readable
     match /public/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null && (request.auth.token.role == 'master' || request.auth.token.role == 'vendorAdmin');
+      allow write: if false; // Unused path: nothing uploads here, so nobody may write.
     }
     
     // A shop's dish photos and logo: its own admin login (or the court manager) uploads small images only.

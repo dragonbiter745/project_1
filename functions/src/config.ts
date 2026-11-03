@@ -9,7 +9,7 @@ export const CASHFREE_APP_ID = defineSecret('CASHFREE_APP_ID');
 export const CASHFREE_SECRET_KEY = defineSecret('CASHFREE_SECRET_KEY');
 /** SANDBOX or PRODUCTION. Switching to live payments is a param change plus production secrets. */
 export const CASHFREE_ENV = defineString('CASHFREE_ENV', { default: 'SANDBOX' });
-export const CUSTOMER_URL = defineString('CUSTOMER_URL', { default: 'https://reva-nest-foodcourt.web.app' });
+export const CUSTOMER_URL = defineString('CUSTOMER_URL', { default: 'https://order.getqrave.in' });
 
 export const CASHFREE_SECRETS = [CASHFREE_APP_ID, CASHFREE_SECRET_KEY];
 

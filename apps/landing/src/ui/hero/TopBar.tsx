@@ -23,7 +23,9 @@ export function TopBar() {
       <div className="pointer-events-auto flex min-w-0 items-center gap-2">
         <div className="glass flex h-11 items-center gap-2.5 rounded-full pl-1.5 pr-4">
           <picture>
+            <source srcSet="/qrave-wordmark-dark.webp" type="image/webp" media="(prefers-color-scheme: dark)" />
             <source srcSet="/qrave-wordmark-dark.png" media="(prefers-color-scheme: dark)" />
+            <source srcSet="/qrave-wordmark.webp" type="image/webp" />
             <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="ml-2.5 h-7 w-auto select-none" draggable={false} />
           </picture>
           <span title="A simulated lunch service; diners, orders and timings are illustrative." className="hidden items-center gap-1.5 rounded-full bg-accent-tint px-2 py-0.5 text-[11px] font-semibold text-accent-ink md:inline-flex">

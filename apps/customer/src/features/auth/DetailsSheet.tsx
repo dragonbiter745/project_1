@@ -8,6 +8,7 @@ import { accountCall, rememberDetails, type AccountProfile } from './account';
 import { renameTableSession } from '../session/useTableSession';
 import { useProfile } from './profileStore';
 import { Button, Sheet } from '@foodcourt/ui';
+import { LegalLink } from '../ui/LegalLinks';
 
 const fieldClass =
   'h-12 w-full rounded-field bg-surface-2 px-3.5 text-md text-ink outline-none transition-[background-color,box-shadow] duration-150 placeholder:text-ink-3 focus:bg-surface focus:ring-2 focus:ring-accent/50';
@@ -150,6 +151,9 @@ export function DetailsSheet({ session }: { session: TableSession | null }) {
             </p>
           )}
         </div>
+        <p className="text-xs text-ink-3">
+          How we use and protect these details: <LegalLink page="privacy" />.
+        </p>
       </form>
     </Sheet>
   );
