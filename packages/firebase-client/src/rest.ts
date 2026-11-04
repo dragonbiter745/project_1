@@ -1,12 +1,27 @@
 import type { CatalogData, CatalogStatus, GlobalConfig, Vendor, VendorAvailability, VendorMenu } from '@foodcourt/shared';
 import { defaultFirebaseConfig } from './config';
+import { shouldUseEmulators } from './app';
 import { liveStore, type LiveStore } from './liveStore';
 
 // The diner's catalogue arrives over plain HTTP (no database SDK in the first download). In production it comes
 // from the CDN-cached /api endpoints; the Firestore REST path below is for local development only.
 
-const DOCS = `https://firestore.googleapis.com/v1/projects/${defaultFirebaseConfig.projectId}/databases/default/documents`;
-const KEY = `key=${defaultFirebaseConfig.apiKey}`;
+function getDocsEndpoint(): { docs: string; keyParam: string; proj: string } {
+  if (shouldUseEmulators()) {
+    const proj = defaultFirebaseConfig.projectId || 'demo-foodcourt';
+    return {
+      docs: `http://localhost:8080/v1/projects/${proj}/databases/default/documents`,
+      keyParam: '',
+      proj,
+    };
+  }
+  const proj = defaultFirebaseConfig.projectId;
+  return {
+    docs: `https://firestore.googleapis.com/v1/projects/${proj}/databases/default/documents`,
+    keyParam: `key=${defaultFirebaseConfig.apiKey}`,
+    proj,
+  };
+}
 
 type FsValue = Record<string, unknown>;
 
@@ -43,7 +58,10 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
 async function loadCatalogDirect(store: LiveStore): Promise<void> {
   // A structured query, not the list-documents endpoint: Firestore refuses unfiltered lists of a
   // named database's collection for public callers, while the same read as a query is allowed.
-  const rows = await getJson<Array<{ document?: RestDoc }>>(`${DOCS}:runQuery?${KEY}`, {
+  const { docs, keyParam, proj } = getDocsEndpoint();
+  const queryUrl = keyParam ? `${docs}:runQuery?${keyParam}` : `${docs}:runQuery`;
+  const batchUrl = keyParam ? `${docs}:batchGet?${keyParam}` : `${docs}:batchGet`;
+  const rows = await getJson<Array<{ document?: RestDoc }>>(queryUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'vendors' }], limit: 100 } }),
@@ -57,8 +75,8 @@ async function loadCatalogDirect(store: LiveStore): Promise<void> {
   const names = [
     ...vendors.flatMap((v) => [`menus/${v.id}`, `availability/${v.id}`]),
     'config/global',
-  ].map((p) => `projects/${defaultFirebaseConfig.projectId}/databases/default/documents/${p}`);
-  const batch = await getJson<Array<{ found?: RestDoc; missing?: string }>>(`${DOCS}:batchGet?${KEY}`, {
+  ].map((p) => `projects/${proj}/databases/default/documents/${p}`);
+  const batch = await getJson<Array<{ found?: RestDoc; missing?: string }>>(batchUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ documents: names }),

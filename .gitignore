@@ -31,6 +31,12 @@ secrets/
 
 # Staff login handover (never commit)
 staff-credentials.local.txt
+*.secret.local
+.secret.local
+
+# End-to-end test artifacts
+e2e/artifacts/
+
 
 # Launch videos from /brag (hundreds of MB each); never commit them.
 brag-output*/
