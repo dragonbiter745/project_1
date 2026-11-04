@@ -17,7 +17,7 @@ A food court with several shops. Every table has its own QR. A customer scans it
 **Three surfaces**
 | Surface | Users | Access |
 |---|---|---|
-| Customer app (PWA) | Diners | At a table: scan & order as a guest, optional login. On the website: sign in, order for pickup |
+| Customer app (PWA) | Diners | At a table: scan & order as a guest, optional login. On the website: order for pickup as a guest, optional login |
 | Vendor dashboard (one per shop, same codebase, scoped by `vendorId`) | Shop owner / staff | Email/phone login, role `vendorAdmin` / `vendorStaff` |
 | Master admin | Founders | Role `master`; sees and controls everything |
 

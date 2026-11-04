@@ -321,3 +321,24 @@ Protection (E-Commerce) Rules 2020 apply. Decisions:
   no analytics, ads or pixels. Adding any optional tracker requires a consent banner first (Accept, Reject, Choose
   equally easy) and a Cookie settings link; update `/cookies` and `/privacy` in the same change.
 - **Sheets trap focus** (Tab and Escape act only on the top sheet) so every form is usable by keyboard.
+
+## ADR 026: Optional login everywhere, no age gate (2026-11-04)
+- **Context:** the founders decided accounts are never required and the 18+ rule is not wanted on this platform.
+  This supersedes the "Accounts are 18+" and "needs a signed-in diner" decisions in ADR 019 and ADR 025.
+- **Decisions:**
+  - Website (pickup) orders work for guests. `startSession { mode: 'pickup' }` and `createCheckout` no longer
+    require a non-anonymous diner; they still require online payments to be on, so nobody can place an unpaid
+    order from home. Guests get a generated name from the server (as at a table) and no phone prompt (the server
+    stands one in for Cashfree). Signed-in diners are still asked for a number and get coupons and rewards.
+  - A guest's pickup session is opened at checkout, not on page load, so browsing writes nothing; a guest who
+    already ordered today gets it restored from the cache so the order stays trackable after a reload.
+  - The sign-up checkbox reads "I agree to the Terms and Privacy Policy". `accept` is `{ version }`; `adult` is no
+    longer sent or stored. Older app builds that still send `adult: true` are accepted (unknown keys are stripped).
+    Existing records keep their `adult` field. `POLICY_VERSION` moved to `2026-11-04`, so members agree again once.
+  - Privacy Policy section 7 and the Terms no longer claim accounts are 18+.
+- **Risk accepted by the founders:** with no age gate DPDP Act s.9 (children's data) can apply to anyone under 18.
+  Mitigation kept: no tracking, behavioural monitoring, targeted offers or advertising for anyone, and deletion on
+  request through the Grievance Officer. Get legal advice before launch; if it says a gate is needed, restore the
+  consent field and the checkbox wording in one change.
+- **Trade-off:** a guest who clears browser data loses the link to their order, as at a table. Signing in (and
+  the guest-to-account merge) is how they keep history.

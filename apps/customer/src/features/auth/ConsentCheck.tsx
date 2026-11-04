@@ -4,12 +4,12 @@ import { cx } from '@foodcourt/ui';
 import { LegalLink } from '../ui/LegalLinks';
 
 /** What the server records when the box is ticked (accountAction SYNC). */
-export const ACCEPT = { version: POLICY_VERSION, adult: true } as const;
+export const ACCEPT = { version: POLICY_VERSION } as const;
 export type Acceptance = typeof ACCEPT;
 
 /**
- * Consent to make an account: never pre-ticked, given by a clear action (DPDP s.6), and confirming the
- * diner is 18 or older (s.9). `ensure()` is called by every sign-in button before anything happens.
+ * Consent to make an account: never pre-ticked, given by a clear action (DPDP s.6).
+ * `ensure()` is called by every sign-in button before anything happens.
  */
 export function useConsent() {
   const [agreed, setAgreedState] = useState(false);
@@ -47,12 +47,12 @@ export function ConsentCheck({ consent, className }: { consent: Consent; classNa
           className={cx('mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded accent-[rgb(var(--ink))]', consent.error && 'outline outline-2 outline-offset-2 outline-danger')}
         />
         <label htmlFor={id} className="cursor-pointer text-sm text-ink-2">
-          I'm 18 or older, and I agree to the <LegalLink page="terms" /> and <LegalLink page="privacy" />.
+          I agree to the <LegalLink page="terms" /> and <LegalLink page="privacy" />.
         </label>
       </div>
       {consent.error && (
         <p id={errorId} role="alert" className="mt-2 text-sm font-medium text-danger">
-          Tick the box to continue. Under 18? You can still order as a guest at a table.
+          Tick the box to continue, or order as a guest without an account.
         </p>
       )}
     </div>

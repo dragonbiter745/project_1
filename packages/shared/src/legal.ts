@@ -4,7 +4,7 @@
 export const LEGAL_SITE = 'https://getqrave.in';
 
 /** The version (date) of the Privacy Policy and Terms a diner agrees to at sign-in. */
-export const POLICY_VERSION = '2026-11-01';
+export const POLICY_VERSION = '2026-11-04';
 
 export type LegalPage = 'privacy' | 'terms' | 'refunds' | 'cookies' | 'grievance';
 

@@ -17,13 +17,19 @@ describe('pickup orders from the website', () => {
     vi.unstubAllGlobals();
   });
 
-  it('opens a pickup session only for signed-in diners', async () => {
-    await expect(call(startSession, { mode: 'pickup' }, uniqueUid(), guest)).rejects.toMatchObject({ code: 'failed-precondition' });
+  it('opens a pickup session for guests and signed-in diners, but not for nobody', async () => {
     await expect(call(startSession, { mode: 'pickup' })).rejects.toMatchObject({ code: 'unauthenticated' });
+
+    // A guest gets a session and a generated name, never a blank one.
+    const guestUid = uniqueUid();
+    const g = await call(startSession, { mode: 'pickup' }, guestUid, guest);
+    expect(g).toMatchObject({ tableId: 'pickup', tableLabel: 'Pickup', dailyNo: 1 });
+    expect(g.displayName).toBeTruthy();
+    expect((await db.doc(`users/${guestUid}`).get()).exists).toBe(false); // no account was created
 
     const uid = uniqueUid();
     const first = await call(startSession, { mode: 'pickup' }, uid, member());
-    expect(first).toMatchObject({ tableId: 'pickup', tableLabel: 'Pickup', dailyNo: 1 });
+    expect(first).toMatchObject({ tableId: 'pickup', tableLabel: 'Pickup', dailyNo: 2 }); // the guest above took 1
     const stored = (await db.doc(`sessions/${first.sessionId}`).get()).data()!;
     expect(stored).toMatchObject({ uid, tableId: 'pickup' });
     expect(stored.qrToken).toBeUndefined();
@@ -32,7 +38,7 @@ describe('pickup orders from the website', () => {
     const again = await call(startSession, { mode: 'pickup' }, uid, member());
     expect(again.sessionId).toBe(first.sessionId);
     const other = await call(startSession, { mode: 'pickup' }, uniqueUid(), member('google.com'));
-    expect(other.dailyNo).toBe(2);
+    expect(other.dailyNo).toBe(3);
   });
 
   it('still refuses a bad table token', async () => {
@@ -64,9 +70,28 @@ describe('pickup orders from the website', () => {
     expect(orders.empty).toBe(true);
   });
 
-  it('refuses a pickup checkout from a session whose diner signed out', async () => {
+  it('lets a guest pay for a pickup order without an account or a phone number', async () => {
+    const calls = fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps_guest', cf_order_id: 2, order_status: 'ACTIVE' } }) });
     const uid = uniqueUid();
-    const { sessionId } = await call(startSession, { mode: 'pickup' }, uid, member());
-    await expect(call(createCheckout, { sessionId, checkoutKey: 'pickup-key-3', items: cart, customerPhone: '9876543210' }, uid, guest)).rejects.toMatchObject({ code: 'failed-precondition' });
+    const { sessionId } = await call(startSession, { mode: 'pickup' }, uid, guest);
+    const res = await call(createCheckout, { sessionId, checkoutKey: 'pickup-key-3', items: cart }, uid, guest);
+    expect(res).toMatchObject({ status: 'PENDING_PAYMENT', paymentSessionId: 'ps_guest', totalPaise: 12000 });
+    const order = (await db.doc(`orders/${res.orderId}`).get()).data()!;
+    expect(order).toMatchObject({ tableId: 'pickup', uid });
+    expect(calls[0]!.body.customer_details.customer_phone).toBe('9999999999'); // the stand-in number
+  });
+
+  it("refuses someone else's pickup session, guest or not", async () => {
+    const owner = uniqueUid();
+    const { sessionId } = await call(startSession, { mode: 'pickup' }, owner, guest);
+    await expect(call(createCheckout, { sessionId, checkoutKey: 'pickup-key-4', items: cart }, uniqueUid(), guest)).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+
+  it('still refuses a guest pickup order while online payments are off', async () => {
+    const uid = uniqueUid();
+    const { sessionId } = await call(startSession, { mode: 'pickup' }, uid, guest);
+    await db.doc('config/global').update({ 'flags.paymentsEnabled': false });
+    await expect(call(createCheckout, { sessionId, checkoutKey: 'pickup-key-5', items: cart }, uid, guest)).rejects.toMatchObject({ code: 'failed-precondition' });
+    expect((await db.collection('orders').where('uid', '==', uid).get()).empty).toBe(true);
   });
 });

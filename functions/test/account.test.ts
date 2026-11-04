@@ -8,7 +8,7 @@ import { QR, call, resetDb, seed, sessionFor, uniqueUid } from './helpers';
 
 const google = (email = 'diner@example.test', name = 'Ananya Rao') => ({ firebase: { sign_in_provider: 'google.com' }, email, name, picture: 'https://example.test/a.png' });
 const guest = { firebase: { sign_in_provider: 'anonymous' } };
-const accept = { version: POLICY_VERSION, adult: true as const };
+const accept = { version: POLICY_VERSION };
 const consentLog = async (uid: string) => (await db.collection('consentLog').where('uid', '==', uid).get()).docs.map((d) => d.data());
 const cart = [{ itemId: 'rm-1', vendorId: 'v-rm', name: 'Paneer Roll', pricePaise: 1, veg: true, qty: 1 }];
 
@@ -51,15 +51,20 @@ describe('accountAction', () => {
     const uid = uniqueUid();
     await expect(call(accountAction, { action: 'SYNC' }, uid, google())).rejects.toMatchObject({ code: 'failed-precondition' });
     expect((await db.doc(`users/${uid}`).get()).exists).toBe(false);
-    await expect(call(accountAction, { action: 'SYNC', accept: { version: '2000-01-01', adult: true } }, uid, google())).rejects.toMatchObject({ code: 'failed-precondition' });
-    await expect(call(accountAction, { action: 'SYNC', accept: { version: POLICY_VERSION, adult: false } }, uid, google())).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(call(accountAction, { action: 'SYNC', accept: { version: '2000-01-01' } }, uid, google())).rejects.toMatchObject({ code: 'failed-precondition' });
+
+    // An older app build still sends `adult: true`; it is accepted but no longer stored.
+    const legacy = uniqueUid();
+    await call(accountAction, { action: 'SYNC', accept: { version: POLICY_VERSION, adult: true } }, legacy, google());
+    expect((await db.doc(`users/${legacy}`).get()).data()!.consent.terms.adult).toBeUndefined();
 
     await call(accountAction, { action: 'SYNC', accept }, uid, google());
     await call(accountAction, { action: 'SYNC', accept }, uid, google());
     // Already agreed to this version: a later sign-in without the box still works.
     await call(accountAction, { action: 'SYNC' }, uid, google());
     const user = (await db.doc(`users/${uid}`).get()).data()!;
-    expect(user.consent.terms).toMatchObject({ version: POLICY_VERSION, adult: true });
+    expect(user.consent.terms).toMatchObject({ version: POLICY_VERSION });
+    expect(user.consent.terms.adult).toBeUndefined();
     expect(user.consent.terms.at).toBeTypeOf('number');
     const log = await consentLog(uid);
     expect(log).toHaveLength(1);

@@ -33,7 +33,7 @@ export const startSession = onCall({ region: REGION, maxInstances: 100, concurre
   limitLocal(`ip:${clientIp(req)}:session`, 900, 60);
   limitLocal(`session:${uid}`, 30, 600);
 
-  // Website orders have no table: a signed-in diner gets a pickup session and collects at the counter.
+  // Website orders have no table: any diner, signed in or a guest, gets a pickup session and collects at the counter.
   const pickup = StartPickupSessionSchema.safeParse(req.data).success;
   const provider = signInProvider(req);
   const member = Boolean(provider && provider !== 'anonymous');
@@ -41,7 +41,6 @@ export const startSession = onCall({ region: REGION, maxInstances: 100, concurre
   let tableLabel: string;
   let qrToken: string | undefined;
   if (pickup) {
-    if (!member) throw new HttpsError('failed-precondition', 'Sign in to order for pickup.');
     tableId = PICKUP_TABLE_ID;
     tableLabel = PICKUP_TABLE_LABEL;
   } else {

@@ -82,8 +82,7 @@ export const createCheckout = onCall(
     const member = Boolean(provider && provider !== 'anonymous');
     const config = (configSnap.exists ? configSnap.data() : FALLBACK_CONFIG) as GlobalConfig;
     if (config.flags.maintenance) throw new HttpsError('unavailable', 'Ordering is paused for a few minutes. Please try again shortly.');
-    // Pickup orders come from people who are not at a table yet: signed in and paid up front only.
-    if (pickup && !member) throw new HttpsError('failed-precondition', 'Sign in to order for pickup.');
+    // Pickup orders come from people who are not at a table yet, signed in or not: paid up front only.
     if (pickup && !config.flags.paymentsEnabled) throw new HttpsError('failed-precondition', 'Online orders are paused. Scan the QR on a table at the court to order.');
 
     // Read every shop's menu, stock and status in parallel.

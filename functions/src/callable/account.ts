@@ -109,7 +109,7 @@ export const accountAction = onCall({ region: REGION, maxInstances: 50, concurre
   const token = req.auth!.token as { email?: string; name?: string; picture?: string };
 
   if (input.action === 'SYNC') {
-    // No account without consent to the current Terms and Privacy Policy, given by an 18+ diner (DPDP s.6, s.9).
+    // No account without consent to the current Terms and Privacy Policy (DPDP s.6).
     // Checked before anything moves, so a refused sign-in changes nothing.
     const accept = input.accept;
     if (accept && accept.version !== POLICY_VERSION) throw new HttpsError('failed-precondition', 'Our Terms have changed. Reload the page and agree to the latest version.');
@@ -143,7 +143,7 @@ export const accountAction = onCall({ region: REGION, maxInstances: 50, concurre
         ...(existing.prefs ? {} : { prefs: { orderUpdates: true } }),
         ...(existing.pointsBalance === undefined ? { pointsBalance: 0 } : {}),
         ...(existing.lifetimeSpendPaise === undefined ? { lifetimeSpendPaise: 0 } : {}),
-        ...(recordTerms ? { consent: { ...existing.consent, terms: { version: accept.version, adult: true as const, at: now } } } : {}),
+        ...(recordTerms ? { consent: { ...existing.consent, terms: { version: accept.version, at: now } } } : {}),
       };
       tx.set(ref, next, { merge: true });
       return { profile: { ...existing, ...next }, firstSignIn: !existing.member };

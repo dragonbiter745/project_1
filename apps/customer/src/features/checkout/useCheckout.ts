@@ -87,18 +87,14 @@ export function useCheckout(tableSession: TableSession | null) {
   const checkout = async (items: CartItem[], totals: OrderTotals, couponCode?: string) => {
     if (items.length === 0 || pending) return;
     const paymentsOn = liveStore.getState().config.flags.paymentsEnabled;
-    // Website orders need an account and are paid online (the server checks both again).
-    if (isWebMode && !useAuth.getState().user?.member) {
-      useUi.getState().showLogin('Sign in to place your order. You collect it at the counter with your token.', { required: true });
-      return;
-    }
+    // Website orders are paid online (the server checks again). An account is optional: guests order too.
     if (isWebMode && !paymentsOn) {
       notifyError('Online orders are paused', { description: 'Scan the QR on a table at the court to order there.' });
       return;
     }
     const phone = useProfile.getState().profile?.phone;
-    // Table guests pay without a number (the server stands one in for Cashfree); only website accounts are asked.
-    if (isWebMode && paymentsOn && !phone) {
+    // Guests pay without a number (the server stands one in for Cashfree); only signed-in website diners are asked.
+    if (isWebMode && paymentsOn && useAuth.getState().user?.member && !phone) {
       useUi.getState().showDetails('checkout');
       notify('Add your mobile number to pay', { description: 'Your payment receipt is sent to it.' });
       return;

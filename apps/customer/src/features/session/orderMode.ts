@@ -1,6 +1,6 @@
 /**
  * `table`: opened from a table's QR (/t/{token}); guests can order and collect at the table's shops.
- * `web`: the normal website; browsing is open, ordering needs an account and is collected at the
+ * `web`: the normal website; browsing and ordering are open to guests (an account is optional), collected at the
  * counter. Fixed for the life of the page.
  */
 export type OrderMode = 'table' | 'web';

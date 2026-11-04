@@ -108,14 +108,8 @@ export function CartSheet({ session }: { session: TableSession | null }) {
               disabled={payBlocker !== null}
               onClick={() => checkout(list, payable, discountPaise > 0 ? coupon?.coupon.code : undefined)}
             >
-              {isWebMode && !member ? (
-                `Sign in to order · ${formatPaise(payable.totalPaise)}`
-              ) : (
-                <>
-                  Pay {formatPaise(payable.totalPaise)}
-                  {discountPaise > 0 && <span className="ml-1 text-sm font-medium line-through opacity-60">{formatPaise(totals.totalPaise)}</span>}
-                </>
-              )}
+              Pay {formatPaise(payable.totalPaise)}
+              {discountPaise > 0 && <span className="ml-1 text-sm font-medium line-through opacity-60">{formatPaise(totals.totalPaise)}</span>}
             </Button>
             {isWebMode && (
               <p className="mt-2 text-center text-xs text-ink-3">Collect at the shop counter when your token is ready.</p>

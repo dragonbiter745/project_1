@@ -265,8 +265,8 @@ export interface UserProfile {
 
 /** Consent the diner gave, and when (DPDP Act s.6: the fiduciary must be able to prove it). */
 export interface UserConsent {
-  /** Agreed to the Terms and Privacy Policy, confirming they are 18 or older. */
-  terms?: { version: string; adult: true; at: number };
+  /** Agreed to the Terms and Privacy Policy. `adult` exists only on records made before 2026-11-04. */
+  terms?: { version: string; at: number; adult?: true };
   /** Offers and announcements: separate, optional, off unless switched on. */
   offers?: { granted: boolean; version: string; at: number };
 }

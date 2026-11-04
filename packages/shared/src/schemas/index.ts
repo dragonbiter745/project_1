@@ -88,12 +88,13 @@ const ID = z.string().min(1).max(200);
 
 export const AccountActionSchema = z.discriminatedUnion('action', [
   // After Google sign-in. guestToken proves the anonymous uid whose orders should move into this account.
-  // accept: the diner ticked "I'm 18 or older and agree to the Terms and Privacy Policy" for this policy version.
+  // accept: the diner ticked "I agree to the Terms and Privacy Policy" for this policy version. Older app
+  // builds also send `adult: true`; unknown keys are stripped, so they keep working.
   z.object({
     action: z.literal('SYNC'),
     sessionId: ID.optional(),
     guestToken: z.string().min(20).max(4096).optional(),
-    accept: z.object({ version: z.string().min(1).max(20), adult: z.literal(true) }).optional(),
+    accept: z.object({ version: z.string().min(1).max(20) }).optional(),
   }),
   z.object({
     action: z.literal('UPDATE_PROFILE'),

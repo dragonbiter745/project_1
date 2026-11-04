@@ -13,7 +13,7 @@ interface StartSessionResult {
   dailyNo: number;
 }
 
-// The website's session: no table, collected at the counter. Only signed-in diners get one.
+// The website's session: no table, collected at the counter. Signed-in diners and guests both get one.
 const usePickup = create<{ session: TableSession | null }>()(() => ({ session: null }));
 
 const cacheKey = (uid: string) => `fc_pickup_${uid}_${getIstDateKey()}`;
@@ -34,7 +34,8 @@ function readCache(uid: string): TableSession | null {
  */
 export function ensurePickupSession(refresh = false): Promise<TableSession> {
   const user = useAuth.getState().user;
-  if (!user?.member) return Promise.reject(Object.assign(new Error('Sign in to order for pickup.'), { code: 'needs-sign-in' }));
+  // Guests (anonymous accounts) order for pickup too; they get a generated name from the server.
+  if (!user) return Promise.reject(Object.assign(new Error('Still connecting. Try again in a moment.'), { code: 'no-user' }));
   if (inflight?.uid === user.uid) return inflight.promise;
   const current = usePickup.getState().session;
   if (!refresh && current && readCache(user.uid)?.id === current.id) return Promise.resolve(current);
@@ -64,9 +65,14 @@ export function ensurePickupSession(refresh = false): Promise<TableSession> {
   return promise;
 }
 
-/** The website's pickup session: null for guests, opened in the background once someone signs in. */
+/**
+ * The website's pickup session. Members get one opened in the background on sign-in. A guest gets one only
+ * when they check out (so merely browsing writes nothing), and it is restored on reload so their order stays
+ * trackable.
+ */
 export function usePickupSession(): TableSession | null {
-  const uid = useAuth((s) => (s.user?.member ? s.user.uid : null));
+  const uid = useAuth((s) => s.user?.uid ?? null);
+  const member = useAuth((s) => Boolean(s.user?.member));
   const session = usePickup((s) => s.session);
 
   useEffect(() => {
@@ -74,11 +80,12 @@ export function usePickupSession(): TableSession | null {
       usePickup.setState({ session: null });
       return;
     }
+    const cached = readCache(uid);
+    usePickup.setState({ session: cached });
     // Re-checked with the server on every load so an ended session never lingers; the cached copy
-    // shows meanwhile.
-    usePickup.setState({ session: readCache(uid) });
-    ensurePickupSession(true).catch((err: unknown) => console.warn('Pickup session unavailable', err));
-  }, [uid]);
+    // shows meanwhile. A guest with nothing cached has not ordered, so there is nothing to open.
+    if (member || cached) ensurePickupSession(true).catch((err: unknown) => console.warn('Pickup session unavailable', err));
+  }, [uid, member]);
 
   return session;
 }
