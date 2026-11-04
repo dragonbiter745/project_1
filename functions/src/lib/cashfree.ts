@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { CASHFREE_APP_ID, CASHFREE_ENV, CASHFREE_SECRET_KEY, projectId, REGION } from '../config';
+import { CASHFREE_APP_ID, CASHFREE_ENV, CASHFREE_SECRET_KEY, isEmulator, projectId, REGION } from '../config';
 
 const API_VERSION = '2023-08-01';
 
@@ -21,8 +21,9 @@ export const toRupees = (paise: number) => Math.round(paise) / 100;
 export const toPaise = (rupees: number | string) => Math.round(Number(rupees) * 100);
 
 async function call<T>(path: string, init: { method: 'GET' | 'POST'; body?: unknown; idempotencyKey?: string }): Promise<T> {
-  // Safe emulator fallback when test placeholder keys are used in non-production.
-  if (!isProduction() && CASHFREE_APP_ID.value().startsWith('TEST_')) {
+  // Local e2e only: the Functions emulator with placeholder keys never calls Cashfree. A deployed function
+  // (FUNCTIONS_EMULATOR unset) can never take this branch, so it can't fake a PAID order or a refund.
+  if (isEmulator() && !isProduction() && CASHFREE_APP_ID.value().startsWith('TEST_')) {
     if (path === '/pg/orders' && init.method === 'POST') {
       const b = init.body as any;
       return {
