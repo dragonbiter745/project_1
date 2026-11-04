@@ -92,6 +92,10 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
 - Go live: `firebase functions:secrets:set CASHFREE_APP_ID` and `CASHFREE_SECRET_KEY` with the
   production keys, set `CASHFREE_ENV=PRODUCTION`, redeploy functions, and whitelist the customer
   domain in the Cashfree dashboard. The webhook URL is sent with every order (`cashfreeWebhook`).
+- Local e2e uses a built-in Cashfree stand-in (`lib/cashfree.ts`) that only runs when
+  `FUNCTIONS_EMULATOR` is set, mode is `SANDBOX` and the app id starts with `TEST_`. A deployed
+  function can never take that path (guarded by `test/cashfreeMock.test.ts`). Before going live,
+  confirm the deployed secret does not start with `TEST_` and that `CASHFREE_ENV=PRODUCTION`.
 - Pay at counter: Settings → turn off online payments; orders go straight to the kitchens.
 - The `sweeper` function (every minute) times out unaccepted tickets, reconciles payments whose
   webhook was lost, expires unpaid orders and polls pending refunds; `onTicketFailed` refunds a
