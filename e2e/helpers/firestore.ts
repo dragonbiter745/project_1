@@ -37,15 +37,16 @@ function decodeDoc(doc: any): any {
   return data;
 }
 
-export async function getFirestoreDoc(collection: string, docId: string): Promise<any | null> {
-  const res = await fetch(`${BASE_URL}/${collection}/${docId}`);
+export async function getFirestoreDoc(collection: string, docId: string, asAdmin = true): Promise<any | null> {
+  const headers: Record<string, string> = asAdmin ? { Authorization: 'Bearer owner' } : {};
+  const res = await fetch(`${BASE_URL}/${collection}/${docId}`, { headers });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Firestore get error: ${res.status}`);
   const json = await res.json();
   return decodeDoc(json);
 }
 
-export async function queryFirestore(collectionId: string, fieldFilter?: { field: string; op: 'EQUAL'; value: any }): Promise<any[]> {
+export async function queryFirestore(collectionId: string, fieldFilter?: { field: string; op: 'EQUAL'; value: any }, asAdmin = true): Promise<any[]> {
   const query: any = {
     structuredQuery: {
       from: [{ collectionId }],
@@ -66,9 +67,12 @@ export async function queryFirestore(collectionId: string, fieldFilter?: { field
     };
   }
 
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (asAdmin) headers.Authorization = 'Bearer owner';
+
   const res = await fetch(`${BASE_URL}:runQuery`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(query),
   });
 

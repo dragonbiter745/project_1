@@ -99,7 +99,8 @@ export async function retryContention<T>(fn: () => Promise<T>, attempts = 8): Pr
         code === 'aborted' ||
         code === 'deadline-exceeded' ||
         msg.includes('ABORTED') ||
-        msg.includes('Transaction lock timeout');
+        msg.includes('Transaction lock timeout') ||
+        msg.includes('Transaction is invalid or closed');
       if (!contended || i >= attempts) throw err;
       await new Promise((r) => setTimeout(r, 120 * i + Math.random() * 400));
     }

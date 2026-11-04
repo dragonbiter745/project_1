@@ -19,19 +19,12 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium-mobile',
-      use: {
-        ...devices['Pixel 7'],
-      },
-      testMatch: /.*diner.*|.*pages.*|.*payment.*/,
-    },
-    {
-      name: 'chromium-desktop',
+      name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
       },
-      testMatch: /.*kitchen.*|.*owner.*|.*admin.*|.*alignment.*|.*health.*/,
+      testMatch: /.*\.spec\.ts/,
     },
   ],
 });

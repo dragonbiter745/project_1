@@ -72,3 +72,4 @@ test.describe('Journey F: Frontend & Backend Price & Money Alignment', () => {
     expect(serverTotalPaise).toBe(36300);
   });
 });
+

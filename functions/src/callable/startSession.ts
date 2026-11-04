@@ -5,6 +5,7 @@ import { REGION, SESSION_TTL_MS } from '../config';
 import { db } from '../db';
 import { clientIp, limitLocal, requireUid } from '../lib/guard';
 import { customerRef, writeVisit } from '../lib/customers';
+import { retryContention } from '../lib/orders';
 import { signInProvider } from './account';
 
 function hashSeed(s: string): number {
@@ -68,34 +69,36 @@ export const startSession = onCall({ region: REGION, maxInstances: 100, concurre
   const resuming = before.exists && (before.data()!.expiresAt as number) > now;
   const takenNo = resuming ? 0 : await takeDailyNo(counterRef, now);
 
-  return db.runTransaction(async (tx) => {
-    const [existing, customer] = await Promise.all([tx.get(sessionRef), tx.get(customerRef(uid))]);
-    if (existing.exists && (existing.data()!.expiresAt as number) > now) {
-      const s = existing.data()!;
-      // A diner who signed in after scanning is called by their own name from now on.
-      const displayName = memberName || (s.displayName as string);
-      tx.update(sessionRef, { lastActiveAt: now, expiresAt: now + SESSION_TTL_MS, expireAt: Timestamp.fromMillis(now + SESSION_TTL_MS + 86_400_000), displayName });
+  return retryContention(() =>
+    db.runTransaction(async (tx) => {
+      const [existing, customer] = await Promise.all([tx.get(sessionRef), tx.get(customerRef(uid))]);
+      if (existing.exists && (existing.data()!.expiresAt as number) > now) {
+        const s = existing.data()!;
+        // A diner who signed in after scanning is called by their own name from now on.
+        const displayName = memberName || (s.displayName as string);
+        tx.update(sessionRef, { lastActiveAt: now, expiresAt: now + SESSION_TTL_MS, expireAt: Timestamp.fromMillis(now + SESSION_TTL_MS + 86_400_000), displayName });
+        writeVisit(tx, customer, { uid, dateKey, now, displayName, member });
+        return { sessionId: sessionRef.id, tableId, tableLabel: s.tableLabel, displayName, dailyNo: s.dailyNo };
+      }
+      // Taken above, before the transaction; a race that lost to a resume above may skip one number, which is harmless.
+      const dailyNo = takenNo || 1;
+      const displayName = memberName || generateDisplayName(hashSeed(uid));
       writeVisit(tx, customer, { uid, dateKey, now, displayName, member });
-      return { sessionId: sessionRef.id, tableId, tableLabel: s.tableLabel, displayName, dailyNo: s.dailyNo };
-    }
-    // Taken above, before the transaction; a race that lost to a resume above may skip one number, which is harmless.
-    const dailyNo = takenNo || 1;
-    const displayName = memberName || generateDisplayName(hashSeed(uid));
-    writeVisit(tx, customer, { uid, dateKey, now, displayName, member });
-    tx.set(sessionRef, {
-      uid,
-      tableId,
-      tableLabel,
-      ...(qrToken ? { qrToken } : {}),
-      dateKey,
-      dailyNo,
-      displayName,
-      createdAt: now,
-      lastActiveAt: now,
-      expiresAt: now + SESSION_TTL_MS,
-      // TTL policy field: Firestore deletes the session a day after it ends.
-      expireAt: Timestamp.fromMillis(now + SESSION_TTL_MS + 86_400_000),
-    });
-    return { sessionId: sessionRef.id, tableId, tableLabel, displayName, dailyNo };
-  });
+      tx.set(sessionRef, {
+        uid,
+        tableId,
+        tableLabel,
+        ...(qrToken ? { qrToken } : {}),
+        dateKey,
+        dailyNo,
+        displayName,
+        createdAt: now,
+        lastActiveAt: now,
+        expiresAt: now + SESSION_TTL_MS,
+        // TTL policy field: Firestore deletes the session a day after it ends.
+        expireAt: Timestamp.fromMillis(now + SESSION_TTL_MS + 86_400_000),
+      });
+      return { sessionId: sessionRef.id, tableId, tableLabel, displayName, dailyNo };
+    })
+  );
 });

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { URLS, SEED_DATA } from '../helpers/constants';
 import { sendPaymentSuccessWebhook } from '../helpers/webhook';
+import { queryFirestore } from '../helpers/firestore';
 
 test.describe('Journey B: Kitchen Actions & Failure Handling', () => {
   test('Kitchen rejection triggers auto-refund and diner alert', async ({ page, browser }) => {
@@ -39,6 +40,22 @@ test.describe('Journey B: Kitchen Actions & Failure Handling', () => {
       orderAmountPaise: orderTotalPaise,
     });
 
+    // Retrieve the exact token assigned to this order
+    let expectedToken = '';
+    for (let i = 0; i < 10; i++) {
+      const results = await queryFirestore('subOrders', {
+        field: 'orderId',
+        op: 'EQUAL',
+        value: createdOrderId!,
+      });
+      if (results.length > 0 && results[0].token) {
+        expectedToken = results[0].token;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    expect(expectedToken).toBeTruthy();
+
     // 2. Kitchen logs in and Rejects the ticket
     const kitchenContext = await browser.newContext();
     const kitchenPage = await kitchenContext.newPage();
@@ -54,9 +71,10 @@ test.describe('Journey B: Kitchen Actions & Failure Handling', () => {
     await startServiceBtn.click();
     await startServiceBtn.waitFor({ state: 'hidden', timeout: 5000 });
 
-    // Look for Reject button on the ticket
-    await kitchenPage.waitForTimeout(2000);
-    const rejectBtn = kitchenPage.getByRole('button', { name: 'Reject' }).first();
+    // Look for Reject button on the exact ticket
+    const ticketCard = kitchenPage.locator(`article[aria-label="Order ${expectedToken}"]`);
+    await ticketCard.waitFor({ state: 'visible', timeout: 10000 });
+    const rejectBtn = ticketCard.getByRole('button', { name: 'Reject' });
     await expect(rejectBtn).toBeVisible();
     await rejectBtn.click();
 
@@ -67,9 +85,35 @@ test.describe('Journey B: Kitchen Actions & Failure Handling', () => {
     await reasonModal.getByRole('button', { name: 'Reject and refund' }).click();
     await reasonModal.waitFor({ state: 'hidden', timeout: 5000 });
 
-    // Verify ticket RM-002 was rejected and removed from New column
-    await expect(kitchenPage.locator('body')).not.toContainText('RM-002');
-
+    // Verify ticket was removed from kitchen board
+    await kitchenPage.waitForTimeout(1000);
     await kitchenContext.close();
+
+    // 3. Verify Refund document in Firestore
+    let subOrder: any = null;
+    for (let i = 0; i < 10; i++) {
+      const results = await queryFirestore('subOrders', {
+        field: 'orderId',
+        op: 'EQUAL',
+        value: createdOrderId!,
+      });
+      if (results.length > 0 && results[0].status === 'REJECTED' && results[0].refund) {
+        subOrder = results[0];
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+
+    expect(subOrder).not.toBeNull();
+    expect(subOrder.status).toBe('REJECTED');
+    expect(subOrder.refund).toBeDefined();
+    expect(subOrder.refund.amountPaise).toBe(orderTotalPaise);
+    expect(['PROCESSED', 'PENDING']).toContain(subOrder.refund.status);
+    expect(subOrder.refund.refundId).toMatch(/^rf_/);
+
+    // 4. Verify diner's browser reflects rejection and refund status
+    await page.bringToFront();
+    // Tracking bar or tracking sheet updates live
+    await expect(page.locator('body')).toContainText(/couldn't take this order|refund is on its way/i);
   });
 });

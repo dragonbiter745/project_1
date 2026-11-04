@@ -36,7 +36,7 @@ test.describe('Journey A: Diner First Order (End-to-End)', () => {
     await expect(page.getByRole('link', { name: /Terms/i })).toBeVisible();
 
     // 3. Verify out-of-stock item (Chickpet Donne Biriyani Combo) cannot be added
-    await page.locator('[role="tab"]:has-text("Roll Me")').click();
+    await page.locator('[role="tab"]:has-text("Roll Me")').first().click();
     const soldOutItem = page.locator('li:has-text("Chickpet Donne Biriyani Combo")');
     await expect(soldOutItem).toContainText('Sold out');
     await expect(soldOutItem.getByRole('button', { name: /Add /i })).toHaveCount(0);
@@ -46,7 +46,7 @@ test.describe('Journey A: Diner First Order (End-to-End)', () => {
     await biriyaniItem.getByRole('button', { name: /Add /i }).click();
 
     // 5. Add items from Siddi Vinayaka Garden
-    await page.locator('[role="tab"]:has-text("Siddi Vinayaka")').click();
+    await page.locator('[role="tab"]:has-text("Siddi Vinayaka")').first().click();
     const idlyVadaItem = page.locator('li:has-text("Idly Vada")').first();
     await idlyVadaItem.getByRole('button', { name: /Add /i }).click();
 
