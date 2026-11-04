@@ -44,7 +44,9 @@ export function initFirebase(config = defaultFirebaseConfig) {
   functions = getFunctions(app, 'asia-south1');
 
   // Check if emulator flag is active
-  const isEmulator = getEnvVar('USE_FIREBASE_EMULATOR') === 'true';
+  const isEmulator =
+    getEnvVar('USE_FIREBASE_EMULATOR') === 'true' ||
+    getEnvVar('VITE_USE_FIREBASE_EMULATOR') === 'true';
   if (
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&

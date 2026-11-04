@@ -9,7 +9,7 @@ export function getFirebaseApp(config = defaultFirebaseConfig): FirebaseApp {
 
 export function shouldUseEmulators(): boolean {
   return (
-    getEnvVar('USE_FIREBASE_EMULATOR') === 'true' &&
+    (getEnvVar('USE_FIREBASE_EMULATOR') === 'true' || getEnvVar('VITE_USE_FIREBASE_EMULATOR') === 'true') &&
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   );
