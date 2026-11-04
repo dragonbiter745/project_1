@@ -21,6 +21,40 @@ export const toRupees = (paise: number) => Math.round(paise) / 100;
 export const toPaise = (rupees: number | string) => Math.round(Number(rupees) * 100);
 
 async function call<T>(path: string, init: { method: 'GET' | 'POST'; body?: unknown; idempotencyKey?: string }): Promise<T> {
+  // Safe emulator fallback when test placeholder keys are used in non-production.
+  if (!isProduction() && CASHFREE_APP_ID.value().startsWith('TEST_')) {
+    if (path === '/pg/orders' && init.method === 'POST') {
+      const b = init.body as any;
+      return {
+        order_id: b.order_id,
+        cf_order_id: `cf_mock_${Date.now()}`,
+        order_status: 'ACTIVE',
+        order_amount: b.order_amount,
+        order_currency: 'INR',
+        payment_session_id: `session_mock_${Date.now()}`,
+      } as T;
+    }
+    if (path.startsWith('/pg/orders/') && path.endsWith('/refunds') && init.method === 'POST') {
+      const b = init.body as any;
+      return {
+        refund_id: b.refund_id,
+        cf_refund_id: `cf_ref_mock_${Date.now()}`,
+        refund_status: 'SUCCESS',
+        refund_amount: b.refund_amount,
+      } as T;
+    }
+    if (path.startsWith('/pg/orders/') && init.method === 'GET') {
+      const parts = path.split('/');
+      const orderId = decodeURIComponent(parts[3] || '');
+      return {
+        order_id: orderId,
+        order_status: 'PAID',
+        order_amount: 100,
+        order_currency: 'INR',
+      } as T;
+    }
+  }
+
   const res = await fetch(`${baseUrl()}${path}`, {
     method: init.method,
     headers: {

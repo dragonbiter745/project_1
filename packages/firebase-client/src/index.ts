@@ -54,7 +54,7 @@ export function initFirebase(config = defaultFirebaseConfig) {
   ) {
     try {
       connectFirestoreEmulator(firestore, 'localhost', 8080);
-      connectAuthEmulator(auth, 'http://localhost:9099');
+      connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
       connectFunctionsEmulator(functions, 'localhost', 5001);
       console.log('Connected to Firebase Emulators');
     } catch {

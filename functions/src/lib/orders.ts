@@ -84,13 +84,22 @@ export type Materialized = 'created' | 'already' | 'missing' | 'amount-mismatch'
  * Retries a transaction that lost a lock race, with jitter. A burst of payments for one shop all take
  * that shop's token counter; without this, the losers fail and wait minutes for Cashfree to retry.
  */
-export async function retryContention<T>(fn: () => Promise<T>, attempts = 5): Promise<T> {
+export async function retryContention<T>(fn: () => Promise<T>, attempts = 8): Promise<T> {
   for (let i = 1; ; i++) {
     try {
       return await fn();
     } catch (err) {
       const code = (err as { code?: number | string }).code;
-      const contended = code === 10 || code === 4 || code === 'aborted' || code === 'deadline-exceeded';
+      const msg = (err as { message?: string }).message ?? '';
+      const contended =
+        code === 10 ||
+        code === 4 ||
+        code === '10' ||
+        code === '4' ||
+        code === 'aborted' ||
+        code === 'deadline-exceeded' ||
+        msg.includes('ABORTED') ||
+        msg.includes('Transaction lock timeout');
       if (!contended || i >= attempts) throw err;
       await new Promise((r) => setTimeout(r, 120 * i + Math.random() * 400));
     }

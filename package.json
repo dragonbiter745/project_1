@@ -12,7 +12,9 @@
     "clean": "turbo run clean",
     "seed": "pnpm --filter scripts seed",
     "qrs": "pnpm --filter scripts qrs",
-    "pack:shared": "pnpm --filter @foodcourt/shared build && cd packages/shared && npm pack --pack-destination ../../functions --silent"
+    "pack:shared": "pnpm --filter @foodcourt/shared build && cd packages/shared && npm pack --pack-destination ../../functions --silent",
+    "e2e": "playwright test --config=e2e/playwright.config.ts",
+    "e2e:load": "cd functions && FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=demo-foodcourt RUSH_DINERS=300 RUSH_RATE=1 npx vitest run test/rush.test.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

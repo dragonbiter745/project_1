@@ -334,6 +334,7 @@ async function runSeed() {
     { email: 'master@foodcourt.local', password: 'password123', claims: { role: 'master' }, displayName: 'Master Admin' },
     { email: 'kitchen-rm@foodcourt.local', password: 'password123', claims: { role: 'vendorStaff', vendorId: 'vendor-roll-me' }, displayName: 'Roll Me Kitchen' },
     { email: 'owner-rm@foodcourt.local', password: 'password123', claims: { role: 'vendorAdmin', vendorId: 'vendor-roll-me' }, displayName: 'Roll Me Owner' },
+    { email: 'finance-rm@foodcourt.local', password: 'password123', claims: { role: 'vendorFinance', vendorId: 'vendor-roll-me' }, displayName: 'Roll Me Finance' },
     { email: 'kitchen-sv@foodcourt.local', password: 'password123', claims: { role: 'vendorStaff', vendorId: 'vendor-siddi-vinayaka' }, displayName: 'SV Kitchen' },
     { email: 'owner-sv@foodcourt.local', password: 'password123', claims: { role: 'vendorAdmin', vendorId: 'vendor-siddi-vinayaka' }, displayName: 'SV Owner' },
     { email: 'kitchen-sc@foodcourt.local', password: 'password123', claims: { role: 'vendorStaff', vendorId: 'vendor-sweet-cravings' }, displayName: 'Sweet Cravings Kitchen' },

@@ -110,3 +110,8 @@
     display: none;
   }
 }
+
+.firebase-emulator-warning {
+  display: none !important;
+  pointer-events: none !important;
+}
