@@ -4,11 +4,11 @@ declare const process: any;
 
 // Safe environment variable accessor for universal runtime (Node, Vite, Next)
 export const getEnvVar = (key: string, fallback: string = ''): string => {
-  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+  if (typeof process !== 'undefined' && process.env && process.env[key] !== undefined) {
     return process.env[key] as string;
   }
   try {
-    if (typeof import.meta !== 'undefined' && (import.meta as any)?.env?.[key]) {
+    if (typeof import.meta !== 'undefined' && (import.meta as any)?.env?.[key] !== undefined) {
       return (import.meta as any).env[key] as string;
     }
   } catch {

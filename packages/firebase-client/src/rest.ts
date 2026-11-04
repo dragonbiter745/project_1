@@ -8,7 +8,7 @@ import { liveStore, type LiveStore } from './liveStore';
 
 function getDocsEndpoint(): { docs: string; keyParam: string; proj: string } {
   if (shouldUseEmulators()) {
-    const proj = defaultFirebaseConfig.projectId || 'demo-foodcourt';
+    const proj = 'demo-foodcourt';
     return {
       docs: `http://localhost:8080/v1/projects/${proj}/databases/default/documents`,
       keyParam: '',
@@ -130,9 +130,35 @@ async function fromCdn<T>(url: string): Promise<T> {
 
 const isLocalDev = () => typeof location !== 'undefined' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 
+/** Local dev: use the catalog Cloud Function (emulated), which mirrors what the CDN serves in production. */
+async function loadCatalogViaFunction(store: LiveStore): Promise<void> {
+  // In local dev the customer app's Vite proxy forwards /api → emulated catalog function (avoids CORS).
+  // In production the Firebase Hosting rewrite does the same thing.
+  const base = '/api';
+  const status = await getJson<CatalogStatus>(`${base}/status`);
+  let data = heldData ?? savedData();
+  if (!data || data.v !== status.v) {
+    data = await getJson<CatalogData>(`${base}/catalog?v=${encodeURIComponent(status.v)}`);
+    saveData(data);
+  }
+  heldData = data;
+  const fresh = data;
+  store.patch((draft) => {
+    draft.vendors = fresh.vendors.map((v) => ({ ...v, ...(status.vendors[v.id] ?? {}) }) as import('@foodcourt/shared').Vendor);
+    for (const v of fresh.vendors) {
+      const menu = fresh.menus[v.id];
+      if (menu) draft.menus[v.id] = menu;
+      const stock = status.availability[v.id];
+      draft.availability[v.id] = { updatedAt: 0, ...(stock ?? {}), vendorId: v.id, unavailable: stock?.unavailable ?? {} } as import('@foodcourt/shared').VendorAvailability;
+    }
+    if (status.config) draft.config = { ...draft.config, ...status.config, flags: { ...draft.config.flags, ...(status.config.flags ?? {}) } };
+  });
+  store.markLoaded('catalog');
+}
+
 /** Shops, menus, stock and flags for the diner, from the CDN: the small status, then the catalogue only if its version moved. */
 export async function loadCatalog(store: LiveStore = liveStore): Promise<void> {
-  if (isLocalDev()) return loadCatalogDirect(store);
+  if (isLocalDev()) return loadCatalogViaFunction(store);
   const status = await fromCdn<CatalogStatus>('/api/status');
   let data = heldData ?? savedData();
   if (!data || data.v !== status.v) {

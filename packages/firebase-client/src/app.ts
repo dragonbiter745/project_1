@@ -4,7 +4,8 @@ import { defaultFirebaseConfig, getEnvVar } from './config';
 export { defaultFirebaseConfig, getEnvVar };
 
 export function getFirebaseApp(config = defaultFirebaseConfig): FirebaseApp {
-  return getApps().length ? getApp() : initializeApp(config);
+  const effectiveConfig = shouldUseEmulators() ? { ...config, projectId: 'demo-foodcourt' } : config;
+  return getApps().length ? getApp() : initializeApp(effectiveConfig);
 }
 
 export function shouldUseEmulators(): boolean {

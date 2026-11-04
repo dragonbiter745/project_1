@@ -33,8 +33,10 @@ let auth: Auth;
 let functions: Functions;
 
 export function initFirebase(config = defaultFirebaseConfig) {
+  const isEmu = (getEnvVar('USE_FIREBASE_EMULATOR') === 'true' || getEnvVar('VITE_USE_FIREBASE_EMULATOR') === 'true') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const effectiveConfig = isEmu ? { ...config, projectId: 'demo-foodcourt' } : config;
   if (!getApps().length) {
-    app = initializeApp(config);
+    app = initializeApp(effectiveConfig);
   } else {
     app = getApp();
   }
@@ -44,9 +46,7 @@ export function initFirebase(config = defaultFirebaseConfig) {
   functions = getFunctions(app, 'asia-south1');
 
   // Check if emulator flag is active
-  const isEmulator =
-    getEnvVar('USE_FIREBASE_EMULATOR') === 'true' ||
-    getEnvVar('VITE_USE_FIREBASE_EMULATOR') === 'true';
+  const isEmulator = isEmu;
   if (
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
