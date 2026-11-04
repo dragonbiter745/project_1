@@ -226,10 +226,8 @@ function IdentityRow({ session, web }: IdentityRowProps) {
       {web ? (
         <div className="min-w-0">
           <a href={LANDING_URL} className="block" aria-label="Qrave, home">
-            <picture>
-              <source srcSet="/qrave-wordmark-dark.png" media="(prefers-color-scheme: dark)" />
-              <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="h-8 w-auto select-none" draggable={false} />
-            </picture>
+            {/* This app is light-only (color-scheme: light), so it always uses the dark-ink wordmark. */}
+            <img src="/qrave-wordmark.png" alt="Qrave" width="420" height="149" className="block h-8 w-auto select-none" draggable={false} />
           </a>
           <p className="truncate text-sm text-ink-3">Order online. Pickup at the counter.</p>
         </div>
