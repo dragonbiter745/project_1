@@ -12,6 +12,15 @@ export const RAZORPAY_KEY_SECRET = defineSecret('RAZORPAY_KEY_SECRET');
 export const RAZORPAY_WEBHOOK_SECRET = defineSecret('RAZORPAY_WEBHOOK_SECRET');
 export const CUSTOMER_URL = defineString('CUSTOMER_URL', { default: 'https://order.getqrave.in' });
 
+// Vendor logins by email (Resend). The key lives in Secret Manager; the sender address must be on a domain verified in Resend.
+export const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
+export const MAIL_FROM = defineString('MAIL_FROM', { default: 'Qrave <accounts@getqrave.in>' });
+/** Where the emailed set-password link lands: kitchen logins open the kitchen display, finance logins shop admin. */
+export const VENDOR_URL = defineString('VENDOR_URL', { default: 'https://reva-nest-vendor.web.app' });
+export const SHOP_ADMIN_URL = defineString('SHOP_ADMIN_URL', { default: 'https://reva-nest-admin.web.app' });
+/** Public home of the logo used inside emails (mail clients cannot load app assets). */
+export const BRAND_URL = defineString('BRAND_URL', { default: 'https://getqrave.in' });
+
 export const RAZORPAY_SECRETS = [RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET];
 
 export const isEmulator = () => process.env.FUNCTIONS_EMULATOR === 'true';

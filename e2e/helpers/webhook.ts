@@ -40,7 +40,8 @@ async function post(body: string, signature: string): Promise<WebhookResult> {
 
 /** Razorpay's payment.captured event. The webhook finds our order by the Razorpay order id on it. */
 export async function sendPaymentSuccessWebhook(opts: PaymentWebhookOptions): Promise<WebhookResult> {
-  const rzpOrderId = opts.rzpOrderId ?? (await lookupRzpOrderId(opts.orderId));
+  // A forged request needs no real order: the signature check must refuse it before any order is looked up.
+  const rzpOrderId = opts.rzpOrderId ?? (opts.badSignature ? 'order_forged' : await lookupRzpOrderId(opts.orderId));
   const payload = {
     event: 'payment.captured',
     payload: {

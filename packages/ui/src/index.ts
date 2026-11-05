@@ -9,6 +9,7 @@ export * from './kit/Sheet';
 export * from './kit/PauseSheet';
 export * from './kit/Skeleton';
 export * from './kit/StaffLogin';
+export * from './kit/SetPassword';
 export * from './kit/actionToast';
 export * from './kit/backStack';
 export * from './kit/scrollLock';

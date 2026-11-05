@@ -69,10 +69,23 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
 - Kitchen and manager logins are Firebase Auth email/password accounts with custom claims:
   `{ role: 'master' }` or `{ role: 'vendorAdmin' | 'vendorStaff', vendorId }`.
 - The kitchen display binds a kitchen account to its own shop; only `master` can pick a shop.
-- New shop: create its account with the claim for the new `vendors/{id}`; a password reset is a
-  new password set by the master (Identity Toolkit `accounts:update`).
+- **Day to day, use Operations console > Vendors.** It adds and removes shops, emails a vendor a link to
+  choose their own password (first login or a reset), switches a login off, or removes it. Nobody types or
+  sees a vendor's password. The link is single use and lasts 72 hours; a new link replaces the old one.
+  Logins created before this feature have stand-in `@foodcourt.local` addresses: invite the shop's real
+  email, check it works, then remove the stand-in.
+- One-time setup for the emails: create a Resend account, verify the sender domain (getqrave.in), then
+  `firebase functions:secrets:set RESEND_API_KEY --project reva-nest-foodcourt`. `MAIL_FROM`, `VENDOR_URL`
+  and `SHOP_ADMIN_URL` live in `functions/.env.reva-nest-foodcourt`. Until the secret exists the Vendors page
+  shows "Email is not set up yet" instead of sending.
+- Removing a shop that has taken orders switches it off and hides it (past orders, payouts and reports must
+  still add up). A shop with no orders is deleted.
+- Manual fallback (console unavailable): create the account with the claim for the `vendors/{id}`; a password
+  reset is a new password set by the master (Identity Toolkit `accounts:update`).
 
-### Adding a shop (checklist)
+### Adding a shop (checklist, manual fallback)
+The Vendors page creates the shop (a new shop starts paused with an empty menu) and its logins; the steps
+below are for when it is not available.
 1. Write `docs/menus/<shop>.json` and run the menu test (`npm test` in `functions`).
 2. Create `vendors/<id>`, `availability/<id>` and `menus/<id>` with create-only writes. Do not re-run `seed.ts` on production: it resets the global config and regenerates every table QR.
 3. Create two logins, the kitchen one (`vendorAdmin`) and the shop admin one (`vendorFinance`), each with its `vendorId` claim.

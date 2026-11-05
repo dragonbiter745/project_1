@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { BarChart3, LogOut, Megaphone, QrCode, Radio, Settings2, ShieldAlert, Store, TicketPercent, Users, Wallet } from 'lucide-react';
+import { BarChart3, LogOut, Megaphone, QrCode, Radio, Settings2, ShieldAlert, Store, TicketPercent, UserPlus, Users, Wallet } from 'lucide-react';
 import { CourtFinance } from '@foodcourt/finance-ui';
 import { ActionToast, BrandMark, Button, StaffLogin, cx, useNow } from '@foodcourt/ui';
 import { connectMaster, whenVisible } from '@foodcourt/firebase-client/live';
@@ -12,13 +12,15 @@ import { LiveOrders } from './features/live/LiveOrders';
 import { Settings } from './features/settings/Settings';
 import { Shops } from './features/shops/Shops';
 import { TablesQr } from './features/tables/TablesQr';
+import { Vendors } from './features/vendors/Vendors';
 import { jsonEqual, useLocal } from './lib/store';
 
-type Page = 'live' | 'shops' | 'tables' | 'insights' | 'customers' | 'coupons' | 'messages' | 'finance' | 'settings';
+type Page = 'live' | 'shops' | 'vendors' | 'tables' | 'insights' | 'customers' | 'coupons' | 'messages' | 'finance' | 'settings';
 
 const PAGES: Array<{ key: Page; label: string; blurb: string; icon: typeof Radio; component: ComponentType }> = [
   { key: 'live', label: 'Live orders', blurb: 'Every ticket in every kitchen, as it happens.', icon: Radio, component: LiveOrders },
   { key: 'shops', label: 'Shops', blurb: 'How each kitchen is doing today.', icon: Store, component: Shops },
+  { key: 'vendors', label: 'Vendors', blurb: 'Add shops, email logins and reset passwords.', icon: UserPlus, component: Vendors },
   { key: 'tables', label: 'Tables and QR', blurb: 'Print and replace the codes on every table.', icon: QrCode, component: TablesQr },
   { key: 'insights', label: 'Insights', blurb: "Today's orders, sales and kitchen speed.", icon: BarChart3, component: Insights },
   { key: 'customers', label: 'Customers', blurb: 'Who comes, how often, and what they order.', icon: Users, component: Customers },

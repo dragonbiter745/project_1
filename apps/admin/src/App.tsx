@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { LogOut, ShieldAlert } from 'lucide-react';
-import { ActionToast, Button } from '@foodcourt/ui';
+import { VENDOR_LOGIN_LABEL } from '@foodcourt/shared';
+import { ActionToast, Button, SetPassword } from '@foodcourt/ui';
+import { finishInvite, lookupInvite } from '@foodcourt/firebase-client/vendor-access';
 import { staffSignOut, watchStaff, type StaffUser } from '@foodcourt/firebase-client/staff';
 import MoneyLogin from './login/MoneyLogin';
 import { Shell } from './shell/Shell';
@@ -9,7 +11,22 @@ import { Shell } from './shell/Shell';
 // own separate login, so counter staff never see money or menu settings, and this only ever shows
 // that one shop.
 
+const inviteLookup = async (token: string) => {
+  const i = await lookupInvite(token);
+  return { email: i.email, shopName: i.shopName, roleLabel: VENDOR_LOGIN_LABEL[i.role] };
+};
+const inviteFinish = async (token: string, password: string) => {
+  await finishInvite(token, password);
+};
+
+/** The emailed link opens /set-password?t=…: choose a password once, then land in shop admin already signed in. */
 export default function App() {
+  const [settingPassword, setSettingPassword] = useState(window.location.pathname === '/set-password');
+  if (settingPassword) return <SetPassword lookup={inviteLookup} finish={inviteFinish} onDone={() => setSettingPassword(false)} />;
+  return <Main />;
+}
+
+function Main() {
   // undefined while Firebase restores the session, null when signed out.
   const [staff, setStaff] = useState<StaffUser | null | undefined>(undefined);
   // True from the sign-in tap until the money has flown off screen.

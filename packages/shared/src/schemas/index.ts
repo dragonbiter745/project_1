@@ -311,3 +311,75 @@ export const ShopAdminActionSchema = z.discriminatedUnion('action', [
 ]);
 
 export type ShopAdminInput = z.infer<typeof ShopAdminActionSchema>;
+
+// ─── Vendor access (court manager adds shops and sends logins) ─────────────────────────────────────
+
+export const VENDOR_LOGIN_ROLES = ['vendorStaff', 'vendorAdmin', 'vendorFinance'] as const;
+export type VendorLoginRole = (typeof VENDOR_LOGIN_ROLES)[number];
+export const VENDOR_LOGIN_LABEL: Record<VendorLoginRole, string> = {
+  vendorStaff: 'Kitchen display',
+  vendorAdmin: 'Shop owner',
+  vendorFinance: 'Shop finance',
+};
+/** How long an emailed set-password link works. Single use. */
+export const INVITE_TTL_HOURS = 72;
+export const PASSWORD_MIN = 10;
+
+export const PasswordSchema = z
+  .string()
+  .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters`)
+  .max(128, 'Keep it under 128 characters')
+  .refine((p) => /[A-Za-z]/.test(p) && /\d/.test(p), 'Use at least one letter and one number');
+
+const EMAIL = z.string().trim().toLowerCase().email('Enter a valid email address').max(200);
+
+export const VendorAccessActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('LIST') }),
+  // Creates the login (or finds it) and emails a link where the person picks their own password.
+  z.object({ action: z.literal('INVITE'), email: EMAIL, vendorId: SHOP_ID, role: z.enum(VENDOR_LOGIN_ROLES) }),
+  // A fresh link for an existing login: first-time setup that was missed, or a forgotten password.
+  z.object({ action: z.literal('RESEND'), uid: z.string().min(1).max(128) }),
+  z.object({ action: z.literal('SET_ENABLED'), uid: z.string().min(1).max(128), enabled: z.boolean() }),
+  z.object({ action: z.literal('REMOVE_LOGIN'), uid: z.string().min(1).max(128) }),
+  z.object({
+    action: z.literal('CREATE_SHOP'),
+    requestKey: REQUEST_KEY,
+    name: z.string().trim().min(2, 'Give the shop a name').max(60, 'Keep the name under 60 letters'),
+    code: z.string().trim().toUpperCase().regex(/^[A-Z]{2,4}$/, 'The token code is 2 to 4 letters, like RM'),
+    open: CLOCK.default('09:00'),
+    close: CLOCK.default('21:00'),
+    defaultPrepMin: z.number().int().min(1).max(120).default(10),
+    feePct: z.number().min(0).max(30).default(3),
+  }),
+  // Removes a shop with no order history; one with history is switched off instead so past orders and money still add up.
+  z.object({ action: z.literal('DELETE_SHOP'), vendorId: SHOP_ID, confirmName: z.string().trim().min(1).max(60) }),
+]);
+export type VendorAccessInput = z.infer<typeof VendorAccessActionSchema>;
+
+export const InviteLookupSchema = z.object({ token: z.string().min(20).max(100) });
+export const InviteCompleteSchema = z.object({ token: z.string().min(20).max(100), password: PasswordSchema });
+
+/** What the master console shows for one login. */
+export interface VendorLoginRow {
+  uid: string;
+  email: string;
+  vendorId: string;
+  role: VendorLoginRole;
+  /** invited: link sent, not used yet. active: has set a password. disabled: switched off. */
+  status: 'invited' | 'active' | 'disabled';
+  /** A seeded stand-in address (not a real inbox); invite the real email instead. */
+  placeholder: boolean;
+  lastSentAt?: number;
+  activatedAt?: number;
+  lastSignInAt?: number;
+}
+export interface VendorAccessList {
+  logins: VendorLoginRow[];
+}
+export interface InviteInfo {
+  email: string;
+  role: VendorLoginRole;
+  shopName: string;
+  /** Which app to open after the password is set. */
+  app: 'kitchen' | 'shop-admin';
+}

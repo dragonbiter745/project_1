@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { LogOut, ShieldAlert } from 'lucide-react';
-import { ActionToast, Button, PauseSheet, StaffLogin, run, useNow, useWakeLock } from '@foodcourt/ui';
+import { VENDOR_LOGIN_LABEL } from '@foodcourt/shared';
+import { ActionToast, Button, PauseSheet, SetPassword, StaffLogin, run, useNow, useWakeLock } from '@foodcourt/ui';
+import { finishInvite, lookupInvite } from '@foodcourt/firebase-client/vendor-access';
 import { connectVendor, loadShopList } from '@foodcourt/firebase-client/live';
 import { AnnouncementBar } from './features/board/AnnouncementBar';
 
@@ -39,7 +41,22 @@ function saveShop(vendorId: string | null) {
   }
 }
 
+const inviteLookup = async (token: string) => {
+  const i = await lookupInvite(token);
+  return { email: i.email, shopName: i.shopName, roleLabel: VENDOR_LOGIN_LABEL[i.role] };
+};
+const inviteFinish = async (token: string, password: string) => {
+  await finishInvite(token, password);
+};
+
+/** The emailed link opens /set-password?t=…: choose a password once, then land in the kitchen already signed in. */
 export default function App() {
+  const [settingPassword, setSettingPassword] = useState(window.location.pathname === '/set-password');
+  if (settingPassword) return <SetPassword lookup={inviteLookup} finish={inviteFinish} onDone={() => setSettingPassword(false)} />;
+  return <Main />;
+}
+
+function Main() {
   // undefined while Firebase restores the session, null when signed out.
   const [staff, setStaff] = useState<StaffUser | null | undefined>(undefined);
   useEffect(() => watchStaff(setStaff), []);

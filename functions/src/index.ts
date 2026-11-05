@@ -9,6 +9,7 @@ export { vendorAction } from './callable/vendorAction';
 export { shopAdmin } from './callable/shopAdmin';
 export { reportIssue } from './callable/reportIssue';
 export { adminAction } from './callable/adminAction';
+export { vendorAccess, inspectInvite, completeInvite } from './callable/vendorAccess';
 export { accountAction } from './callable/account';
 export { customerInsights } from './callable/customers';
 export { couponAdmin, dinerCoupons } from './callable/coupons';
