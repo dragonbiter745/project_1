@@ -5,7 +5,7 @@ import { startSession } from '../src/callable/startSession';
 import { createCheckout } from '../src/callable/createCheckout';
 import { buildFinanceReport, financeAction, financeReport, founderReport, shopReport } from '../src/callable/finance';
 import { materializePaidOrder } from '../src/lib/orders';
-import { call, fakeCashfree, resetDb, seed, sessionFor, uniqueUid } from './helpers';
+import { call, fakeRazorpay, resetDb, seed, sessionFor, uniqueUid } from './helpers';
 
 const finance = { role: 'master', email: 'boss@example.test' };
 const rmFinance = { role: 'vendorFinance', vendorId: 'v-rm' };
@@ -15,10 +15,10 @@ const line = (itemId: string, vendorId: string, qty = 1) => ({ itemId, vendorId,
 async function paidOnline(items: ReturnType<typeof line>[], total: number): Promise<string> {
   const uid = uniqueUid();
   const sessionId = await sessionFor(startSession, uid);
-  fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps', order_status: 'ACTIVE' } }) });
+  fakeRazorpay({ createOrder: (_u, body) => ({ json: { id: `order_${body.receipt}`, amount: body.amount, currency: 'INR', status: 'created' } }) });
   const { orderId } = await call(createCheckout, { sessionId, checkoutKey: `fin-${uid}`, items, customerPhone: '9123456780' }, uid);
   vi.unstubAllGlobals();
-  expect(await materializePaidOrder(orderId, { amountPaise: total, cfPaymentId: 'cf1', method: 'upi' })).toBe('created');
+  expect(await materializePaidOrder(orderId, { amountPaise: total, rzpPaymentId: 'pay_fin1', method: 'upi' })).toBe('created');
   return orderId;
 }
 

@@ -13,39 +13,73 @@ import { ensurePickupSession } from '../session/usePickupSession';
 import type { TableSession } from '../session/useTableSession';
 import { useUi } from '../ui/uiStore';
 
-interface CashfreeInstance {
-  checkout: (options: { paymentSessionId: string; redirectTarget: '_modal' }) => Promise<unknown>;
+interface RazorpaySuccess {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+interface RazorpayFailure {
+  error?: { description?: string; reason?: string };
+}
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: 'payment.failed', handler: (response: RazorpayFailure) => void) => void;
+}
+interface RazorpayOptions {
+  key: string;
+  order_id: string;
+  name: string;
+  description?: string;
+  prefill?: { contact?: string };
+  theme?: { color: string };
+  handler: (response: RazorpaySuccess) => void;
+  modal: { ondismiss: () => void };
 }
 declare global {
   interface Window {
-    Cashfree?: (options: { mode: 'sandbox' | 'production' }) => CashfreeInstance;
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
   }
 }
 
-const CASHFREE_SDK = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-let cashfreeLoader: Promise<Window['Cashfree']> | null = null;
+const RAZORPAY_SDK = 'https://checkout.razorpay.com/v1/checkout.js';
+let razorpayLoader: Promise<Window['Razorpay']> | null = null;
 
-// The SDK used to block first paint on every scan; now it loads only when the cart opens.
-function loadCashfree(): Promise<Window['Cashfree']> {
-  if (window.Cashfree) return Promise.resolve(window.Cashfree);
-  if (!cashfreeLoader) {
-    cashfreeLoader = new Promise((resolve) => {
+// The script loads only when the cart opens, never on first paint, so it costs the bundle nothing.
+function loadRazorpay(): Promise<Window['Razorpay']> {
+  if (window.Razorpay) return Promise.resolve(window.Razorpay);
+  if (!razorpayLoader) {
+    razorpayLoader = new Promise((resolve) => {
       const script = document.createElement('script');
-      script.src = CASHFREE_SDK;
+      script.src = RAZORPAY_SDK;
       script.async = true;
-      script.onload = () => resolve(window.Cashfree);
+      script.onload = () => resolve(window.Razorpay);
       script.onerror = () => {
-        cashfreeLoader = null;
+        razorpayLoader = null;
         resolve(undefined);
       };
       document.head.appendChild(script);
     });
   }
-  return cashfreeLoader;
+  return razorpayLoader;
+}
+
+type PaymentOutcome = { paid: true; response: RazorpaySuccess } | { paid: false; message?: string };
+
+/** Opens the Razorpay window and settles with what happened: paid, dismissed, or failed. */
+function openRazorpay(Razorpay: NonNullable<Window['Razorpay']>, options: Omit<RazorpayOptions, 'handler' | 'modal'>): Promise<PaymentOutcome> {
+  return new Promise((resolve) => {
+    const rzp = new Razorpay({
+      ...options,
+      handler: (response) => resolve({ paid: true, response }),
+      modal: { ondismiss: () => resolve({ paid: false }) },
+    });
+    rzp.on('payment.failed', (r) => resolve({ paid: false, message: r.error?.description || r.error?.reason }));
+    rzp.open();
+  });
 }
 
 export function preloadCheckout(paysOnline: boolean): void {
-  if (paysOnline) void loadCashfree();
+  if (paysOnline) void loadRazorpay();
   void import('@foodcourt/firebase-client/functions');
   ensureAnonymousUser().catch(() => {});
 }
@@ -69,15 +103,9 @@ interface CheckoutRequest {
 interface CheckoutResponse {
   orderId: string;
   status: string;
-  paymentSessionId: string | null;
-  cashfreeMode: 'production' | 'sandbox' | null;
+  razorpayOrderId: string | null;
+  razorpayKeyId: string | null;
   totalPaise: number;
-}
-
-interface CashfreeResult {
-  error?: { message?: string };
-  paymentDetails?: unknown;
-  redirect?: boolean;
 }
 
 /** On the website `tableSession` is null; checkout opens the signed-in diner's pickup session itself. */
@@ -93,7 +121,7 @@ export function useCheckout(tableSession: TableSession | null) {
       return;
     }
     const phone = useProfile.getState().profile?.phone;
-    // Guests pay without a number (the server stands one in for Cashfree); only signed-in website diners are asked.
+    // Guests pay without a number (Razorpay's window asks for one itself); only signed-in website diners are asked.
     if (isWebMode && paymentsOn && useAuth.getState().user?.member && !phone) {
       useUi.getState().showDetails('checkout');
       notify('Add your mobile number to pay', { description: 'Your payment receipt is sent to it.' });
@@ -156,23 +184,41 @@ export function useCheckout(tableSession: TableSession | null) {
       });
 
       // Pay at the counter: already confirmed and sent to the kitchens.
-      if (!data.paymentSessionId || !data.cashfreeMode) {
+      if (!data.razorpayOrderId || !data.razorpayKeyId) {
         finalize(data.orderId, data.status);
         return;
       }
 
-      const Cashfree = await loadCashfree();
-      if (!Cashfree) {
+      const Razorpay = await loadRazorpay();
+      if (!Razorpay) {
         notifyError("Couldn't open the payment window", { description: 'Check your connection. Nothing was charged.' });
         return;
       }
-      const result = (await Cashfree({ mode: data.cashfreeMode }).checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: '_modal' })) as CashfreeResult;
-      if (result?.error) {
+      const outcome = await openRazorpay(Razorpay, {
+        key: data.razorpayKeyId,
+        order_id: data.razorpayOrderId,
+        name: 'Qrave',
+        description: 'Food court order',
+        ...(phone ? { prefill: { contact: phone } } : {}),
+        theme: { color: '#111111' },
+      });
+      if (!outcome.paid) {
         // Closed or failed: nothing is sent to the kitchens; the cart stays as it was.
-        notifyError('Payment not completed', { description: result.error.message || 'Nothing was charged. You can try again.' });
+        notifyError('Payment not completed', { description: outcome.message || 'Nothing was charged. You can try again.' });
         return;
       }
-      // Paid in the window (or about to redirect): tracking shows "Confirming payment" until Cashfree confirms.
+      // The window says paid. The server checks the signature and reads the payment back before settling.
+      // If that call can't be made (network), the webhook still settles it, so tracking shows "Confirming payment".
+      try {
+        const verify = await getCallable<RazorpaySuccess, { verified: boolean; settled: boolean }>('verifyPayment');
+        await verify(outcome.response);
+      } catch (err: unknown) {
+        if ((err as { code?: string })?.code === 'functions/invalid-argument') {
+          notifyError('Payment could not be verified', { description: 'If money left your account, it is refunded automatically. Please try again.' });
+          return;
+        }
+        console.warn('verifyPayment unavailable; waiting for the webhook', err);
+      }
       finalize(data.orderId, data.status);
     } catch (err: unknown) {
       console.error('Checkout failed:', err);

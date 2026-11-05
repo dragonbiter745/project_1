@@ -3,12 +3,11 @@ import { URLS, SEED_DATA } from '../helpers/constants';
 import { sendPaymentSuccessWebhook } from '../helpers/webhook';
 import { queryFirestore } from '../helpers/firestore';
 import { getAdminAuth } from '../helpers/auth';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey I: Diner Notifications & In-App Inbox', () => {
   test('Diner receives live visual alert when food is READY', async ({ page, browser }) => {
-    await page.addInitScript(() => {
-      window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await page.addInitScript(razorpayMock);
 
     let createdOrderId: string | null = null;
     let orderTotalPaise = 0;

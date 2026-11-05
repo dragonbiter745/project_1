@@ -1,9 +1,9 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions/v2';
 import { canTransitionOrder, canTransitionSubOrder, type Order, type SubOrder, type Vendor } from '@foodcourt/shared';
-import { CASHFREE_SECRETS, DEFAULT_ACCEPT_SLA_SEC, REGION } from '../config';
+import { DEFAULT_ACCEPT_SLA_SEC, RAZORPAY_SECRETS, REGION } from '../config';
 import { db } from '../db';
-import { getOrder, getRefund, toPaise } from '../lib/cashfree';
+import { createRefund, getCapturedPayment, getRefund } from '../lib/razorpay';
 import { materializePaidOrder, syncParentStatus } from '../lib/orders';
 
 // Shops' accept deadlines change rarely, so a minute-by-minute sweep must not re-read every shop each time.
@@ -47,9 +47,9 @@ export async function timeOutUnaccepted(now = Date.now()): Promise<number> {
   return n;
 }
 
-// An unpaid order is checked with Cashfree at these ages (whole minutes) and then every sweep once it is
+// An unpaid order is checked with Razorpay at these ages (whole minutes) and then every sweep once it is
 // older than the last one: about eight calls instead of one per minute for orders nobody pays for. The
-// payment window is 20 minutes, Cashfree reports the order expired at 21, and the age fallback applies from 26.
+// payment window is 20 minutes, the order is expired here once it is 5 minutes past that (Razorpay orders never expire by themselves), and the age fallback applies from 26.
 const CHECK_AT_MIN = new Set([2, 3, 5, 8, 12, 16, 21, 26]);
 const CHECK_EVERY_AFTER_MIN = 26;
 
@@ -63,14 +63,14 @@ export async function reconcilePayments(now = Date.now()): Promise<{ paid: numbe
     const ageMin = Math.floor((now - order.createdAt) / 60_000);
     if (ageMin <= CHECK_EVERY_AFTER_MIN && !CHECK_AT_MIN.has(ageMin)) continue;
     try {
-      const cf = await getOrder(doc.id);
-      if (cf.order_status === 'PAID') {
-        const outcome = await materializePaidOrder(doc.id, { amountPaise: toPaise(cf.order_amount), method: 'RECONCILED' });
+      const captured = order.payment.rzpOrderId ? await getCapturedPayment(order.payment.rzpOrderId) : undefined;
+      if (captured) {
+        const outcome = await materializePaidOrder(doc.id, { amountPaise: captured.amount, rzpPaymentId: captured.id, method: captured.method ?? 'RECONCILED' });
         if (outcome === 'created') paid++;
         continue;
       }
       const tooOld = now > (order.expiresAt ?? order.createdAt + 15 * 60_000) + 5 * 60_000;
-      if ((cf.order_status === 'EXPIRED' || cf.order_status === 'TERMINATED' || tooOld) && canTransitionOrder('PENDING_PAYMENT', 'EXPIRED')) {
+      if (tooOld && canTransitionOrder('PENDING_PAYMENT', 'EXPIRED')) {
         await doc.ref.update({ status: 'EXPIRED', 'payment.status': 'FAILED', updatedAt: now });
         expired++;
       }
@@ -81,7 +81,7 @@ export async function reconcilePayments(now = Date.now()): Promise<{ paid: numbe
   return { paid, expired };
 }
 
-/** Refunds Cashfree accepted but has not finished: poll until they settle. */
+/** Refunds Razorpay accepted but has not finished: poll until they settle. A refund whose request never got an answer is re-sent (idempotent on its id). */
 export async function refreshRefunds(): Promise<number> {
   const pending = await db.collection('subOrders').where('refund.status', '==', 'PENDING').limit(100).get();
   let settled = 0;
@@ -89,9 +89,17 @@ export async function refreshRefunds(): Promise<number> {
     const t = doc.data() as SubOrder;
     if (!t.refund?.refundId) continue;
     try {
-      const r = await getRefund(t.orderId, t.refund.refundId);
-      if (r.refund_status === 'PENDING' || r.refund_status === 'ONHOLD') continue;
-      await doc.ref.update({ 'refund.status': r.refund_status === 'SUCCESS' ? 'PROCESSED' : 'FAILED', 'refund.updatedAt': Date.now() });
+      let r;
+      if (t.refund.gatewayRefundId) {
+        r = await getRefund(t.refund.gatewayRefundId);
+      } else {
+        const paymentId = ((await db.collection('orders').doc(t.orderId).get()).data() as Order | undefined)?.payment.rzpPaymentId;
+        if (!paymentId) continue;
+        r = await createRefund(paymentId, t.refund.refundId, t.refund.amountPaise, `${t.token} retry`);
+        await doc.ref.update({ 'refund.gatewayRefundId': r.id });
+      }
+      if (r.status === 'pending') continue;
+      await doc.ref.update({ 'refund.status': r.status === 'processed' ? 'PROCESSED' : 'FAILED', 'refund.updatedAt': Date.now() });
       settled++;
     } catch (err) {
       logger.warn('Refund status check failed', { subOrderId: doc.id, err: (err as Error).message });
@@ -102,7 +110,7 @@ export async function refreshRefunds(): Promise<number> {
 
 // Every minute, but only while the court can be ordering (06:00-21:59 IST). Overnight there is nothing to
 // sweep, and anything left over is settled at 06:00.
-export const sweeper = onSchedule({ schedule: '* 6-21 * * *', timeZone: 'Asia/Kolkata', region: REGION, secrets: CASHFREE_SECRETS, timeoutSeconds: 120, maxInstances: 1, retryCount: 0 }, async () => {
+export const sweeper = onSchedule({ schedule: '* 6-21 * * *', timeZone: 'Asia/Kolkata', region: REGION, secrets: RAZORPAY_SECRETS, timeoutSeconds: 120, maxInstances: 1, retryCount: 0 }, async () => {
   const timedOut = await timeOutUnaccepted();
   const payments = await reconcilePayments();
   const refunds = await refreshRefunds();

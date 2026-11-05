@@ -18,13 +18,13 @@
 - **Server-Authoritative State:** Firestore security rules deny direct client updates to `orders`, `subOrders`, `payments`, `pointsLedger`, and `users.pointsBalance`. Only authenticated Cloud Functions or verified PG Webhooks execute mutations.
 
 ## ADR 003: Idempotency & Scalability (10x Launch Profile)
-- **Cart & Order Deduplication:** Client generates an ephemeral UUID `checkoutKey`. If tapped twice, the function detects `checkoutKey` and returns the existing `orderId` and `paymentSessionId`.
-- **Payment Webhook:** Verified via HMAC-SHA256 signature against Cashfree raw body and timestamp. Deduped using `cf_payment_id` written inside a Firestore transaction.
+- **Cart & Order Deduplication:** Client generates an ephemeral UUID `checkoutKey`. If tapped twice, the function detects `checkoutKey` and returns the existing `orderId` and `razorpayOrderId`.
+- **Payment Webhook:** Verified via hex HMAC-SHA256 of the raw body (`x-razorpay-signature`, webhook secret). Settling is idempotent inside a Firestore transaction, so the webhook, the `verifyPayment` fast path and the reconciler can race safely. `verifyPayment` checks the checkout signature, then reads the payment back from Razorpay before settling.
 - **Menu Caching (Cheap Scan Path):** Menus are stored in a single document per vendor (`menus/{vendorId}`). Availability overrides are stored in a micro-document (`availability/{vendorId}`). On menu publish, static JSON is rendered for CDN distribution, dropping per-scan Firestore read costs to near-zero.
 - **Real-time Isolation:** Vendor dashboards only listen to active `subOrders` (`status in ['NEW', 'ACCEPTED', 'PREPARING', 'READY']`). Customers only listen to their active `sessionId`.
 
 ## ADR 004: Customer App Frontend Foundations
-- **Bundle budget:** Initial JS 93 KB gz (was 171 KB). Firebase Auth loads on idle, Functions and the Cashfree SDK load when the cart opens, confetti loads on the first READY alert. `@foodcourt/shared` is `sideEffects: false` so unused zod schemas tree-shake away.
+- **Bundle budget:** Initial JS 93 KB gz (was 171 KB). Firebase Auth loads on idle, Functions and the Razorpay checkout script loads when the cart opens, confetti loads on the first READY alert. `@foodcourt/shared` is `sideEffects: false` so unused zod schemas tree-shake away.
 - **firebase-client subpaths:** `./app`, `./auth`, `./functions`, `./local-store`. The root export is unchanged for vendor/master; the customer app imports subpaths only, so Firestore never enters its bundle until it is actually used.
 - **Structure:** `src/features/{session,menu,cart,checkout,tracking,auth,account,ui}` per PRD §10, `src/components/ui` for customer-only primitives. Cart is a persisted Zustand store (`fc_cart_v1`).
 - **Rendering:** `useLocal(selector, isEqual)` wraps `localStore` with `useSyncExternalStore`, so a cart change re-renders one item row instead of the whole menu. Swapping to targeted Firestore listeners later is contained to these hooks.
@@ -40,7 +40,7 @@
 ## ADR 005: CI/CD
 - **Decision:** one GitHub Actions pipeline per deployable: Frontend · Customer / Vendor / Master (sharing the reusable `_frontend.yml`), Backend · Cloud Functions, and Firebase · Rules & indexes. Path filters mean a change only runs the pipelines it can affect; shared packages fan out to all three frontends.
 - **Frontends:** verify (package typecheck, app build, customer bundle budget via `scripts/ci/check-bundle-size.mjs`) then deploy that artifact: preview channel per PR, live on `main`.
-- **Backend and rules deploy behind approval** (`backend-production`, `firebase-production` environments). Rules are validated offline by loading them into the emulators (`scripts/ci/validate-rules.mjs`); booting the emulators alone was verified not to catch syntax errors. Functions still read Cashfree config from `process.env`, so the deploy writes `functions/.env` from environment secrets and deletes it. Follow-up: Secret Manager (`defineSecret`) per AGENTS.md, with webhook tests.
+- **Backend and rules deploy behind approval** (`backend-production`, `firebase-production` environments). Rules are validated offline by loading them into the emulators (`scripts/ci/validate-rules.mjs`); booting the emulators alone was verified not to catch syntax errors. Functions still read Razorpay config from `process.env`, so the deploy writes `functions/.env` from environment secrets and deletes it. Follow-up: Secret Manager (`defineSecret`) per AGENTS.md, with webhook tests.
 - **Known gap:** `functions` depends on a packed `foodcourt-shared-0.1.0.tgz`, not the workspace package, so `packages/shared` changes don't reach functions until it is re-packed.
 
 ## ADR 006: Shared UI kit and the vendor kitchen display
@@ -86,12 +86,12 @@
   catalog to keep the 150 KB budget, scoped listeners elsewhere) and write only through callables
   or rule-checked documents; sessions start from per-table 128-bit QR tokens; every callable is
   rate-limited (shared per-user windows in Firestore, generous per-instance IP limits for campus
-  NAT); Cashfree keys in Secret Manager; signed webhooks with amount checks; deterministic order
+  NAT); Razorpay keys in Secret Manager; signed webhooks with amount checks; deterministic order
   and ticket ids for idempotency; a one-minute sweeper and a refund trigger.
 - **Testing:** 25 emulator tests (callables, webhook replay, sweeper, refunds, rules) run in CI.
 
 ## ADR 012: Finance: court income in master, a finance page per shop
-- **Context:** the court collects every online payment in one Cashfree account and owes each shop
+- **Context:** the court collects every online payment in one Razorpay account and owes each shop
   its share. The court needs its income and payouts; each shop needs its own earnings, privately.
 - **Decisions:** court finance (commission income, every shop's balance, payouts, commission
   rates, payment ledger) is a **Finance** page in the master console, master-only. Each shop has
@@ -109,8 +109,8 @@
 - **Trends and comparison:** both reports return a series (IST hours for one day, days up to 62
   days, weeks beyond) and the same totals for the previous period of equal length. Each bucket is
   four aggregation queries; charts are hand-drawn SVG in the saffron accent (palette validated).
-- **Not built (kept simple on purpose):** Cashfree settlement and fee reconciliation, GST
-  returns, expense tracking, double-entry journals. Gateway fees appear on Cashfree settlements.
+- **Not built (kept simple on purpose):** Razorpay settlement and fee reconciliation, GST
+  returns, expense tracking, double-entry journals. Gateway fees appear on Razorpay settlements.
 
 ## ADR 013: Founder books replace the expense spreadsheet
 - **Context:** three founders (Dibya, Manash, Sahil Shingh) tracked spending in a spreadsheet.
@@ -139,7 +139,7 @@
   deleted; kept orders lose name and number). The account hub is its own lazy chunk: orders with
   filters, order detail, printable receipt, favourites, coupons, payments and refunds, points,
   notifications, profile, help, privacy (download or delete). Sign-in prompts promise no amounts,
-  only that coupons are coming. Cards are never stored by us: Cashfree and UPI apps keep them.
+  only that coupons are coming. Cards are never stored by us: Razorpay and UPI apps keep them.
 
 ## ADR 015: Customer analytics in master
 - **Decisions:** one server-written summary per diner (`customers/{uid}`: distinct visit days,
@@ -289,7 +289,7 @@ design rule is: **cost follows orders, never visitors or open tabs.** Full numbe
 - **No polling and no hidden listeners.** Admin Home refreshes every 5 minutes while visible; manager and shop-admin
   listeners pause in a background tab; staff apps keep a persistent browser cache. Kitchens stay live.
 - **Background work is idle-cheap.** The sweeper runs 06:00 to 21:59 IST, does one query when nothing is waiting, and
-  asks Cashfree about an unpaid order at fixed ages (2, 3, 5, 8, 12, 16, 21, 26 minutes) instead of every minute.
+  asks Razorpay about an unpaid order at fixed ages (2, 3, 5, 8, 12, 16, 21, 26 minutes) instead of every minute.
 - **The shared rate limiter is for money.** It costs a read and a write per call, so only `createCheckout` and a few
   low-volume actions use it; session start, kitchen actions and staff reports use the in-memory limiter.
 - **Write only what changed.** The order's overall status is re-derived only after Collected, Reject and Cancel,
@@ -329,7 +329,7 @@ Protection (E-Commerce) Rules 2020 apply. Decisions:
   - Website (pickup) orders work for guests. `startSession { mode: 'pickup' }` and `createCheckout` no longer
     require a non-anonymous diner; they still require online payments to be on, so nobody can place an unpaid
     order from home. Guests get a generated name from the server (as at a table) and no phone prompt (the server
-    stands one in for Cashfree). Signed-in diners are still asked for a number and get coupons and rewards.
+    stands one in for Razorpay). Signed-in diners are still asked for a number and get coupons and rewards.
   - A guest's pickup session is opened at checkout, not on page load, so browsing writes nothing; a guest who
     already ordered today gets it restored from the cache so the order stays trackable after a reload.
   - The sign-up checkbox reads "I agree to the Terms and Privacy Policy". `accept` is `{ version }`; `adult` is no
@@ -342,3 +342,9 @@ Protection (E-Commerce) Rules 2020 apply. Decisions:
   consent field and the checkbox wording in one change.
 - **Trade-off:** a guest who clears browser data loses the link to their order, as at a table. Signing in (and
   the guest-to-account merge) is how they keep history.
+
+## ADR: Payment gateway moves from Cashfree to Razorpay (2026-11-05)
+- **Decision:** Razorpay Standard Web Checkout replaces Cashfree. PRD §7.5 is rewritten; the rules did not change: prices recomputed server-side, webhook is the source of truth, every money/state mutation idempotent, secrets in Secret Manager, no client writes.
+- **Shape:** `createCheckout` creates a Razorpay order (integer paise, `receipt` = `orderId`, minimum 100 paise) and returns `{razorpayOrderId, razorpayKeyId}`. The browser opens `checkout.js` (loaded lazily, so the 150 KB budget is untouched). `verifyPayment` is a fast path that checks the checkout signature and reads the payment back before settling; `razorpayWebhook` is authoritative; `reconcilePayments` covers missed webhooks. Refunds use `POST /payments/{id}/refund` with an idempotency key.
+- **Why a callable and not a client write:** `verifyPayment` runs on the server, re-fetches the payment and compares amount/order, so a forged success cannot mark an order paid.
+- **Consequences:** Razorpay orders do not expire, so our sweeper expires unpaid ones after `expiresAt` + 5 min. Auto-capture must be on in the dashboard. Order docs carry `payment.rzpOrderId` / `rzpPaymentId` and tickets `refund.gatewayRefundId` (old `cf*` fields are no longer read; there is no live order data to migrate). Payment mode follows the key prefix (`rzp_test_` / `rzp_live_`), replacing `CASHFREE_ENV`. Shop-level settlement (Phase 2) moves from Easy Split to Razorpay Route (`razorpayAccountId`).

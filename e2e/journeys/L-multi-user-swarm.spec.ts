@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { URLS, SEED_DATA } from '../helpers/constants';
 import { sendPaymentSuccessWebhook } from '../helpers/webhook';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey L: Multi-User Browser Swarm (20 Concurrent Diners)', () => {
   test('20 concurrent browser contexts on Table 14 order, apply coupons, and checkout with zero token collisions', async ({ browser }) => {
@@ -20,9 +21,7 @@ test.describe('Journey L: Multi-User Browser Swarm (20 Concurrent Diners)', () =
         const context = await browser.newContext();
         const page = await context.newPage();
 
-        await page.addInitScript(() => {
-          window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-        });
+        await page.addInitScript(razorpayMock);
 
         let createdOrderId: string | null = null;
         let totalPaise = 0;

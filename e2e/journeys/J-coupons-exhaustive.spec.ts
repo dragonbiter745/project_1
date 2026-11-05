@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { URLS, SEED_DATA } from '../helpers/constants';
 import { sendPaymentSuccessWebhook } from '../helpers/webhook';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey J: Exhaustive Coupons Suite (Browser E2E)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await page.addInitScript(razorpayMock);
   });
 
   test('Valid Flat & Percentage Coupons calculate correct integer paise discounts', async ({ page }) => {

@@ -288,7 +288,7 @@ export function PaymentsScreen() {
         <div className="text-sm text-ink-2">
           <p className="font-semibold text-ink">Your card and UPI details never reach Qrave</p>
           <p className="mt-1">
-            Payments run on Cashfree, an RBI-authorised payment gateway. Saved cards and UPI IDs stay with Cashfree and your UPI app, and you
+            Payments run on Razorpay, an RBI-authorised payment gateway. Saved cards and UPI IDs stay with Razorpay and your UPI app, and you
             pick them in the payment window each time.
           </p>
         </div>

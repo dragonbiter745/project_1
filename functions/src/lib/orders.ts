@@ -82,7 +82,7 @@ export type Materialized = 'created' | 'already' | 'missing' | 'amount-mismatch'
 
 /**
  * Retries a transaction that lost a lock race, with jitter. A burst of payments for one shop all take
- * that shop's token counter; without this, the losers fail and wait minutes for Cashfree to retry.
+ * that shop's token counter; without this, the losers fail and wait minutes for Razorpay to retry.
  */
 export async function retryContention<T>(fn: () => Promise<T>, attempts = 8): Promise<T> {
   for (let i = 1; ; i++) {
@@ -147,7 +147,7 @@ async function reserveTokens(orderId: string, order: Pick<Order, 'items' | 'date
  * Marks an online order paid and creates its shop tickets, atomically and idempotently.
  * Safe to call from the webhook and the reconciler for the same payment.
  */
-export async function materializePaidOrder(orderId: string, payment: { amountPaise: number; cfPaymentId?: string | null; method?: string | null }): Promise<Materialized> {
+export async function materializePaidOrder(orderId: string, payment: { amountPaise: number; rzpPaymentId?: string | null; method?: string | null }): Promise<Materialized> {
   const orderRef = db.collection('orders').doc(orderId);
   const before = await orderRef.get();
   if (!before.exists) return 'missing';
@@ -167,7 +167,7 @@ export async function materializePaidOrder(orderId: string, payment: { amountPai
       status: 'PAID',
       'payment.status': 'SUCCESS',
       'payment.paidAt': now,
-      'payment.cfPaymentId': payment.cfPaymentId ?? null,
+      'payment.rzpPaymentId': payment.rzpPaymentId ?? null,
       'payment.method': payment.method ?? 'UPI',
       updatedAt: now,
     });

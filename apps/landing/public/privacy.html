@@ -45,7 +45,7 @@
 <ul>
   <li>You can order at a table <strong>as a guest</strong>. We then keep no name, email or phone unless you choose to add them.</li>
   <li>An account holds your name, email, mobile number and your orders. You can download it or delete it from <em>Account → Privacy and account</em>.</li>
-  <li>Payments go through <strong>Cashfree Payments</strong>. We never see your card number, UPI PIN or bank login.</li>
+  <li>Payments go through <strong>Razorpay</strong>. We never see your card number, UPI PIN or bank login.</li>
   <li>We use <strong>no advertising or analytics trackers</strong>, and we never sell your data.</li>
   <li>Offers and announcements are <strong>off unless you turn them on</strong>, and you can turn them off at any time.</li>
 </ul>
@@ -128,7 +128,7 @@
   <tbody>
     <tr><td><strong>The food court shops</strong></td><td>The name on your token, your table or pickup, and the dishes you ordered from them</td><td>To cook and hand over your food</td></tr>
     <tr><td><strong>The food court manager</strong> (REVA University food court)</td><td>If you have an account: your name, email, mobile number, orders and total spend</td><td>To run the court, sort out problems and refunds, and send offers you opted in to</td></tr>
-    <tr><td><strong>Cashfree Payments India Pvt. Ltd.</strong> (payment gateway)</td><td>Your name, mobile number, order amount and an order ID</td><td>To take your payment and process refunds</td></tr>
+    <tr><td><strong>Razorpay Software Private Limited</strong> (payment gateway)</td><td>Your name, mobile number, order amount and an order ID</td><td>To take your payment and process refunds</td></tr>
     <tr><td><strong>Google</strong> (Firebase and Google Cloud)</td><td>All the data above, stored on our behalf</td><td>Hosting, sign-in, database and notifications. Our database and servers are in Mumbai, India; some Google services may process data outside India</td></tr>
     <tr><td><strong>Government or courts</strong></td><td>Only what a valid legal order asks for</td><td>When the law requires it</td></tr>
   </tbody>
@@ -162,7 +162,7 @@
   <li><strong>Sign-in</strong> (Google Firebase, in browser storage): keeps you signed in, as a guest or with your account.</li>
   <li><strong>Cart, table session and order progress</strong> (local and session storage): so your cart and live order survive a page refresh.</li>
   <li><strong>Menu cache</strong>: a copy of the menus, so the app loads fast on weak Wi-Fi.</li>
-  <li><strong>Payment window</strong> (Cashfree): their checkout may set cookies it needs to take and secure your payment. See Cashfree's privacy policy.</li>
+  <li><strong>Payment window</strong> (Razorpay): their checkout may set cookies it needs to take and secure your payment. See Razorpay's privacy policy.</li>
 </ul>
 <p>Because these are strictly necessary, we don't show a cookie banner. You can clear them any time in your browser settings; you will be signed out and lose your cart. If we ever add optional trackers, we will ask you first, with "Accept" and "Reject" equally easy, and add a "Cookie settings" link to every page. Full details are in our <a href="/cookies">Cookie Policy</a>.</p>
 
@@ -173,8 +173,8 @@
 <ul>
   <li>Every Qrave site runs only on <strong>HTTPS</strong>.</li>
   <li>Database access is <strong>denied by default</strong>. You can read only your own data; kitchens see only their own tickets; only the court manager sees customer lists. Only our servers can create orders or payments.</li>
-  <li>Prices, payments and refunds are checked on our servers, never trusted from the phone. Payment confirmations from Cashfree are signature-checked.</li>
-  <li>Card and UPI details are handled only by Cashfree, which is PCI-DSS certified. Payment keys are kept in Google Secret Manager, never in the app.</li>
+  <li>Prices, payments and refunds are checked on our servers, never trusted from the phone. Payment confirmations from Razorpay are signature-checked.</li>
+  <li>Card and UPI details are handled only by Razorpay, which is PCI-DSS certified. Payment keys are kept in Google Secret Manager, never in the app.</li>
   <li>Staff and admin actions are written to an audit log.</li>
   <li>We have a written plan for data breaches. If one affects you, we will tell you without delay and report it to the Data Protection Board of India (with a full report within 72 hours) and cyber incidents to CERT-In within 6 hours, as the law requires.</li>
 </ul>

@@ -14,7 +14,7 @@ const fieldClass =
   'h-12 w-full rounded-field bg-surface-2 px-3.5 text-md text-ink outline-none transition-[background-color,box-shadow] duration-150 placeholder:text-ink-3 focus:bg-surface focus:ring-2 focus:ring-accent/50';
 
 /**
- * The name called out at the counter and the mobile number Cashfree needs for an online payment.
+ * The name called out at the counter and the mobile number for your payment receipt.
  * Opens once straight after a sign-in that left them missing, and at checkout if the number is still missing.
  * Guests keep these on this phone; signed-in diners save them to their account.
  */

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { URLS, SEED_DATA } from '../helpers/constants';
 import { sendPaymentSuccessWebhook } from '../helpers/webhook';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey E: Venue Admin Console (Master)', () => {
   test('Master console: logs in and accesses live ops, shops, tables, coupons and settings', async ({ page }) => {
@@ -55,9 +56,7 @@ test.describe('Journey E: Venue Admin Console (Master)', () => {
     const dinerContext = await browser.newContext();
     const dinerPage = await dinerContext.newPage();
 
-    await dinerPage.addInitScript(() => {
-      window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await dinerPage.addInitScript(razorpayMock);
 
     dinerPage.on('response', async (res) => {
       if (res.url().includes('createCheckout') && res.status() === 200) {

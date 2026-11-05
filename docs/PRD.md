@@ -2,7 +2,7 @@
 
 **Owners:** Manash & Dibya Bhusal · **Stage:** Build (Month 2 of the 6‑month plan) · **Date:** 17 Oct 2026
 **Inspiration:** Toast "Mobile Order & Pay" (scan → browse → pay → kitchen ticket → status) adapted to a multi‑vendor food court.
-**Stack (fixed):** Firebase (Auth, Firestore, Functions, Hosting, FCM, App Check, Storage) · Cashfree Payments · built in Google Antigravity.
+**Stack (fixed):** Firebase (Auth, Firestore, Functions, Hosting, FCM, App Check, Storage) · Razorpay Payments · built in Google Antigravity.
 
 > **How to use this in Antigravity:** put this file at `docs/PRD.md`, create `AGENTS.md` pointing to it (see §14), then build milestone by milestone (§13). Each milestone has a definition of done. Do not skip ahead.
 
@@ -10,7 +10,7 @@
 
 ## 1. Vision & Scope
 
-A food court with several shops. Every table has its own QR. A customer scans it, sees **all shops' menus in one app**, builds one cart across shops, pays once via Cashfree, and each shop gets its own kitchen ticket. The customer sees live status per shop and is notified when food is ready.
+A food court with several shops. Every table has its own QR. A customer scans it, sees **all shops' menus in one app**, builds one cart across shops, pays once via Razorpay, and each shop gets its own kitchen ticket. The customer sees live status per shop and is notified when food is ready.
 
 **Launch shops:** Roll Me, Siddi Vinayaka Garden (menus in Appendix A). Architecture is multi‑vendor from day one — adding a shop = config + menu, no code change.
 
@@ -22,7 +22,7 @@ A food court with several shops. Every table has its own QR. A customer scans it
 | Master admin | Founders | Role `master`; sees and controls everything |
 
 ### Scope reconciliation with the pitch deck (important)
-The pitch deck lists *loyalty wallet* and *POS replacement* as out of MVP and says the pilot may use "the vendor's existing payment process." This PRD **adds Cashfree payments and points earning**. Either update the deck/vision doc, or label these as Phase 2 externally. Internally: build per this PRD, behind feature flags (`payments.enabled`, `loyalty.enabled`) so the pilot can run in "order only / pay at counter" mode if REVA or the vendors don't approve online payments yet.
+The pitch deck lists *loyalty wallet* and *POS replacement* as out of MVP and says the pilot may use "the vendor's existing payment process." This PRD **adds Razorpay payments and points earning**. Either update the deck/vision doc, or label these as Phase 2 externally. Internally: build per this PRD, behind feature flags (`payments.enabled`, `loyalty.enabled`) so the pilot can run in "order only / pay at counter" mode if REVA or the vendors don't approve online payments yet.
 
 ### Non‑goals (v1)
 Delivery fleet, native apps, table reservations, inventory/stock management, full accounting, AI recommendations, multi‑campus tenancy UI (data model supports it via `venueId`, UI does not).
@@ -46,7 +46,7 @@ Delivery fleet, native apps, table reservations, inventory/stock management, ful
 - **FR‑C2 Identity.** On session creation the server assigns `displayName` (random "Adjective + Food", e.g. "Zesty Mango") and `dailyNo` = the day's running customer number (resets at 00:00 IST). Shown in header as "Zesty Mango · #042". Names are never unique identifiers; `dailyNo` + date is.
 - **FR‑C3 Browse.** Shop tabs/chips (Roll Me, Siddi Vinayaka…), category sticky nav, search across all shops, veg/non‑veg filter, item cards (name, price, veg dot, optional photo, tags). Out‑of‑stock items greyed and non‑addable in real time. Shops that paused orders show a banner and block add‑to‑cart.
 - **FR‑C4 Cart.** One cart, grouped by shop. Quantity steppers, per‑item note (≤120 chars), persisted locally (survives refresh). Subtotals per shop, one grand total.
-- **FR‑C5 Checkout.** Shows table, per‑shop estimated prep time, tax breakdown, total. Optional "Log in to earn N points" nudge (non‑blocking). Pay button → Cashfree checkout (UPI intent first, then UPI collect, cards, netbanking).
+- **FR‑C5 Checkout.** Shows table, per‑shop estimated prep time, tax breakdown, total. Optional "Log in to earn N points" nudge (non‑blocking). Pay button → Razorpay checkout (UPI, cards, netbanking, wallets).
 - **FR‑C6 Order tracking.** Live screen per order with per‑shop sub‑order status timeline. Ready alert = vibration + sound + banner (+ web push if permitted). Keep‑awake while an order is active.
 - **FR‑C7 Failures.** Payment failed/expired → cart preserved, retry. Shop rejects/times out → auto refund + clear message + option to reorder elsewhere. Duplicate tap protection (idempotency key per checkout).
 - **FR‑C8 Login & points (phase 1b).** Phone OTP (primary) or Google. Linking upgrades the anonymous user (`linkWithCredential`) so current session and orders are retained, and **already‑paid orders in the current session earn points retroactively**. Points screen: balance, ledger, how it works.
@@ -63,7 +63,7 @@ Delivery fleet, native apps, table reservations, inventory/stock management, ful
 - **FR‑V7 Settlements view.** Read‑only list of payouts/settled amounts per day (see §7.5).
 
 ### 3.3 Master admin
-- **FR‑M1 Vendors:** create/suspend shops, set fees, fulfilment mode, hours, Cashfree vendor linkage, staff roles.
+- **FR‑M1 Vendors:** create/suspend shops, set fees, fulfilment mode, hours, Razorpay Route linked-account, staff roles.
 - **FR‑M2 Menus:** full edit across shops; menu import from CSV/JSON.
 - **FR‑M3 Tables & QR:** create tables/zones; generate per‑table QR (individual PNG/SVG + print‑ready A4 PDF sheet with table label); deactivate/rotate a QR (tableCode rotation invalidates old print).
 - **FR‑M4 Live ops:** all orders across shops, filter by shop/status/table; force status change, cancel, refund (full/partial) with reason; audit‑logged.
@@ -84,7 +84,7 @@ Parent order status is derived: all collected → `COMPLETED`; partially refunde
 Rules
 - Pay‑first. A shop only ever sees paid orders (kills prank/QR‑photo orders and no‑shows).
 - Vendor accept SLA: 3 min (configurable). Missed → `TIMED_OUT` → auto‑refund → notify customer.
-- Pending payment TTL: 15 min (Cashfree `order_expiry_time` + scheduled cleanup).
+- Pending payment TTL: 20 min (our own `expiresAt` + scheduled cleanup; Razorpay orders do not expire on their own).
 - Token format: `{VENDOR_CODE}-{NNN}` resetting daily per shop (`RM-042`, `SV-017`).
 - All prices are integers in **paise**. Never compute totals on the client for payment; server recomputes from the menu.
 - Fulfilment mode per shop (config): `pickup` (default; customer collects on READY) or `table_service` (staff delivers to table label). Ticket always shows table.
@@ -105,7 +105,7 @@ Rules
 | **Accessibility** | WCAG AA contrast, 44px touch targets, no hover‑only UI. |
 | **i18n** | English v1; strings externalised so Kannada/Hindi can be added. |
 | **Observability** | Structured logs, Cloud Monitoring alerts (payment webhook failures, function error rate, DLQ depth), Crashlytics/Sentry on frontends. |
-| **Cost** | Blaze plan with budget alerts (₹ thresholds). At 1k scans/day expected Firebase spend is low; Cashfree gateway fees dominate (§12). |
+| **Cost** | Blaze plan with budget alerts (₹ thresholds). At 1k scans/day expected Firebase spend is low; Razorpay gateway fees dominate (§12). |
 
 ---
 
@@ -123,13 +123,13 @@ Rules
      │
  Cloud Functions v2 (asia-south1, Node 20 / TypeScript)
    ├─ callable: startSession, createCheckout, vendorAction, linkLogin, adminOps
-   ├─ http: cashfreeWebhook (signature-verified, idempotent)
+   ├─ http: razorpayWebhook (signature-verified, idempotent)
    ├─ triggers: onSubOrderWrite (points, push, analytics), onPaymentPaid
    ├─ scheduled/Cloud Tasks: expirePending, vendorSlaTimeout, reconcilePayments, dailyRollup
-   └─ Secret Manager (Cashfree keys, webhook secret)
+   └─ Secret Manager (Razorpay keys, webhook secret)
         │
         ▼
-   Cashfree (PG: Create Order, Webhooks, Refunds, [Easy Split])
+   Razorpay (Orders, Checkout, Webhooks, Refunds, [Route])
    FCM (web push) · Cloud Storage (item images, QR PDFs) · BigQuery export (analytics, optional)
 ```
 
@@ -139,10 +139,10 @@ Rules
 3. **No hot documents.** Firestore sustains ~1 write/s per document. Avoid per‑order writes to shared docs. Counters: `counters/{dateKey}` (customer no.) and `counters/{dateKey}_{vendorId}` (tokens) are updated inside transactions, only on session creation / paid order (≤ a few per second at peak). If contention appears at 10×, switch to **sharded counters** or pre‑allocated number blocks per function instance — interface `nextCustomerNo()` / `nextToken(vendorId)` stays the same.
 4. **Targeted listeners.** Customers listen only to their own session's orders (`where sessionId == X`). Vendors listen to `subOrders where vendorId == V and status in [NEW,ACCEPTED,PREPARING,READY]` (small, bounded set). Never listen to whole collections.
 5. **Server‑authoritative writes.** Clients cannot write `orders`/`subOrders`/`payments`/`users.points`; only callable functions/webhooks can. Rules enforce this (also stops tampering under load).
-6. **Idempotency & retries.** `checkoutKey` (client UUID) dedupes double taps; Cashfree `order_id` = our `orderId`; webhook handler keyed by `cf_payment_id`; points keyed by `orderId`; refunds keyed by `subOrderId`.
+6. **Idempotency & retries.** `checkoutKey` (client UUID) dedupes double taps; Razorpay order `receipt` = our `orderId`; settlement keyed by order, so webhook/`verifyPayment`/reconcile retries are no-ops; points keyed by `orderId`; refunds keyed by `subOrderId`.
 7. **Async side effects.** Points, push notifications, analytics rollups run from Firestore triggers / Cloud Tasks with retry + dead‑letter, never in the request path.
 8. **Bot / abuse control.** Firebase **App Check** (reCAPTCHA Enterprise/Play‑style for web) on all callables; per‑uid and per‑IP rate limits on `startSession`/`createCheckout`; payment‑first removes spam‑order incentive.
-9. **Region & cold starts.** Everything in `asia-south1`. `createCheckout` and `cashfreeWebhook` set `minInstances: 1` (cheap, removes cold start from the critical path).
+9. **Region & cold starts.** Everything in `asia-south1`. `createCheckout` and `razorpayWebhook` set `minInstances: 1` (cheap, removes cold start from the critical path).
 10. **Data growth.** Orders partitioned by `dateKey` field + composite indexes; nightly rollup into `analyticsDaily` so dashboards never scan raw orders. Optional BigQuery export extension for deep analysis.
 
 ### 6.3 Realtime & offline
@@ -159,7 +159,7 @@ All money in paise. All timestamps server timestamps. `dateKey` = `YYYY-MM-DD` i
 | Collection | Key fields | Notes |
 |---|---|---|
 | `venues/{venueId}` | name, timezone, taxConfig, sessionTtlMin | one doc now |
-| `vendors/{vendorId}` | name, code(`RM`,`SV`), logoUrl, status(active/suspended), acceptingOrders, pausedUntil, defaultPrepMin, fulfilmentMode, acceptSlaSec, cashfreeVendorId?, feePct/perOrderFeePaise, hours | |
+| `vendors/{vendorId}` | name, code(`RM`,`SV`), logoUrl, status(active/suspended), acceptingOrders, pausedUntil, defaultPrepMin, fulfilmentMode, acceptSlaSec, razorpayAccountId?, feePct/perOrderFeePaise, hours | |
 | `menus/{vendorId}` | version, categories[{id,name,sort,items[{id,name,pricePaise,veg,desc?,imageUrl?,tags[],prepMin?,sort}]}] | single doc, < 1 MB |
 | `availability/{vendorId}` | unavailable{itemId:true}, updatedAt | tiny, hot-ish |
 | `tables/{tableId}` | code(public, in QR), label("T‑14"), zone, active | |
@@ -190,17 +190,22 @@ Server computes: Σ(item price × qty) + tax. Menu prices are treated as **GST�
 ### 7.4 Anonymous → logged‑in merge
 `linkLogin` callable: after Firebase `linkWithCredential` the uid is preserved (no data move). If the phone already belongs to another uid (returning user on a new device), merge: re‑point current `sessions`/`orders` to the existing user, then credit points retroactively for the current session's collected/paid orders.
 
-### 7.5 Payments & settlement (Cashfree)
+### 7.5 Payments & settlement (Razorpay)
+> **Provider change (2026-11-05):** the gateway moved from Razorpay to Razorpay Standard Web Checkout. Everything below replaces the Razorpay flow; the rules (server-side prices, webhook as source of truth, idempotency) are unchanged.
+
 **Flow**
 1. Client → `createCheckout({sessionId, cart, checkoutKey})`.
-2. Function validates session, shop open/not paused, item availability, recomputes prices from `menus/*` (ignores client prices), writes `orders/{id}` = `PENDING_PAYMENT`, calls Cashfree **Create Order** (`order_id`, `order_amount` in ₹, `customer_details` using a stable anonymous id + placeholder phone if guest, `order_meta.notify_url`=webhook, `return_url`, `order_expiry_time`). Returns `payment_session_id`.
-3. Client opens Cashfree Checkout (JS SDK; UPI intent prioritised on mobile).
-4. **Source of truth = webhook.** `cashfreeWebhook` verifies `x-webhook-signature` (HMAC‑SHA256 over timestamp + raw body, secret from Secret Manager), dedupes by `cf_payment_id`, checks amount/currency match the order, then in one transaction sets order `PAID`, creates one `subOrder` per shop with tokens, and enqueues push to vendors.
-5. `return_url` page never marks anything paid; it only listens to the Firestore order doc (and shows "confirming payment…").
-6. **Reconcile:** `reconcilePayments` runs every 2 min for `PENDING_PAYMENT` orders older than 2 min → Cashfree **Get Order** → settle state. Covers missed webhooks.
-7. **Refunds:** `refundSubOrder` calls Cashfree Refund API with `refund_id = sub_{subOrderId}`; status tracked via refund webhooks.
+2. Function validates session, shop open/not paused, item availability, recomputes prices from `menus/*` (ignores client prices), rejects online totals under ₹1 (Razorpay minimum is 100 paise), writes `orders/{id}` = `PENDING_PAYMENT`, calls Razorpay **Create Order** (`POST /v1/orders` with `amount` in integer paise, `currency: INR`, `receipt` = our `orderId`). Stores `payment.rzpOrderId`; returns `{razorpayOrderId, razorpayKeyId}`. Guests need no phone number or customer details.
+3. Client loads `checkout.razorpay.com/v1/checkout.js` lazily (cart open, never at first paint) and opens the Razorpay window with the order id. Handles dismiss (cancelled) and `payment.failed`; the cart is kept in both cases.
+4. On success the client sends `razorpay_order_id`, `razorpay_payment_id`, `razorpay_signature` to the callable `verifyPayment`. It checks `HMAC-SHA256(order_id + "|" + payment_id, key secret)`, requires the order to belong to the caller, **reads the payment back from Razorpay** (status `captured`, same order, amount equals the server total) and only then settles. A bad signature is rejected (`invalid-argument`) and marks nothing paid. This is a fast path only.
+5. **Source of truth = webhook.** `razorpayWebhook` verifies `x-razorpay-signature` (hex HMAC‑SHA256 of the raw body, webhook secret from Secret Manager), handles `payment.captured` / `order.paid` / `payment.failed` / `refund.processed` / `refund.failed`, finds the order by `payment.rzpOrderId`, checks amount/currency, then in one transaction sets order `PAID`, creates one `subOrder` per shop with tokens, and enqueues push to vendors. Settling is idempotent, so the webhook, `verifyPayment` and the reconciler can race safely.
+6. The tracking screen only listens to the Firestore order doc ("confirming payment…"); the browser's word never marks anything paid.
+7. **Reconcile:** `reconcilePayments` checks `PENDING_PAYMENT` orders at fixed ages → Razorpay **Fetch payments for an order** → settles a captured payment. Razorpay orders never expire by themselves, so orders past their window (+5 min) are expired by our sweeper. Covers missed webhooks.
+8. **Refunds:** `refundTicket` calls `POST /v1/payments/{rzpPaymentId}/refund` with `receipt = refundId` (`rf_{subOrderId}`) and the `X-Refund-Idempotency` header; status tracked via refund webhooks and polled by the sweeper (a refund whose request got no answer is re-sent with the same idempotency key).
 
-**Settlement to shops (decision needed — see §16):** (a) *Phase 1 default:* all money lands in the founders' Cashfree account; daily payout report per shop (master + vendor "Settlements" view) and manual payouts; (b) *Phase 2:* Cashfree **Easy Split / vendor split** to settle each shop automatically (requires shop KYC onboarding in Cashfree). Data model already carries `cashfreeVendorId` and per‑sub‑order amounts so (b) needs no migration.
+**Dashboard setup:** enable payment auto-capture; add a webhook to `https://asia-south1-<project>.cloudfunctions.net/razorpayWebhook` for `payment.captured`, `order.paid`, `payment.failed`, `refund.processed`, `refund.failed`, with a strong webhook secret (`RAZORPAY_WEBHOOK_SECRET`). Test mode uses `rzp_test_` keys; live uses `rzp_live_`.
+
+**Settlement to shops (decision needed — see §16):** (a) *Phase 1 default:* all money lands in the founders' Razorpay account; daily payout report per shop (master + vendor "Settlements" view) and manual payouts; (b) *Phase 2:* Razorpay **Route (linked accounts)** to settle each shop automatically (requires shop KYC onboarding in Razorpay). Data model already carries `razorpayAccountId` and per‑sub‑order amounts so (b) needs no migration.
 
 ---
 
@@ -212,7 +217,7 @@ Server computes: Σ(item price × qty) + tax. Menu prices are treated as **GST�
   - Master: broad read; privileged writes via functions.
 - **Server‑side validation** of every state transition (allowed‑transition table) and of prices/availability.
 - **App Check enforced** on Firestore + Functions; **reCAPTCHA** on login OTP.
-- **Secrets** only in Secret Manager; Cashfree keys never ship to clients (only `payment_session_id`).
+- **Secrets** only in Secret Manager; Razorpay secrets never ship to clients (only the public key id and the order id).
 - **Webhook hardening:** signature + timestamp tolerance, replay protection via event dedupe, amount re‑verification.
 - **QR integrity:** QR carries a short public `tableCode`; rotating code invalidates stolen/old prints. Sessions are cheap and bound to uid+table; pay‑first prevents abuse value.
 - **PII:** phone numbers stored only for logged‑in users; admin views mask by default; audit log on views of full phone.
@@ -260,7 +265,7 @@ foodcourt/
 │  │     │  ├─ session/           # startSession, table bind, header identity
 │  │     │  ├─ menu/              # shop tabs, categories, search, item card
 │  │     │  ├─ cart/              # cart store (zustand), grouping, notes
-│  │     │  ├─ checkout/          # summary, Cashfree SDK launcher, return page
+│  │     │  ├─ checkout/          # summary, Razorpay checkout launcher, return page
 │  │     │  ├─ tracking/          # order status, ready alert, push opt-in
 │  │     │  ├─ auth/              # phone OTP, link/merge, login nudge
 │  │     │  ├─ loyalty/           # points balance & ledger
@@ -281,10 +286,10 @@ foodcourt/
 │  └─ src/
 │     ├─ index.ts                 # exports only
 │     ├─ callable/ startSession.ts · createCheckout.ts · vendorAction.ts · linkLogin.ts · adminOps.ts · reportIssue.ts
-│     ├─ http/ cashfreeWebhook.ts · cashfreeRefundWebhook.ts
+│     ├─ http/ razorpayWebhook.ts (payments + refunds)
 │     ├─ triggers/ onOrderPaid.ts · onSubOrderStatus.ts (push, points, analytics) · onMenuPublish.ts (CDN json)
 │     ├─ scheduled/ expirePending.ts · vendorSlaTimeout.ts · reconcilePayments.ts · dailyRollup.ts · sessionCleanup.ts
-│     ├─ services/ cashfree.ts · counters.ts · points.ts · notifications.ts · refunds.ts · audit.ts
+│     ├─ services/ razorpay.ts · counters.ts · points.ts · notifications.ts · refunds.ts · audit.ts
 │     └─ lib/ auth.ts (claims guards) · idempotency.ts · errors.ts · logger.ts · rateLimit.ts
 ├─ firebase/
 │  ├─ firebase.json               # hosting targets: customer, vendor, master
@@ -303,7 +308,7 @@ foodcourt/
 └─ .github/workflows/             # lint+test, deploy per branch (dev/staging/prod)
 ```
 
-**Environments:** `fc-dev`, `fc-staging`, `fc-prod` Firebase projects; Cashfree **sandbox** for dev/staging, **production** only on prod. Feature flags in `config/global`.
+**Environments:** `fc-dev`, `fc-staging`, `fc-prod` Firebase projects; Razorpay **test mode** (`rzp_test_`) for dev/staging, **live** (`rzp_live_`) only on prod. Feature flags in `config/global`.
 
 ---
 
@@ -319,7 +324,7 @@ foodcourt/
 ## 12. Cost & Commercial Notes
 
 - Firebase at 1k scans/day: reads ≈ tens of thousands/day with menu‑JSON caching → negligible; Functions/Hosting low. Set budget alerts.
-- **Cashfree gateway fees are the real cost** and may exceed the pitch's ₹1/order platform fee hypothesis. Decide who bears the fee (customer convenience fee, shop, or founders) before pilot. Model it in `config/global` (`platformFee`, `gatewayFeeBearer`).
+- **Razorpay gateway fees are the real cost** and may exceed the pitch's ₹1/order platform fee hypothesis. Decide who bears the fee (customer convenience fee, shop, or founders) before pilot. Model it in `config/global` (`platformFee`, `gatewayFeeBearer`).
 - Per‑order platform fee (vendor‑side) and monthly subscription remain testable via `vendors.feePct/perOrderFeePaise`; report on contribution margin per order in master analytics.
 
 ---
@@ -335,7 +340,7 @@ foodcourt/
 **M2 · Vendor board (1 wk):** KDS, accept/reject/preparing/ready/collected via `vendorAction`, sound alerts, pause, availability toggles, status → customer live.
 *DoD:* E2E Playwright test passes scan→collected; board survives refresh and offline/online.
 
-**M3 · Cashfree payments (1 wk):** `createCheckout`, SDK checkout, webhook, reconcile, auto‑refund on reject/timeout, SLA timeout.
+**M3 · Razorpay payments (1 wk):** `createCheckout`, checkout.js window, webhook, reconcile, auto‑refund on reject/timeout, SLA timeout.
 *DoD:* sandbox test matrix passes: success, failure, user abandon, duplicate webhook, missed webhook (reconcile), reject→refund, partial refund on one shop of two.
 
 **M4 · Master admin (1 wk):** vendors, menus, tables & QR PDF, live ops, refunds, audit log, config/flags.
@@ -364,7 +369,7 @@ foodcourt/
 - Never trust client prices or availability. Recompute server-side from menus/availability.
 - Every function that mutates money/state must be idempotent (see PRD §6.2.6).
 - Status changes must go through packages/shared/statusMachine.ts.
-- No secrets in code. Cashfree keys via Secret Manager. Sandbox unless env=prod.
+- No secrets in code. Razorpay secrets via Secret Manager. Test mode unless env=prod.
 - Firestore: no listeners on whole collections; always filter by vendorId/sessionId/uid.
 - Any change touching rules, payments, or refunds requires tests (rules emulator / webhook replay).
 - Customer app bundle budget: ≤150 KB gz initial. Don't import vendor/master code or heavy libs.
@@ -381,14 +386,14 @@ foodcourt/
 | Vendor ignores new orders | Repeating alert, SLA auto‑refund, board escalation colours, pause control |
 | Tablet/Wi‑Fi flakiness in the court | Persistent listeners, reconnect replay, offline banner, 4G fallback device |
 | Campus/vendor not approving online payments yet | `payments.enabled` flag → pay‑at‑counter pilot mode |
-| Cashfree fees erode margin | Model fee bearer, track contribution margin per order |
+| Razorpay fees erode margin | Model fee bearer, track contribution margin per order |
 | QR photo abuse / bots | Pay‑first, App Check, rate limits, tableCode rotation |
 | Daily counter contention at peak | Sharded‑counter swap behind `nextCustomerNo()` |
 | Menu/price errors from photo transcription | Shop owners sign off on seed data before go‑live |
 
 ## 16. Open Questions (decide before M3/M4)
 1. Settlement model for Phase 1: founders collect & pay out manually, or Easy Split from day one?
-2. Who bears Cashfree gateway fee, and is a customer convenience fee acceptable?
+2. Who bears Razorpay gateway fee, and is a customer convenience fee acceptable?
 3. Are menu prices GST‑inclusive? Do shops need GST invoices / FSSAI details on receipts?
 4. Fulfilment per shop: counter pickup or table service?
 5. Do both shops share one accept SLA and prep‑time defaults, or per shop?

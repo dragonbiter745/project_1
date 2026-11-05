@@ -193,54 +193,6 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Create Cashfree Sandbox Order
-  if (req.method === 'POST' && req.url === '/api/cashfree/create-order') {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
-    req.on('end', async () => {
-      try {
-        const payload = JSON.parse(body);
-        const orderId = payload.orderId || `ord_${Date.now()}`;
-        const amount = payload.amount || 100;
-        const phone = payload.customerPhone || '9876543210';
-        const name = payload.customerName || 'Demo Diner';
-
-        const appId = process.env.CASHFREE_APP_ID || '';
-        const secret = process.env.CASHFREE_SECRET_KEY || '';
-
-        const cfRes = await fetch('https://sandbox.cashfree.com/pg/orders', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-client-id': appId,
-            'x-client-secret': secret,
-            'x-api-version': '2023-08-01',
-          },
-          body: JSON.stringify({
-            order_id: orderId,
-            order_amount: amount,
-            order_currency: 'INR',
-            customer_details: {
-              customer_id: `cust_${Date.now()}`,
-              customer_phone: phone,
-              customer_name: name,
-            },
-          }),
-        });
-
-        const cfData = await cfRes.json();
-        res.writeHead(cfRes.status, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(cfData));
-      } catch (err: any) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message }));
-      }
-    });
-    return;
-  }
-
   res.writeHead(404);
   res.end('Not found');
 });

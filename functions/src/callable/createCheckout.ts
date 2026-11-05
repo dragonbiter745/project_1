@@ -13,17 +13,14 @@ import {
   type VendorMenu,
   PICKUP_TABLE_ID,
 } from '@foodcourt/shared';
-import { CASHFREE_SECRETS, CUSTOMER_URL, PAYMENT_WINDOW_MS, REGION } from '../config';
+import { PAYMENT_WINDOW_MS, RAZORPAY_KEY_ID, RAZORPAY_SECRETS, REGION } from '../config';
 import { db } from '../db';
-import { CashfreeError, createOrder, isProduction } from '../lib/cashfree';
+import { createOrder, MIN_AMOUNT_PAISE, RazorpayError } from '../lib/razorpay';
 import { clientIp, limitLocal, limitShared, requireUid } from '../lib/guard';
 import { discountForCheckout, holdCoupon, releaseHold } from '../lib/coupons';
 import { writeCustomerOrder } from '../lib/customers';
 import { signInProvider } from './account';
 import { readForTickets, retryContention, writeTickets } from '../lib/orders';
-
-/** Cashfree insists on a mobile number; guests give none, so this stands in and is never stored on the order. */
-const GUEST_PHONE = '9999999999';
 
 const FALLBACK_CONFIG: GlobalConfig = {
   pointsPerRupee: 0.1,
@@ -39,12 +36,12 @@ const FALLBACK_CONFIG: GlobalConfig = {
  * money is trusted. The same (diner, checkoutKey) always maps to the same order, so double taps and
  * retries cannot create a second order or a second payment.
  */
-/** The first of two simultaneous checkouts is creating the Cashfree order: wait (briefly) for its payment session. */
+/** The first of two simultaneous checkouts is creating the Razorpay order: wait (briefly) for its id. */
 async function awaitFirstCheckout(orderRef: FirebaseFirestore.DocumentReference, orderId: string) {
   for (let i = 0; i < 16; i++) {
     const o = (await orderRef.get()).data() as Order | undefined;
-    if (o && (o.payment.paymentSessionId || o.status !== 'PENDING_PAYMENT')) {
-      return { orderId, status: o.status, paymentSessionId: o.payment.paymentSessionId ?? null, cashfreeMode: isProduction() ? 'production' : 'sandbox', totalPaise: o.totals.totalPaise };
+    if (o && (o.payment.rzpOrderId || o.status !== 'PENDING_PAYMENT')) {
+      return { orderId, status: o.status, razorpayOrderId: o.payment.rzpOrderId ?? null, razorpayKeyId: RAZORPAY_KEY_ID.value(), totalPaise: o.totals.totalPaise };
     }
     await new Promise((r) => setTimeout(r, 400));
   }
@@ -52,7 +49,7 @@ async function awaitFirstCheckout(orderRef: FirebaseFirestore.DocumentReference,
 }
 
 export const createCheckout = onCall(
-  { region: REGION, secrets: CASHFREE_SECRETS, maxInstances: 100, concurrency: 80, timeoutSeconds: 30, memory: '512MiB' },
+  { region: REGION, secrets: RAZORPAY_SECRETS, maxInstances: 100, concurrency: 80, timeoutSeconds: 30, memory: '512MiB' },
   async (req) => {
     const uid = requireUid(req);
     limitLocal(`ip:${clientIp(req)}:checkout`, 600, 60);
@@ -69,7 +66,7 @@ export const createCheckout = onCall(
 
     if (existingSnap.exists) {
       const o = existingSnap.data() as Order;
-      return { orderId, status: o.status, paymentSessionId: o.payment.paymentSessionId ?? null, cashfreeMode: isProduction() ? 'production' : 'sandbox', totalPaise: o.totals.totalPaise };
+      return { orderId, status: o.status, razorpayOrderId: o.payment.rzpOrderId ?? null, razorpayKeyId: RAZORPAY_KEY_ID.value(), totalPaise: o.totals.totalPaise };
     }
 
     const now = Date.now();
@@ -145,12 +142,12 @@ export const createCheckout = onCall(
         writeTickets(tx, orderId, base, reads, now, 'COUNTER');
         writeCustomerOrder(tx, base, now);
       }));
-      return { orderId, status: 'PAID', paymentSessionId: null, cashfreeMode: null, totalPaise: totals.totalPaise };
+      return { orderId, status: 'PAID', razorpayOrderId: null, razorpayKeyId: null, totalPaise: totals.totalPaise };
     }
 
+    if (totals.totalPaise < MIN_AMOUNT_PAISE) throw new HttpsError('failed-precondition', 'Online payment needs a total of at least ₹1. Pay at the counter instead.');
     const expiresAt = now + PAYMENT_WINDOW_MS;
     if (coupon) await holdCoupon(coupon.code, uid, orderId, expiresAt, now);
-    // Guests pay without giving a number (PRD §6.2): Cashfree still needs one, so it gets a placeholder and none is stored.
     try {
       await orderRef.create({ ...base, status: 'PENDING_PAYMENT', payment: { status: 'PENDING', mode: 'ONLINE' }, ...(customerPhone ? { customerPhone } : {}), expiresAt });
     } catch (err) {
@@ -160,20 +157,13 @@ export const createCheckout = onCall(
     }
 
     try {
-      const cf = await createOrder({
-        orderId,
-        amountPaise: totals.totalPaise,
-        customerId: uid,
-        customerPhone: customerPhone ?? GUEST_PHONE,
-        customerName: base.displayName || 'Qrave diner',
-        returnUrl: pickup ? `${CUSTOMER_URL.value()}/order?order_id={order_id}` : `${CUSTOMER_URL.value()}/t/${session.qrToken as string}?order_id={order_id}`,
-        expiresAt: expiresAt + 60_000,
-      });
-      if (!cf.payment_session_id) throw new CashfreeError(502, 'No payment session returned');
-      await orderRef.update({ 'payment.paymentSessionId': cf.payment_session_id, 'payment.cfOrderId': String(cf.cf_order_id ?? '') });
-      return { orderId, status: 'PENDING_PAYMENT', paymentSessionId: cf.payment_session_id, cashfreeMode: isProduction() ? 'production' : 'sandbox', totalPaise: totals.totalPaise };
+      // Amount is the server-recomputed total in integer paise; Razorpay takes paise as-is.
+      const rzp = await createOrder({ orderId, amountPaise: totals.totalPaise });
+      if (!rzp.id) throw new RazorpayError(502, 'No order id returned');
+      await orderRef.update({ 'payment.rzpOrderId': rzp.id });
+      return { orderId, status: 'PENDING_PAYMENT', razorpayOrderId: rzp.id, razorpayKeyId: RAZORPAY_KEY_ID.value(), totalPaise: totals.totalPaise };
     } catch (err) {
-      logger.error('Cashfree order creation failed', { orderId, err: (err as Error).message });
+      logger.error('Razorpay order creation failed', { orderId, err: (err as Error).message });
       await orderRef.update({ status: 'FAILED', 'payment.status': 'FAILED', updatedAt: Date.now() });
       if (coupon) await releaseHold(coupon.code, uid);
       throw new HttpsError('unavailable', 'Payments are not responding right now. Nothing was charged. Please try again.');

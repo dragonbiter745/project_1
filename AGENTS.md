@@ -6,7 +6,7 @@
 - Never trust client prices or availability. Recompute server-side from menus/availability.
 - Every function that mutates money/state must be idempotent (see PRD §6.2.6).
 - Status changes must go through packages/shared/statusMachine.ts.
-- No secrets in code. Cashfree keys via Secret Manager. Sandbox unless env=prod.
+- No secrets in code. Razorpay secrets via Secret Manager. Test mode (rzp_test_ keys) unless env=prod.
 - Firestore: no listeners on whole collections; always filter by vendorId/sessionId/uid.
 - Any change touching rules, payments, or refunds requires tests (rules emulator / webhook replay).
 - Customer app bundle budget: ≤150 KB gz initial. Don't import vendor/master code or heavy libs.

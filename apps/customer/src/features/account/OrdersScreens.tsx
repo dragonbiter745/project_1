@@ -388,7 +388,7 @@ export function ReceiptScreen({ id }: { id: string }) {
             <dd className="tabular-nums">{formatPaise(order.totals.totalPaise)}</dd>
           </div>
           <BillRow label="Paid by" value={online ? `Online${order.payment.method ? ` (${order.payment.method})` : ''}` : 'At the shop counter'} muted />
-          {order.payment.cfPaymentId && <BillRow label="Payment ref." value={order.payment.cfPaymentId} muted />}
+          {order.payment.rzpPaymentId && <BillRow label="Payment ref." value={order.payment.rzpPaymentId} muted />}
         </dl>
         <p className="mt-4 text-center text-xs text-ink-3">Thank you for eating with us.</p>
       </article>

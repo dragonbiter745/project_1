@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { URLS, SEED_DATA } from '../helpers/constants';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey M: login is optional, no age gate', () => {
   test('A visitor on the website (no QR, no login) can order as a guest with a generated name', async ({ page }) => {
-    await page.addInitScript(() => {
-      (window as any).Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await page.addInitScript(razorpayMock);
 
     let checkout: { orderId?: string; totalPaise?: number } = {};
     let pickup: { displayName?: string; tableLabel?: string } = {};

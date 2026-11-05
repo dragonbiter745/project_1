@@ -6,7 +6,7 @@ import { ORDER_STATUS, formatTime, methodLabel } from '../lib/orderStatus';
 
 const REFUND: Record<string, string> = { PENDING: 'Refund in progress', PROCESSED: 'Refunded', FAILED: 'Refund failed', NOT_REQUIRED: 'No refund needed' };
 
-/** Everything about one payment: gateway ids for Cashfree support, and each shop's ticket with its refund. */
+/** Everything about one payment: gateway ids for Razorpay support, and each shop's ticket with its refund. */
 export function OrderSheet({ order, onClose }: { order: LedgerOrder | null; onClose: () => void }) {
   const [tickets, setTickets] = useState<SubOrder[] | null>(null);
 
@@ -34,8 +34,8 @@ export function OrderSheet({ order, onClose }: { order: LedgerOrder | null; onCl
           <dl className="divide-y divide-line overflow-hidden rounded-card bg-surface-2/60 text-sm ring-1 ring-inset ring-line">
             <Row label="Order ID" value={o.id} mono />
             <Row label="Payment" value={methodLabel(o.payment?.mode, o.payment?.method)} />
-            {o.payment?.cfOrderId && <Row label="Cashfree order" value={o.payment.cfOrderId} mono />}
-            {o.payment?.cfPaymentId && <Row label="Cashfree payment" value={o.payment.cfPaymentId} mono />}
+            {o.payment?.rzpOrderId && <Row label="Razorpay order" value={o.payment.rzpOrderId} mono />}
+            {o.payment?.rzpPaymentId && <Row label="Razorpay payment" value={o.payment.rzpPaymentId} mono />}
             {o.payment?.paidAt && <Row label="Paid at" value={formatTime(o.payment.paidAt)} />}
             {o.customerPhone && <Row label="Diner phone" value={o.customerPhone} mono />}
             {o.displayName && <Row label="Diner name" value={o.displayName} />}

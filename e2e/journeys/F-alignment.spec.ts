@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { computeOrderTotals } from '@foodcourt/shared';
 import { URLS, SEED_DATA } from '../helpers/constants';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey F: Frontend & Backend Price & Money Alignment', () => {
   test('Integer paise computation matches between @foodcourt/shared and server checkout', async ({ page }) => {
@@ -26,9 +27,7 @@ test.describe('Journey F: Frontend & Backend Price & Money Alignment', () => {
     expect(Number.isInteger(clientTotals.totalPaise)).toBe(true);
 
     // 2. Now verify against the live server through createCheckout
-    await page.addInitScript(() => {
-      window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await page.addInitScript(razorpayMock);
 
     let serverTotalPaise = 0;
     page.on('response', async (res) => {

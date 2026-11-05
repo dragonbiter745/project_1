@@ -16,7 +16,7 @@
   - **Target Latency SLAs:**
     - Catalogue reads (CDN): `< 50ms` (cached at Firebase Hosting Edge).
     - `createCheckout` callable function: p50 `< 80ms`, p95 `< 250ms`.
-    - Payment Webhook (`cashfreeWebhook`): p50 `< 90ms`, p95 `< 300ms`.
+    - Payment Webhook (`razorpayWebhook`): p50 `< 90ms`, p95 `< 300ms`.
     - Real-time KDS delivery: `< 1.5s` from webhook ACK to tablet receipt.
 
 ---
@@ -38,9 +38,8 @@ gcloud beta billing projects link qrave-loadtest-throwaway --billing-account=<BI
 # asia-south1 Cloud Functions region
 firebase functions:config:set \
   app.env="staging" \
-  cashfree.env="SANDBOX" \
-  cashfree.app_id="<TEST_APP_ID>" \
-  cashfree.secret="<TEST_SECRET_KEY>"
+  razorpay.key_id="<rzp_test_KEY_ID>" \
+  razorpay.webhook_secret="<TEST_WEBHOOK_SECRET>" \
 ```
 
 ### Step 3: Deploy Backend & Rules Only
@@ -114,23 +113,17 @@ export default function () {
     if (chkRes.status === 200) {
       const order = JSON.parse(chkRes.body).result;
       
-      // 3. Replay signed Cashfree webhook for payment confirmation
-      const timestamp = String(Math.floor(Date.now() / 1000));
+      // 3. Replay signed Razorpay webhook for payment confirmation
       const rawBody = JSON.stringify({
-        data: {
-          order: { order_id: order.orderId, order_amount: 180.00, order_currency: 'INR' },
-          payment: { payment_status: 'SUCCESS', cf_payment_id: `pay_${Date.now()}` }
-        },
-        event_time: new Date().toISOString(),
-        type: 'PAYMENT_SUCCESS_WEBHOOK',
+        event: 'payment.captured',
+        payload: { payment: { entity: { id: `pay_${Date.now()}`, order_id: order.razorpayOrderId, amount: 18000, currency: 'INR', status: 'captured', method: 'upi' } } },
       });
-      const signature = crypto.hmac('sha256', '<TEST_SECRET_KEY>', `${timestamp}${rawBody}`, 'base64');
+      const signature = crypto.hmac('sha256', '<TEST_WEBHOOK_SECRET>', rawBody, 'hex');
 
-      const hookRes = http.post('https://asia-south1-qrave-loadtest-throwaway.cloudfunctions.net/cashfreeWebhook', rawBody, {
+      const hookRes = http.post('https://asia-south1-qrave-loadtest-throwaway.cloudfunctions.net/razorpayWebhook', rawBody, {
         headers: {
           'Content-Type': 'application/json',
-          'x-webhook-timestamp': timestamp,
-          'x-webhook-signature': signature,
+          'x-razorpay-signature': signature,
         },
         tags: { type: 'webhook' },
       });
@@ -148,7 +141,7 @@ export default function () {
 
 1. **Cloud Functions Concurrency & Cold Starts:**
    - GCP Metrics Explorer: `cloudfunctions.googleapis.com/function/execution_count`
-   - Active instances: Target `max_instances: 50` for `createCheckout` and `cashfreeWebhook`.
+   - Active instances: Target `max_instances: 50` for `createCheckout` and `razorpayWebhook`.
 2. **Firestore Lock Contention on Daily Counters:**
    - Measure document transaction retry rate on `counters/{dateKey}_{vendorId}`.
    - Confirm `retryContention()` in `functions/src/lib/orders.ts` keeps token allocation 100% collision-free.

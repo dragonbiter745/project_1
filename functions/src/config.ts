@@ -4,14 +4,15 @@ export const REGION = 'asia-south1';
 /** Firestore lives in the named database "default" (not "(default)"). */
 export const DATABASE = 'default';
 
-// Cashfree credentials live in Secret Manager, never in env files or code.
-export const CASHFREE_APP_ID = defineSecret('CASHFREE_APP_ID');
-export const CASHFREE_SECRET_KEY = defineSecret('CASHFREE_SECRET_KEY');
-/** SANDBOX or PRODUCTION. Switching to live payments is a param change plus production secrets. */
-export const CASHFREE_ENV = defineString('CASHFREE_ENV', { default: 'SANDBOX' });
+// Razorpay: the key id is public (the checkout window needs it); the secrets live in Secret Manager, never in code.
+// A rzp_live_ key id means live payments, rzp_test_ means test mode, so switching is a key swap, not a code change.
+export const RAZORPAY_KEY_ID = defineString('RAZORPAY_KEY_ID', { default: '' });
+export const RAZORPAY_KEY_SECRET = defineSecret('RAZORPAY_KEY_SECRET');
+/** Set in the Razorpay dashboard when the webhook is created; it is not the API key secret. */
+export const RAZORPAY_WEBHOOK_SECRET = defineSecret('RAZORPAY_WEBHOOK_SECRET');
 export const CUSTOMER_URL = defineString('CUSTOMER_URL', { default: 'https://order.getqrave.in' });
 
-export const CASHFREE_SECRETS = [CASHFREE_APP_ID, CASHFREE_SECRET_KEY];
+export const RAZORPAY_SECRETS = [RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET];
 
 export const isEmulator = () => process.env.FUNCTIONS_EMULATOR === 'true';
 
@@ -21,6 +22,6 @@ export function projectId(): string {
 
 /** How long a kitchen has to accept a new ticket before it times out (PRD default). */
 export const DEFAULT_ACCEPT_SLA_SEC = 180;
-/** Unpaid online orders stop being payable after this long (must be > 15m for Cashfree). */
+/** Unpaid online orders stop being payable after this long (Razorpay orders do not expire on their own, so the sweeper expires them). */
 export const PAYMENT_WINDOW_MS = 20 * 60 * 1000;
 export const SESSION_TTL_MS = 3 * 60 * 60 * 1000;

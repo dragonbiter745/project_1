@@ -75,7 +75,7 @@ export function Transactions({ range }: PageProps) {
       allOrders(range.from, range.to, filter).then((list) =>
         downloadCsv(
           `qrave-transactions-${range.from}_to_${range.to}${filter === 'all' ? '' : `-${filter}`}.csv`,
-          ['Placed at', 'Order ID', 'Status', 'Payment', 'Method', 'Amount (Rs)', 'Table', 'Diner phone', 'Cashfree order', 'Cashfree payment', 'Paid at', 'Shops'],
+          ['Placed at', 'Order ID', 'Status', 'Payment', 'Method', 'Amount (Rs)', 'Table', 'Diner phone', 'Razorpay order', 'Razorpay payment', 'Paid at', 'Shops'],
           list.map((o) => [
             formatTime(o.createdAt),
             o.id,
@@ -85,8 +85,8 @@ export function Transactions({ range }: PageProps) {
             rupees(o.totals?.totalPaise),
             o.tableLabel,
             o.customerPhone ?? '',
-            o.payment?.cfOrderId ?? '',
-            o.payment?.cfPaymentId ?? '',
+            o.payment?.rzpOrderId ?? '',
+            o.payment?.rzpPaymentId ?? '',
             formatTime(o.payment?.paidAt),
             [...new Set(o.items.map((i) => i.vendorId))].length,
           ])

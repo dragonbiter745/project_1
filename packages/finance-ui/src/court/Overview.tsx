@@ -236,7 +236,7 @@ export function Overview({ range, report: { report, loading, error, reload } }: 
 
       <p className="mt-4 flex items-start gap-2 text-xs text-ink-3">
         <RotateCcw className="mt-px h-3.5 w-3.5 shrink-0" />
-        Sales leave out rejected, cancelled and timed-out tickets; those diners were refunded. Gateway fees are charged by Cashfree on its settlements and are not
+        Sales leave out rejected, cancelled and timed-out tickets; those diners were refunded. Gateway fees are charged by Razorpay on its settlements and are not
         included here.
       </p>
 

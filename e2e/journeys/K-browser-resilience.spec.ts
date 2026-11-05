@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { URLS, SEED_DATA } from '../helpers/constants';
 import { sendPaymentSuccessWebhook } from '../helpers/webhook';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey K: Real Browser Resilience Suite', () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await page.addInitScript(razorpayMock);
   });
 
   test('Double-tapping Pay button disables immediately and creates exactly ONE order', async ({ page }) => {

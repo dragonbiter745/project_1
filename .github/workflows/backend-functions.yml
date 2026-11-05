@@ -89,8 +89,8 @@ jobs:
         if: env.HAS_FIREBASE_SA == 'true'
         run: pnpm turbo run build --filter=functions
 
-      # Cashfree keys live in Secret Manager (defineSecret); deploy reads them there. Nothing is
-      # written to disk. CASHFREE_ENV (SANDBOX / PRODUCTION) comes from functions/.env.<project>.
+      # Razorpay secrets live in Secret Manager (defineSecret); deploy reads them there. Nothing is
+      # written to disk. RAZORPAY_KEY_ID (rzp_test_ / rzp_live_) comes from functions/.env.<project>.
       - uses: google-github-actions/auth@v2
         if: env.HAS_FIREBASE_SA == 'true'
         with:

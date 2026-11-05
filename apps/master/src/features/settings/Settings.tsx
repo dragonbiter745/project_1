@@ -10,7 +10,7 @@ const COPY = {
     title: (on: boolean) => (on ? 'Turn on online payments?' : 'Turn off online payments?'),
     body: (on: boolean) =>
       on
-        ? 'Diners pay with UPI or card through Cashfree before their order reaches the kitchen.'
+        ? 'Diners pay with UPI or card through Razorpay before their order reaches the kitchen.'
         : 'Diners order now and pay at each shop counter. Use this if the payment gateway is down.',
   },
   maintenance: {

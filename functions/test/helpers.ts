@@ -48,8 +48,14 @@ export async function sessionFor(startSession: any, uid: string): Promise<string
   return res.sessionId;
 }
 
-export function sign(body: string, ts: string, secret = 'test-secret-key') {
-  return crypto.createHmac('sha256', secret).update(ts + body).digest('base64');
+/** Razorpay webhook signature: hex HMAC-SHA256 of the raw body with the webhook secret. */
+export function sign(body: string, secret = 'test-webhook-secret') {
+  return crypto.createHmac('sha256', secret).update(body).digest('hex');
+}
+
+/** Checkout success signature: hex HMAC-SHA256 of "order_id|payment_id" with the API key secret. */
+export function signPayment(rzpOrderId: string, paymentId: string, secret = 'test-key-secret') {
+  return crypto.createHmac('sha256', secret).update(`${rzpOrderId}|${paymentId}`).digest('hex');
 }
 
 /** Minimal Express-like req/res pair for onRequest handlers. */
@@ -81,17 +87,27 @@ export function webhookCall(handler: (req: any, res: any) => unknown, body: unkn
   return Promise.resolve(handler(req, res)).then(() => ({ status, payload }));
 }
 
-/** Replaces global fetch with a fake Cashfree API; returns the recorded calls. */
-export function fakeCashfree(handlers: Partial<Record<'createOrder' | 'getOrder' | 'refund' | 'getRefund', (url: string, body: any) => { status?: number; json: any }>>) {
-  const calls: Array<{ url: string; method: string; body: any }> = [];
+type RzpKind = 'createOrder' | 'getOrder' | 'orderPayments' | 'getPayment' | 'refund' | 'getRefund';
+
+/** Replaces global fetch with a fake Razorpay API; returns the recorded calls. */
+export function fakeRazorpay(handlers: Partial<Record<RzpKind, (url: string, body: any) => { status?: number; json: any }>>) {
+  const calls: Array<{ url: string; method: string; body: any; headers: Record<string, string> }> = [];
   vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
     const url = String(input);
     if (url.startsWith('http://')) return (globalThis as any).__realFetch(input, init);
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
-    calls.push({ url, method: init?.method ?? 'GET', body });
-    const kind = /\/refunds\//.test(url) ? 'getRefund' : /\/refunds$/.test(url) ? 'refund' : init?.method === 'POST' ? 'createOrder' : 'getOrder';
+    const method = init?.method ?? 'GET';
+    calls.push({ url, method, body, headers: (init?.headers ?? {}) as Record<string, string> });
+    const path = url.replace('https://api.razorpay.com/v1', '');
+    const kind: RzpKind =
+      /^\/payments\/[^/]+\/refund$/.test(path) ? 'refund'
+      : /^\/refunds\//.test(path) ? 'getRefund'
+      : /^\/payments\//.test(path) ? 'getPayment'
+      : /^\/orders\/[^/]+\/payments$/.test(path) ? 'orderPayments'
+      : method === 'POST' ? 'createOrder'
+      : 'getOrder';
     const h = handlers[kind];
-    const out = h ? h(url, body) : { status: 500, json: { message: 'unexpected call' } };
+    const out = h ? h(url, body) : { status: 500, json: { error: { description: 'unexpected call' } } };
     return new Response(JSON.stringify(out.json), { status: out.status ?? 200, headers: { 'Content-Type': 'application/json' } });
   });
   return calls;

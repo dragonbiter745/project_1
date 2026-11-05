@@ -5,7 +5,7 @@ import { createCheckout } from '../src/callable/createCheckout';
 import { vendorAction } from '../src/callable/vendorAction';
 import { reconcilePayments, timeOutUnaccepted } from '../src/scheduled/sweeper';
 import { syncParentStatus } from '../src/lib/orders';
-import { call, fakeCashfree, resetDb, seed, sessionFor, uniqueUid } from './helpers';
+import { call, fakeRazorpay, resetDb, seed, sessionFor, uniqueUid } from './helpers';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -31,13 +31,13 @@ describe('the sweeper stays cheap', () => {
     expect(reads).toEqual(['subOrders']);
   });
 
-  it('asks Cashfree about an unpaid order at its check ages, not every minute', async () => {
+  it('asks Razorpay about an unpaid order at its check ages, not every minute', async () => {
     const uid = uniqueUid();
     const sessionId = await sessionFor(startSession, uid);
-    fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps', cf_order_id: 1, order_status: 'ACTIVE' } }) });
+    fakeRazorpay({ createOrder: (_u, body) => ({ json: { id: `order_${body.receipt}`, amount: body.amount, currency: 'INR', receipt: body.receipt, status: 'created' } }) });
     const { orderId } = await call(createCheckout, { sessionId, checkoutKey: 'cost-key-1', items: cart, customerPhone: '9123456780' }, uid);
     const asked: string[] = [];
-    const calls = fakeCashfree({ getOrder: () => ({ json: { order_id: orderId, order_status: 'ACTIVE', order_amount: 1, order_currency: 'INR' } }) });
+    const calls = fakeRazorpay({ orderPayments: () => ({ json: { items: [] } }) });
     const ageAt = async (min: number) => {
       await db.doc(`orders/${orderId}`).update({ createdAt: Date.now() - min * 60_000 - 1000 });
       const before = calls.length;
@@ -51,9 +51,9 @@ describe('the sweeper stays cheap', () => {
   it('still expires an unpaid order that has outlived its window', async () => {
     const uid = uniqueUid();
     const sessionId = await sessionFor(startSession, uid);
-    fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps', cf_order_id: 1, order_status: 'ACTIVE' } }) });
+    fakeRazorpay({ createOrder: (_u, body) => ({ json: { id: `order_${body.receipt}`, amount: body.amount, currency: 'INR', receipt: body.receipt, status: 'created' } }) });
     const { orderId } = await call(createCheckout, { sessionId, checkoutKey: 'cost-key-2', items: cart, customerPhone: '9123456780' }, uid);
-    fakeCashfree({ getOrder: () => ({ json: { order_id: orderId, order_status: 'ACTIVE', order_amount: 1, order_currency: 'INR' } }) });
+    fakeRazorpay({ orderPayments: () => ({ json: { items: [] } }) });
     await db.doc(`orders/${orderId}`).update({ createdAt: Date.now() - 45 * 60_000, expiresAt: Date.now() - 30 * 60_000 });
     expect((await reconcilePayments()).expired).toBe(1);
     expect((await db.doc(`orders/${orderId}`).get()).data()!.status).toBe('EXPIRED');
@@ -154,7 +154,7 @@ describe('online checkout allowance', () => {
   it('stops an account from creating a seventh gateway order in ten minutes', async () => {
     const uid = uniqueUid();
     const sessionId = await sessionFor(startSession, uid);
-    fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps', cf_order_id: 1, order_status: 'ACTIVE' } }) });
+    fakeRazorpay({ createOrder: (_u, body) => ({ json: { id: `order_${body.receipt}`, amount: body.amount, currency: 'INR', receipt: body.receipt, status: 'created' } }) });
     for (let n = 1; n <= 6; n++) await call(createCheckout, { sessionId, checkoutKey: `flood-key-${n}-aaaa`, items: cart }, uid);
     await expect(call(createCheckout, { sessionId, checkoutKey: 'flood-key-7-aaaa', items: cart }, uid)).rejects.toMatchObject({ code: 'resource-exhausted' });
   });

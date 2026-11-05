@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../src/db';
 import { startSession } from '../src/callable/startSession';
 import { createCheckout } from '../src/callable/createCheckout';
-import { call, fakeCashfree, resetDb, seed, uniqueUid } from './helpers';
+import { call, fakeRazorpay, resetDb, seed, uniqueUid } from './helpers';
 
 const member = (provider = 'password') => ({ firebase: { sign_in_provider: provider }, email: 'diner@example.test', name: 'Ananya Rao' });
 const guest = { firebase: { sign_in_provider: 'anonymous' } };
@@ -46,15 +46,15 @@ describe('pickup orders from the website', () => {
     await expect(call(startSession, { mode: 'table' }, uniqueUid(), member())).rejects.toMatchObject({ code: 'invalid-argument' });
   });
 
-  it('takes a paid order and sends the diner back to the website after payment', async () => {
-    const calls = fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps_test', cf_order_id: 1, order_status: 'ACTIVE' } }) });
+  it('creates a Razorpay order for a pickup session', async () => {
+    const calls = fakeRazorpay({ createOrder: (_u, body) => ({ json: { id: 'order_pk1', amount: body.amount, currency: 'INR', receipt: body.receipt, status: 'created' } }) });
     const uid = uniqueUid();
     const { sessionId } = await call(startSession, { mode: 'pickup' }, uid, member());
     const res = await call(createCheckout, { sessionId, checkoutKey: 'pickup-key-1', items: cart, customerPhone: '9876543210' }, uid, member());
-    expect(res).toMatchObject({ status: 'PENDING_PAYMENT', paymentSessionId: 'ps_test', totalPaise: 12000 });
+    expect(res).toMatchObject({ status: 'PENDING_PAYMENT', razorpayOrderId: 'order_pk1', totalPaise: 12000 });
     const order = (await db.doc(`orders/${res.orderId}`).get()).data()!;
     expect(order).toMatchObject({ tableId: 'pickup', tableLabel: 'Pickup', uid });
-    expect(calls[0]!.body.order_meta.return_url).toBe('https://order.example.test/order?order_id={order_id}');
+    expect(calls[0]!.body).toMatchObject({ amount: 12000, currency: 'INR', receipt: res.orderId });
 
     // Idempotent: the same key maps to the same order.
     const retry = await call(createCheckout, { sessionId, checkoutKey: 'pickup-key-1', items: cart, customerPhone: '9876543210' }, uid, member());
@@ -71,14 +71,15 @@ describe('pickup orders from the website', () => {
   });
 
   it('lets a guest pay for a pickup order without an account or a phone number', async () => {
-    const calls = fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps_guest', cf_order_id: 2, order_status: 'ACTIVE' } }) });
+    const calls = fakeRazorpay({ createOrder: (_u, body) => ({ json: { id: 'order_pk2', amount: body.amount, currency: 'INR', receipt: body.receipt, status: 'created' } }) });
     const uid = uniqueUid();
     const { sessionId } = await call(startSession, { mode: 'pickup' }, uid, guest);
     const res = await call(createCheckout, { sessionId, checkoutKey: 'pickup-key-3', items: cart }, uid, guest);
-    expect(res).toMatchObject({ status: 'PENDING_PAYMENT', paymentSessionId: 'ps_guest', totalPaise: 12000 });
+    expect(res).toMatchObject({ status: 'PENDING_PAYMENT', razorpayOrderId: 'order_pk2', totalPaise: 12000 });
     const order = (await db.doc(`orders/${res.orderId}`).get()).data()!;
     expect(order).toMatchObject({ tableId: 'pickup', uid });
-    expect(calls[0]!.body.customer_details.customer_phone).toBe('9999999999'); // the stand-in number
+    expect(order.customerPhone).toBeUndefined(); // nothing about the diner is sent to or stored for Razorpay
+    expect(calls).toHaveLength(1);
   });
 
   it("refuses someone else's pickup session, guest or not", async () => {

@@ -3,19 +3,19 @@
 ## 1. Webhook Failures & Payment Triage
 - **Symptom:** Diner paid on UPI / Card, but screen stays on "Confirming payment..."
 - **Root Causes:**
-  1. Cashfree webhook dropped or delayed by PG.
-  2. HMAC signature mismatch (secret rotated or timestamp drifted).
+  1. Razorpay webhook dropped or delayed by PG.
+  2. Webhook signature mismatch (webhook secret rotated or not matching the dashboard).
 - **Resolution Steps:**
-  1. The automated scheduled task `reconcilePayments` runs every 2 minutes for orders in `PENDING_PAYMENT` older than 2 minutes. It calls Cashfree Get Order API and marks `PAID` if settled.
+  1. The automated scheduled task `reconcilePayments` runs every 2 minutes for orders in `PENDING_PAYMENT` older than 2 minutes. It asks Razorpay for the order's payments and marks `PAID` if one is captured (auto-capture must be on in the dashboard: an `authorized` payment is never settled).
   2. In Master Admin (`/live-ops`), search order by `orderId` or customer `dailyNo`.
-  3. Click **Force Check Status**: queries Cashfree directly and triggers fulfillment if captured.
+  3. Click **Force Check Status**: queries Razorpay directly and triggers fulfillment if captured.
   4. If payment failed at PG, client receives `PAYMENT_FAILED` notice and can retry immediately with preserved cart.
 
 ## 2. Vendor SLA Timeout & Auto-Refund
 - **SLA Rule:** Vendor has 3 minutes (180 seconds, configurable in `vendors/{vendorId}.acceptSlaSec`) to accept an incoming order.
 - **Auto-action:**
   - If unaccepted after 180s, `vendorSlaTimeout` marks sub-order `TIMED_OUT`.
-  - Cashfree Refund API is dispatched for that sub-order's exact paise amount (`refund_id = sub_{subOrderId}`).
+  - Razorpay Refund API is dispatched for that sub-order's exact paise amount (`receipt = rf_{subOrderId}` with the same value as idempotency key).
   - Diner receives alert banner + option to re-order from another shop in the court.
 
 ## 3. Rush Hour Vendor Management
@@ -43,7 +43,7 @@ Each area has its own GitHub Actions pipeline and runs only when its files chang
 | **Frontend · Customer** (`frontend-customer.yml`) | `apps/customer`, shared packages | typecheck, build, 150 KB gz bundle budget, preview channel URL on the PR | deploy to the live customer site |
 | **Frontend · Vendor** (`frontend-vendor.yml`) | `apps/vendor`, shared packages | typecheck, build, preview channel | deploy to the live vendor site |
 | **Frontend · Master admin** (`frontend-master.yml`) | `apps/master`, shared packages | typecheck, build, preview channel | deploy to the live master site |
-| **Backend · Cloud Functions** (`backend-functions.yml`) | `functions/**` | typecheck + build | deploy after approval on `backend-production`; Cashfree keys written to `functions/.env` from environment secrets, deleted after |
+| **Backend · Cloud Functions** (`backend-functions.yml`) | `functions/**` | typecheck + build | deploy after approval on `backend-production`; Razorpay keys written to `functions/.env` from environment secrets, deleted after |
 | **Firebase · Rules & indexes** (`firebase-rules.yml`) | `firebase/**`, `firebase.json` | compile Firestore + Storage rules in the emulators (`scripts/ci/validate-rules.mjs`), validate indexes JSON | deploy after approval on `firebase-production` |
 
 The three frontends share `_frontend.yml`, and every pipeline uses `.github/actions/setup` (Node 22, pnpm from `packageManager`, cached store, frozen install). Frontend deploys ship the exact artifact the verify job built. Every pipeline can also be run by hand (Actions → pipeline → Run workflow).
@@ -53,7 +53,7 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
 2. **Repo secret** `FIREBASE_SERVICE_ACCOUNT` = that JSON key. Until it exists, verify jobs still run and frontend deploys are skipped with a notice.
 3. **Environments** (Settings → Environments), each restricted to `main`:
    - `customer-production`, `vendor-production`, `master-production`: optional reviewers.
-   - `backend-production`: **required reviewers**; secrets `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `CASHFREE_ENV` (`SANDBOX` until go-live), `CASHFREE_API_VERSION`.
+   - `backend-production`: **required reviewers**; secrets `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`; `RAZORPAY_KEY_ID` (`rzp_test_` until go-live) is a param in `functions/.env.<project>`.
    - `firebase-production`: **required reviewers**.
 4. **Branch protection on `main`:** require a PR review. Path-filtered pipelines don't report on unrelated PRs, so mark checks as required only through a ruleset that allows skipped checks.
 5. Optional **repo variables** `VITE_FIREBASE_*` override the public web config baked into the apps.
@@ -86,16 +86,21 @@ The three frontends share `_frontend.yml`, and every pipeline uses `.github/acti
   button on a card replaces that table's token (the old sticker stops working at once).
 - After the first generation, print and replace every sticker: old `/t/T14` links no longer work.
 
-### Payments (Cashfree)
-- Keys live in Secret Manager: `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`. Mode is the
-  `CASHFREE_ENV` param in `functions/.env.reva-nest-foodcourt` (`SANDBOX` or `PRODUCTION`).
-- Go live: `firebase functions:secrets:set CASHFREE_APP_ID` and `CASHFREE_SECRET_KEY` with the
-  production keys, set `CASHFREE_ENV=PRODUCTION`, redeploy functions, and whitelist the customer
-  domain in the Cashfree dashboard. The webhook URL is sent with every order (`cashfreeWebhook`).
-- Local e2e uses a built-in Cashfree stand-in (`lib/cashfree.ts`) that only runs when
-  `FUNCTIONS_EMULATOR` is set, mode is `SANDBOX` and the app id starts with `TEST_`. A deployed
-  function can never take that path (guarded by `test/cashfreeMock.test.ts`). Before going live,
-  confirm the deployed secret does not start with `TEST_` and that `CASHFREE_ENV=PRODUCTION`.
+### Payments (Razorpay)
+- Secrets live in Secret Manager: `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`. The public key id is the
+  `RAZORPAY_KEY_ID` param in `functions/.env.reva-nest-foodcourt`; its prefix is the mode (`rzp_test_` test,
+  `rzp_live_` live). The customer app has no key variable: `createCheckout` returns the key id with each order.
+- One-time setup in the Razorpay dashboard: enable auto-capture, then Settings → Webhooks → add
+  `https://asia-south1-<project>.cloudfunctions.net/razorpayWebhook` for `payment.captured`, `order.paid`,
+  `payment.failed`, `refund.processed`, `refund.failed`, with a strong secret; store that secret with
+  `firebase functions:secrets:set RAZORPAY_WEBHOOK_SECRET`, and the API secret with `RAZORPAY_KEY_SECRET`.
+- Go live: set both secrets to the live values, set `RAZORPAY_KEY_ID=rzp_live_...`, redeploy functions, and
+  create the webhook again in live mode (webhooks are per mode).
+- Local e2e uses a built-in Razorpay stand-in (`lib/razorpay.ts`) that only runs when `FUNCTIONS_EMULATOR` is
+  set, the key id is exactly `rzp_test_placeholder` and it is not a live key. A deployed function can never take
+  that path (guarded by `test/razorpay.test.ts`). `functions/.env.local` holds those placeholders; to try real
+  test-mode payments locally, put your `rzp_test_` key and secret there instead (the stand-in then switches off).
+- Rotate leaked keys in the dashboard, then update the secrets; the old ones stop working immediately.
 - Pay at counter: Settings → turn off online payments; orders go straight to the kitchens.
 - The `sweeper` function (every minute) times out unaccepted tickets, reconciles payments whose
   webhook was lost, expires unpaid orders and polls pending refunds; `onTicketFailed` refunds a
@@ -136,7 +141,7 @@ A breach is any unauthorised access, loss, change or disclosure of personal data
 orders), including a leaked key, an open database rule, or a lost founder laptop with console access.
 
 1. **Contain (first hour).** Revoke or rotate the leaked credential (Secret Manager, Firebase service accounts,
-   Cashfree keys), redeploy tightened rules, switch on maintenance mode if orders are at risk. Do not delete logs.
+   Razorpay keys), redeploy tightened rules, switch on maintenance mode if orders are at risk. Do not delete logs.
 2. **CERT-In within 6 hours** of noticing a reportable cyber incident (incident@cert-in.org.in, form on
    cert-in.org.in). Send what you know; update later.
 3. **Data Protection Board without delay**, and a detailed report **within 72 hours**: what happened, when, data
@@ -148,4 +153,4 @@ orders), including a leaked key, an open database rule, or a lost founder laptop
 
 Keep: Cloud Logging and audit logs for at least **180 days** (CERT-In) and ideally 1 year; check the log bucket
 retention in Google Cloud Console → Logging → Log storage. Staff consoles must use strong passwords and Google
-2-step verification for every founder account with Firebase or Cashfree access.
+2-step verification for every founder account with Firebase or Razorpay access.

@@ -1,7 +1,7 @@
 # End-to-End & Performance Verification Report: Qrave
 
 **Date:** 2026-11-04  
-**Environment:** Local Firebase Emulators (`demo-foodcourt`), Cashfree Mock/Sandbox Mode  
+**Environment:** Local Firebase Emulators (`demo-foodcourt`), Razorpay stand-in / test mode  
 **Git Branch:** `test/e2e-emulator` (Local testing only, no remote push)  
 **Scope:** Real-browser E2E suite (Playwright across 5 Vite apps), Backend concurrency rush test (Vitest), Firestore Security Rules audit, Bundle Budget audit, and Resilience verification.
 
@@ -13,7 +13,7 @@
 - **Real-Browser Journeys (Playwright):** **27 of 27 tests passed** across all 5 applications (`apps/customer`, `apps/vendor`, `apps/master`, `apps/admin`, `apps/landing`).
 - **Load Test (Vitest / 60–300 Diners Lunch Rush):** **5 of 5 tests passed** (`rush.test.ts`).
   - Total time: 60.7 seconds (1 diner/sec arrival rate).
-  - Double-tap idempotency: 100% verified (only 1 order and 1 Cashfree order created).
+  - Double-tap idempotency: 100% verified (only 1 order and 1 Razorpay order created).
   - Webhook delivery: 100% of paid orders reached kitchens; 6 simulated lost webhooks were reconciled via the sweeper.
   - Token numbers: Zero collisions across all shop counters.
   - Zero fraud / amount-mismatched orders fulfilled to kitchen.
@@ -71,7 +71,7 @@
   5. Cloud Function trigger `onTicketFailed` invokes `refundTicket`.
   6. Test verifies in Firestore:
      - `subOrders` status changed to `REJECTED`.
-     - `refund` object is created with `amountPaise: 14900`, `status: 'PROCESSED' | 'PENDING'`, and valid Cashfree refund ID (`rf_...`).
+     - `refund` object is created with `amountPaise: 14900`, `status: 'PROCESSED' | 'PENDING'`, and our refund receipt (`rf_...`).
   7. Diner browser updates in real-time to display the alert: `"Roll Me couldn't take this order. Your refund is on its way."`.
 
 ### 3.3. Coupons End-to-End
@@ -123,7 +123,7 @@
 - **Behavior Tested in Real Browser:**
   1. 20 isolated browser contexts created via Playwright.
   2. All 20 diners open Table 14 simultaneously, add Donne Biriyani, apply coupon `PERCENT10`, and trigger checkout concurrently.
-  3. All 20 orders receive Cashfree payment webhooks.
+  3. All 20 orders receive Razorpay payment webhooks.
   4. Result:
      - 20 unique sub-orders created in Firestore.
      - Tokens assigned: `RM-042`, `RM-043`, `RM-044`, `RM-045`, `RM-046`, `RM-047`, `RM-048`, `RM-049`, `RM-050`, `RM-051`, `RM-052`, `RM-053`, `RM-054`, `RM-055`, `RM-056`, `RM-057`, `RM-058`, `RM-059`, `RM-060`, `RM-061`.
@@ -177,6 +177,6 @@ As per the safety rules (no real FCM, no real money in automated tests), please 
 2. **Thermal Receipt Printer (ESC/POS):**
    - [ ] Pair kitchen tablet to Bluetooth/USB ESC/POS receipt printer.
    - [ ] Confirm new orders print 80mm kitchen tickets automatically upon payment.
-3. **Cashfree Production Gateway:**
-   - [ ] Set `CASHFREE_ENV=PRODUCTION` in Secret Manager.
+3. **Razorpay Production Gateway:**
+   - [ ] Set the live `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`, and recreate the webhook in live mode.
    - [ ] Execute a live ₹1.00 UPI QR payment and verify webhook delivery.

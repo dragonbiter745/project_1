@@ -2,13 +2,12 @@ import { test, expect } from '@playwright/test';
 import { URLS, SEED_DATA } from '../helpers/constants';
 import { sendPaymentSuccessWebhook } from '../helpers/webhook';
 import { queryFirestore } from '../helpers/firestore';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey B: Kitchen Actions & Failure Handling', () => {
   test('Kitchen rejection triggers auto-refund and diner alert', async ({ page, browser }) => {
     // 1. Diner creates an order
-    await page.addInitScript(() => {
-      window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await page.addInitScript(razorpayMock);
 
     let createdOrderId: string | null = null;
     let orderTotalPaise = 0;

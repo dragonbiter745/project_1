@@ -1,15 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { URLS, SEED_DATA } from '../helpers/constants';
 import { sendPaymentSuccessWebhook } from '../helpers/webhook';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey A: Diner First Order (End-to-End)', () => {
   test('Complete diner ordering lifecycle across Roll Me and Siddi Vinayaka', async ({ page, browser }) => {
-    // Mock Cashfree checkout modal in browser context
-    await page.addInitScript(() => {
-      window.Cashfree = () => ({
-        checkout: async () => ({ paymentDetails: {} }),
-      });
-    });
+    // Mock Razorpay checkout window in browser context
+    await page.addInitScript(razorpayMock);
 
     let createdOrderId: string | null = null;
     let orderTotalPaise = 0;
@@ -88,7 +85,7 @@ test.describe('Journey A: Diner First Order (End-to-End)', () => {
     await page.waitForTimeout(2000);
     expect(createdOrderId).toBeTruthy();
 
-    // 9. Send signed Cashfree Webhook
+    // 9. Send signed Razorpay Webhook
     const webhookRes = await sendPaymentSuccessWebhook({
       orderId: createdOrderId!,
       orderAmountPaise: orderTotalPaise,

@@ -2,9 +2,9 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { db } from '../src/db';
 import { startSession } from '../src/callable/startSession';
 import { createCheckout } from '../src/callable/createCheckout';
-import { cashfreeWebhook } from '../src/webhook/cashfreeWebhook';
+import { razorpayWebhook } from '../src/webhook/razorpayWebhook';
 import { reconcilePayments } from '../src/scheduled/sweeper';
-import { call, fakeCashfree, resetDb, seed, sessionFor, sign, uniqueUid, webhookCall } from './helpers';
+import { call, fakeRazorpay, resetDb, seed, sessionFor, sign, uniqueUid, webhookCall } from './helpers';
 
 /**
  * Lunch rush with real-world misbehaviour, through the real functions on the emulator.
@@ -14,7 +14,7 @@ import { call, fakeCashfree, resetDb, seed, sessionFor, sign, uniqueUid, webhook
  *   i % 10 in {0,1}: taps Pay twice at the same instant
  *   i % 10 == 2:     opens the payment page and walks away
  *   i % 10 == 3:     pays, closes the app, and the webhook never arrives (reconciler must catch it)
- *   i % 10 in {4,5}: Cashfree delivers the webhook again (a retry)
+ *   i % 10 in {4,5}: Razorpay delivers the webhook again (a retry)
  *   otherwise:       a normal order, one or both shops
  */
 const N = Number(process.env.RUSH_DINERS ?? 60);
@@ -42,7 +42,7 @@ async function pool<T>(items: T[], size: number, fn: (t: T, i: number) => Promis
 const pct = (xs: number[], p: number) => [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.floor((p / 100) * xs.length))] ?? 0;
 
 describe(`lunch rush: ${N} diners`, () => {
-  const paidAmounts = new Map<string, number>(); // orders Cashfree considers paid (for the reconciler)
+  const paidAmounts = new Map<string, number>(); // orders Razorpay considers paid (for the reconciler)
   const createCalls = new Map<string, number>();
   const results: Array<{ i: number; kind: Kind; orderId: string; second?: string; shops: number; totalPaise: number }> = [];
   const latency = { checkout: [] as number[], webhook: [] as number[] };
@@ -51,15 +51,16 @@ describe(`lunch rush: ${N} diners`, () => {
   beforeAll(async () => {
     await resetDb();
     await seed({ paymentsEnabled: true });
-    fakeCashfree({
+    fakeRazorpay({
       createOrder: (_u, body) => {
-        createCalls.set(body.order_id, (createCalls.get(body.order_id) ?? 0) + 1);
-        return { json: { order_id: body.order_id, payment_session_id: `ps_${body.order_id}`, order_status: 'ACTIVE' } };
+        createCalls.set(body.receipt, (createCalls.get(body.receipt) ?? 0) + 1);
+        return { json: { id: `order_${body.receipt}`, amount: body.amount, currency: 'INR', receipt: body.receipt, status: 'created' } };
       },
-      getOrder: (url) => {
-        const id = decodeURIComponent(url.split('/orders/')[1]!.split(/[/?]/)[0]!);
+      orderPayments: (url) => {
+        const rzpId = decodeURIComponent(url.split('/orders/')[1]!.split(/[/?]/)[0]!);
+        const id = rzpId.replace(/^order_/, '');
         const amount = paidAmounts.get(id);
-        return { json: { order_id: id, order_status: amount !== undefined ? 'PAID' : 'ACTIVE', order_amount: (amount ?? 0) / 100, order_currency: 'INR' } };
+        return { json: { items: amount !== undefined ? [{ id: `pay_${id}`, order_id: rzpId, amount, currency: 'INR', status: 'captured', method: 'upi' }] : [] } };
       },
     });
 
@@ -84,16 +85,15 @@ describe(`lunch rush: ${N} diners`, () => {
         paidAmounts.set(first.orderId, first.totalPaise);
         if (kind === 'lost-webhook') return;
         const event = {
-          type: 'PAYMENT_SUCCESS_WEBHOOK',
-          data: { order: { order_id: first.orderId, order_amount: first.totalPaise / 100, order_currency: 'INR' }, payment: { payment_status: 'SUCCESS', payment_amount: first.totalPaise / 100, cf_payment_id: 1000 + i, payment_group: 'upi' } },
+          event: 'payment.captured',
+          payload: { payment: { entity: { id: `pay_${1000 + i}`, order_id: `order_${first.orderId}`, amount: first.totalPaise, currency: 'INR', status: 'captured', method: 'upi' } } },
         };
-        const ts = String(Date.now());
-        const headers = { 'x-webhook-timestamp': ts, 'x-webhook-signature': sign(JSON.stringify(event), ts) };
+        const headers = { 'x-razorpay-signature': sign(JSON.stringify(event)) };
         const w0 = Date.now();
-        // Cashfree retries after a delivery, it does not send two at the same instant (the emulator cannot model
+        // Razorpay retries after a delivery, it does not send two at the same instant (the emulator cannot model
         // two simultaneous read-modify-writes of one document; production aborts and retries the younger one).
-        const sends = [await webhookCall(cashfreeWebhook as any, event, headers)];
-        if (kind === 'retry-webhook') sends.push(await webhookCall(cashfreeWebhook as any, event, headers));
+        const sends = [await webhookCall(razorpayWebhook as any, event, headers)];
+        if (kind === 'retry-webhook') sends.push(await webhookCall(razorpayWebhook as any, event, headers));
         latency.webhook.push(Date.now() - w0);
         for (const s of sends) if (s.status !== 200) errors.push(`webhook ${s.status} for diner ${i}`);
       } catch (err) {
@@ -119,7 +119,7 @@ describe(`lunch rush: ${N} diners`, () => {
     expect(results).toHaveLength(N);
   });
 
-  it('a double tap on Pay makes one order and one Cashfree order, never two', () => {
+  it('a double tap on Pay makes one order and one Razorpay order, never two', () => {
     for (const r of results.filter((x) => x.kind === 'double-tap')) expect(r.second).toBe(r.orderId);
     expect(new Set(results.map((r) => r.orderId)).size).toBe(results.length);
     for (const r of results) expect(createCalls.get(r.orderId) ?? 0).toBeLessThanOrEqual(1);

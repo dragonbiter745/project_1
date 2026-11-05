@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { URLS, SEED_DATA } from '../helpers/constants';
 import { sendPaymentSuccessWebhook } from '../helpers/webhook';
+import { razorpayMock } from '../helpers/razorpayMock';
 
 test.describe('Journey C: Payment Edge Cases & Security', () => {
   test('Webhook security: rejects invalid signature with 401', async () => {
@@ -14,9 +15,7 @@ test.describe('Journey C: Payment Edge Cases & Security', () => {
   });
 
   test('Non-INR currency rejected with 400', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await page.addInitScript(razorpayMock);
 
     let createdOrderId: string | null = null;
     let orderTotalPaise = 0;
@@ -54,9 +53,7 @@ test.describe('Journey C: Payment Edge Cases & Security', () => {
   });
 
   test('Amount mismatch flags order without fulfilling to kitchen', async ({ page, browser }) => {
-    await page.addInitScript(() => {
-      window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await page.addInitScript(razorpayMock);
 
     let createdOrderId: string | null = null;
     let orderTotalPaise = 0;
@@ -114,9 +111,7 @@ test.describe('Journey C: Payment Edge Cases & Security', () => {
   });
 
   test('Webhook idempotency: replay returns already and touches nothing', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.Cashfree = () => ({ checkout: async () => ({ paymentDetails: {} }) });
-    });
+    await page.addInitScript(razorpayMock);
 
     let createdOrderId: string | null = null;
     let orderTotalPaise = 0;
@@ -152,7 +147,7 @@ test.describe('Journey C: Payment Edge Cases & Security', () => {
     expect(res1.status).toBe(200);
     expect(res1.json?.outcome).toBe('created');
 
-    // 2nd delivery (retry from Cashfree)
+    // 2nd delivery (retry from Razorpay)
     const res2 = await sendPaymentSuccessWebhook({
       orderId: createdOrderId!,
       orderAmountPaise: orderTotalPaise,

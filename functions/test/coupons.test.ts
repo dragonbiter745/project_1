@@ -6,8 +6,8 @@ import { createCheckout } from '../src/callable/createCheckout';
 import { vendorAction } from '../src/callable/vendorAction';
 import { couponAdmin, dinerCoupons } from '../src/callable/coupons';
 import { buildFinanceReport, buildFounderIncome } from '../src/callable/finance';
-import { cashfreeWebhook } from '../src/webhook/cashfreeWebhook';
-import { call, fakeCashfree, resetDb, seed, sessionFor, sign, uniqueUid, webhookCall } from './helpers';
+import { razorpayWebhook } from '../src/webhook/razorpayWebhook';
+import { call, fakeRazorpay, resetDb, seed, sessionFor, sign, uniqueUid, webhookCall } from './helpers';
 
 const master = { role: 'master', email: 'boss@example.test' };
 const google = { firebase: { sign_in_provider: 'google.com' }, email: 'diner@example.test' };
@@ -99,7 +99,7 @@ describe('couponAdmin', () => {
 describe('coupons at checkout', () => {
   let uid = '';
   let sessionId = '';
-  let cfCalls: Array<{ body: any }> = [];
+  let gatewayCalls: Array<{ body: any }> = [];
 
   beforeEach(async () => {
     await resetDb();
@@ -107,16 +107,15 @@ describe('coupons at checkout', () => {
     await db.doc('vendors/v-rm').update({ feePct: 10 });
     uid = uniqueUid();
     sessionId = await sessionFor(startSession, uid);
-    cfCalls = fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps_c', order_status: 'ACTIVE' } }) });
+    gatewayCalls = fakeRazorpay({ createOrder: (_u, body) => ({ json: { id: `order_${body.receipt}`, amount: body.amount, currency: 'INR', receipt: body.receipt, status: 'created' } }) });
   });
 
   const pay = async (orderId: string, amountPaise: number) => {
     const body = {
-      type: 'PAYMENT_SUCCESS_WEBHOOK',
-      data: { order: { order_id: orderId, order_amount: amountPaise / 100, order_currency: 'INR' }, payment: { payment_status: 'SUCCESS', payment_amount: amountPaise / 100, cf_payment_id: 777, payment_group: 'upi' } },
+      event: 'payment.captured',
+      payload: { payment: { entity: { id: 'pay_777', order_id: `order_${orderId}`, amount: amountPaise, currency: 'INR', status: 'captured', method: 'upi' } } },
     };
-    const ts = String(Date.now());
-    return webhookCall(cashfreeWebhook as any, body, { 'x-webhook-timestamp': ts, 'x-webhook-signature': sign(JSON.stringify(body), ts) });
+    return webhookCall(razorpayWebhook as any, body, { 'x-razorpay-signature': sign(JSON.stringify(body)) });
   };
   const checkout = (key: string, couponCode?: string, who = uid, extra: Record<string, unknown> = {}) =>
     call(createCheckout, { sessionId, checkoutKey: key, items: rollAndDosa, customerPhone: '9123456780', ...(couponCode ? { couponCode } : {}) }, who, extra);
@@ -125,7 +124,7 @@ describe('coupons at checkout', () => {
     await createCoupon({ code: 'ROLL50', kind: 'FLAT', flatPaise: 5000, scope: { kind: 'VENDORS', vendorIds: ['v-rm'] } });
     const res = await checkout('coupon-key-01', 'roll50');
     expect(res.totalPaise).toBe(FULL - 5000);
-    expect(cfCalls[0]!.body.order_amount).toBe((FULL - 5000) / 100);
+    expect(gatewayCalls[0]!.body.amount).toBe(FULL - 5000);
     const order = (await db.doc(`orders/${res.orderId}`).get()).data()!;
     expect(order.totals).toMatchObject({ subtotalPaise: FULL, discountPaise: 5000, totalPaise: FULL - 5000 });
     expect(order.coupon).toEqual({ code: 'ROLL50', title: 'Launch week', discountPaise: 5000 });
@@ -156,10 +155,10 @@ describe('coupons at checkout', () => {
   it('frees the coupon when the payment could not even start', async () => {
     await createCoupon({ code: 'RETRY', kind: 'FLAT', flatPaise: 1000 });
     vi.unstubAllGlobals();
-    fakeCashfree({ createOrder: () => ({ status: 503, json: { message: 'down' } }) });
+    fakeRazorpay({ createOrder: () => ({ status: 503, json: { error: { description: 'down' } } }) });
     await expect(checkout('coupon-key-05', 'RETRY')).rejects.toMatchObject({ code: 'unavailable' });
     vi.unstubAllGlobals();
-    fakeCashfree({ createOrder: (_u, body) => ({ json: { order_id: body.order_id, payment_session_id: 'ps_d', order_status: 'ACTIVE' } }) });
+    fakeRazorpay({ createOrder: (_u, body) => ({ json: { id: `order_${body.receipt}`, amount: body.amount, currency: 'INR', receipt: body.receipt, status: 'created' } }) });
     expect((await checkout('coupon-key-06', 'RETRY')).totalPaise).toBe(FULL - 1000);
   });
 

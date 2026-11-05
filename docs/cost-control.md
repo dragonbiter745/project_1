@@ -16,7 +16,7 @@ Firebase pricing page before relying on the rupee amounts.
 | 2 | `vendors`, `menus`, `availability`, `config`, `venues` readable by anyone on the internet | Any script could loop on them and the reads are billed to the project | Rules now allow staff only (their own shop, or the manager). Diners use the CDN |
 | 3 | Shop-admin Home called the report function every 60 s for as long as the tab stayed open | 840 backend calls a day per tab, each running several queries | Once on open, then every 5 minutes **only while the tab is in front** |
 | 4 | The sweeper ran every minute, all day and night, and read every shop each time | ~11,500 reads a day with zero customers | One query when nothing is waiting; shops are read only when a ticket is overdue; runs 06:00 to 21:59 IST only (~2,900 reads a day idle) |
-| 5 | Every unpaid order was checked with Cashfree once a minute for 20 minutes | ~18 calls per abandoned order | Checked at 2, 3, 5, 8, 12, 16, 21 and 26 minutes (the payment window is 20), then every sweep |
+| 5 | Every unpaid order was checked with Razorpay once a minute for 20 minutes | ~18 calls per abandoned order | Checked at 2, 3, 5, 8, 12, 16, 21 and 26 minutes (the payment window is 20), then every sweep |
 | 6 | The shared rate limiter costs a read **and** a write per call and ran on every kitchen action, session start and staff report | ~7 extra operations per order | Trusted staff routes and session start use the free in-memory limiter. The payment route keeps the shared one |
 | 7 | After every kitchen step the order's overall status was re-queried and re-written | A query, a read and a write per step | Re-checked only after Collected, Reject and Cancel, the only steps that can change it, and written only if it changed |
 | 8 | Staff screens kept no local copy and kept streaming from background tabs | Re-download on every reload; overnight meters | Browser cache for staff apps; master and shop admin pause their listeners after 2 minutes in the background |
@@ -85,7 +85,7 @@ is what guarantees the number cannot run past what you decide.
 6. **Rate limits for staff routes are in memory.** The shared limiter (a read and a write per call) is for money
    and for abuse-prone public routes only.
 7. **Scheduled jobs do nothing when idle**, and run only while the court can be ordering.
-8. **A background job that calls a paid API (Cashfree) backs off** instead of calling every minute.
+8. **A background job that calls a paid API (Razorpay) backs off** instead of calling every minute.
 9. **Every new public endpoint gets a CDN cache and an instance cap.**
 10. **Test it.** Anything touching money, rules or the sweeper needs a test (`functions/test`).
 

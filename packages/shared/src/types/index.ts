@@ -51,7 +51,7 @@ export interface Vendor {
   defaultPrepMin: number;
   fulfilmentMode: 'pickup' | 'table_service';
   acceptSlaSec: number;
-  cashfreeVendorId?: string;
+  razorpayAccountId?: string;
   feePct: number;
   perOrderFeePaise: number;
   hours: {
@@ -170,13 +170,12 @@ export interface Order {
   items: OrderItemRecord[];
   totals: OrderTotals;
   payment: {
-    cfOrderId?: string;
-    cfPaymentId?: string;
-    paymentSessionId?: string;
+    rzpOrderId?: string;
+    rzpPaymentId?: string;
     method?: string;
     status: PaymentStatus;
     paidAt?: number;
-    /** ONLINE goes through Cashfree; COUNTER is paid at collection. */
+    /** ONLINE goes through Razorpay; COUNTER is paid at collection. */
     mode?: 'ONLINE' | 'COUNTER';
   };
   status: OrderStatus;
@@ -233,7 +232,7 @@ export interface SubOrder {
     status: 'PENDING' | 'PROCESSED' | 'FAILED' | 'NOT_REQUIRED';
     amountPaise: number;
     refundId?: string;
-    cfRefundId?: string;
+    gatewayRefundId?: string;
     updatedAt?: number;
   };
 }
