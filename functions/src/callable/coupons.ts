@@ -1,7 +1,7 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { CouponActionSchema, PreviewCouponSchema, couponBlocked, toPublicCoupon, type Coupon, type CouponPreview, type GlobalConfig, type PublicCoupon } from '@foodcourt/shared';
-import { REGION } from '../config';
+import { REGION, APP_CHECK_ENFORCE } from '../config';
 import { db } from '../db';
 import { couponRef, dinerContext, readCoupon } from '../lib/coupons';
 import { limitLocal, limitShared, requireUid, roleOf } from '../lib/guard';
@@ -87,7 +87,7 @@ export interface WalletCoupon {
  * For diners: check a code before paying (the cart previews the saving from the terms returned),
  * and list the coupons shown in "My coupons". Rate-limited so codes cannot be guessed.
  */
-export const dinerCoupons = onCall({ region: REGION, maxInstances: 30, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
+export const dinerCoupons = onCall({ region: REGION, enforceAppCheck: APP_CHECK_ENFORCE, maxInstances: 30, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
   const uid = requireUid(req);
   const parsed = DinerSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Check the code.');

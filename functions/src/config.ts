@@ -1,4 +1,4 @@
-import { defineSecret, defineString } from 'firebase-functions/params';
+import { defineBoolean, defineSecret, defineString } from 'firebase-functions/params';
 
 export const REGION = 'asia-south1';
 /** Firestore lives in the named database "default" (not "(default)"). */
@@ -13,7 +13,9 @@ export const RAZORPAY_WEBHOOK_SECRET = defineSecret('RAZORPAY_WEBHOOK_SECRET');
 export const CUSTOMER_URL = defineString('CUSTOMER_URL', { default: 'https://order.getqrave.in' });
 
 // Vendor logins by email (Resend). The key lives in Secret Manager; the sender address must be on a domain verified in Resend.
-export const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
+// Not bound as a Secret Manager secret yet (the email team owns that); until then the key is empty and invites say
+// "Email is not set up yet". To enable: create the secret, switch this to defineSecret and re-add it to vendorAccess.
+export const RESEND_API_KEY = { value: (): string => process.env.RESEND_API_KEY ?? '' };
 export const MAIL_FROM = defineString('MAIL_FROM', { default: 'Qrave <accounts@getqrave.in>' });
 /** Where the emailed set-password link lands: kitchen logins open the kitchen display, finance logins shop admin. */
 export const VENDOR_URL = defineString('VENDOR_URL', { default: 'https://reva-nest-vendor.web.app' });
@@ -22,6 +24,13 @@ export const SHOP_ADMIN_URL = defineString('SHOP_ADMIN_URL', { default: 'https:/
 export const BRAND_URL = defineString('BRAND_URL', { default: 'https://getqrave.in' });
 
 export const RAZORPAY_SECRETS = [RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET];
+
+/**
+ * Firebase App Check on the diner-facing callables: only the real apps (proved by a reCAPTCHA token) may call them,
+ * which stops scripts that bypass the website. Off until the apps ship a site key (see docs/runbook.md section 9),
+ * because turning it on first would lock out every phone that has no token yet.
+ */
+export const APP_CHECK_ENFORCE = defineBoolean('APP_CHECK_ENFORCE', { default: false });
 
 export const isEmulator = () => process.env.FUNCTIONS_EMULATOR === 'true';
 

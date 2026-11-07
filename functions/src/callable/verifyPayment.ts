@@ -2,7 +2,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 import { z } from 'zod';
 import type { Order } from '@foodcourt/shared';
-import { RAZORPAY_KEY_SECRET, RAZORPAY_SECRETS, REGION } from '../config';
+import { RAZORPAY_KEY_SECRET, RAZORPAY_SECRETS, REGION, APP_CHECK_ENFORCE } from '../config';
 import { db } from '../db';
 import { clientIp, limitLocal, requireUid } from '../lib/guard';
 import { materializePaidOrder } from '../lib/orders';
@@ -20,7 +20,7 @@ const VerifyPaymentSchema = z.object({
  * status before settling: the browser's word is never enough. The webhook reaches the same result
  * independently, and settling is idempotent, so whichever arrives second is a no-op.
  */
-export const verifyPayment = onCall({ region: REGION, secrets: RAZORPAY_SECRETS, maxInstances: 100, concurrency: 80, timeoutSeconds: 30 }, async (req) => {
+export const verifyPayment = onCall({ region: REGION, enforceAppCheck: APP_CHECK_ENFORCE, secrets: RAZORPAY_SECRETS, maxInstances: 100, concurrency: 80, timeoutSeconds: 30 }, async (req) => {
   const uid = requireUid(req);
   limitLocal(`ip:${clientIp(req)}:verify`, 600, 60);
   const parsed = VerifyPaymentSchema.safeParse(req.data);

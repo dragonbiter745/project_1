@@ -1,11 +1,11 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { ReportIssueSchema } from '@foodcourt/shared';
-import { REGION } from '../config';
+import { REGION, APP_CHECK_ENFORCE } from '../config';
 import { db } from '../db';
 import { limitShared, requireUid } from '../lib/guard';
 
 /** Diners report a problem with their own order; validated and rate-limited instead of an open client write. */
-export const reportIssue = onCall({ region: REGION, maxInstances: 20, timeoutSeconds: 15 }, async (req) => {
+export const reportIssue = onCall({ region: REGION, enforceAppCheck: APP_CHECK_ENFORCE, maxInstances: 20, timeoutSeconds: 15 }, async (req) => {
   const uid = requireUid(req);
   await limitShared(`issue:${uid}`, 5, 3600);
   const parsed = ReportIssueSchema.safeParse(req.data);

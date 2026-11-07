@@ -13,7 +13,7 @@ import {
   type VendorMenu,
   PICKUP_TABLE_ID,
 } from '@foodcourt/shared';
-import { PAYMENT_WINDOW_MS, RAZORPAY_KEY_ID, RAZORPAY_SECRETS, REGION } from '../config';
+import { PAYMENT_WINDOW_MS, RAZORPAY_KEY_ID, RAZORPAY_SECRETS, REGION, APP_CHECK_ENFORCE } from '../config';
 import { db } from '../db';
 import { createOrder, MIN_AMOUNT_PAISE, RazorpayError } from '../lib/razorpay';
 import { clientIp, limitLocal, limitShared, requireUid } from '../lib/guard';
@@ -49,7 +49,7 @@ async function awaitFirstCheckout(orderRef: FirebaseFirestore.DocumentReference,
 }
 
 export const createCheckout = onCall(
-  { region: REGION, secrets: RAZORPAY_SECRETS, maxInstances: 100, concurrency: 80, timeoutSeconds: 30, memory: '512MiB' },
+  { region: REGION, enforceAppCheck: APP_CHECK_ENFORCE, secrets: RAZORPAY_SECRETS, maxInstances: 100, concurrency: 80, timeoutSeconds: 30, memory: '512MiB' },
   async (req) => {
     const uid = requireUid(req);
     limitLocal(`ip:${clientIp(req)}:checkout`, 600, 60);

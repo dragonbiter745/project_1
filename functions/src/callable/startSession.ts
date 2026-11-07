@@ -1,7 +1,7 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { FieldValue, Timestamp, type DocumentReference } from 'firebase-admin/firestore';
 import { PICKUP_TABLE_ID, PICKUP_TABLE_LABEL, StartPickupSessionSchema, StartSessionSchema, generateDisplayName, getIstDateKey, type Table } from '@foodcourt/shared';
-import { REGION, SESSION_TTL_MS } from '../config';
+import { REGION, SESSION_TTL_MS, APP_CHECK_ENFORCE } from '../config';
 import { db } from '../db';
 import { clientIp, limitLocal, requireUid } from '../lib/guard';
 import { customerRef, writeVisit } from '../lib/customers';
@@ -28,7 +28,7 @@ async function takeDailyNo(counterRef: DocumentReference, now: number): Promise<
  * diner's pickup session for ordering on the website.
  * One session per diner per table per day, keyed deterministically: no global counter to contend on.
  */
-export const startSession = onCall({ region: REGION, maxInstances: 100, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
+export const startSession = onCall({ region: REGION, enforceAppCheck: APP_CHECK_ENFORCE, maxInstances: 100, concurrency: 80, timeoutSeconds: 20 }, async (req) => {
   const uid = requireUid(req);
   limitLocal(`ip:${clientIp(req)}:session`, 900, 60);
   limitLocal(`session:${uid}`, 30, 600);

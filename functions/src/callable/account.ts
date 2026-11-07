@@ -3,7 +3,7 @@ import { logger } from 'firebase-functions/v2';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, type DocumentReference, type Transaction } from 'firebase-admin/firestore';
 import { AccountActionSchema, MAX_FAVOURITES, POLICY_VERSION, favouriteKey, type ConsentLogEntry, type UserProfile } from '@foodcourt/shared';
-import { REGION } from '../config';
+import { REGION, APP_CHECK_ENFORCE } from '../config';
 import { app, db } from '../db';
 import { customerRef, mergeCustomer } from '../lib/customers';
 import { limitLocal, requireUid } from '../lib/guard';
@@ -98,7 +98,7 @@ const publicProfile = (uid: string, p: Partial<UserProfile>) => ({
   createdAt: p.createdAt ?? null,
 });
 
-export const accountAction = onCall({ region: REGION, maxInstances: 50, concurrency: 80, timeoutSeconds: 60 }, async (req) => {
+export const accountAction = onCall({ region: REGION, enforceAppCheck: APP_CHECK_ENFORCE, maxInstances: 50, concurrency: 80, timeoutSeconds: 60 }, async (req) => {
   const uid = requireMember(req);
   limitLocal(`account:${uid}`, 60, 300);
   const parsed = AccountActionSchema.safeParse(req.data);
