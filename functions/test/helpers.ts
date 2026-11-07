@@ -6,8 +6,15 @@ import { resetLocalLimits } from '../src/lib/guard';
 export const PROJECT = process.env.GCLOUD_PROJECT!;
 export const QR = 'Q7xk2PqM9vR4tLw8nB3ydA'; // 22-char base64url token for table T14
 
+const COLLECTIONS = ['orders', 'subOrders', 'sessions', 'config', 'vendors', 'menus', 'availability', 'tables', 'counters', 'tokenHolds', 'rateLimits', 'users', 'customers', 'visits', 'coupons', 'couponUses', 'couponHolds', 'inbox', 'pointsLedger', 'auditLogs', 'paymentEvents', 'publicCatalog'];
+
 export async function resetDb() {
   resetLocalLimits();
+  if (process.env.LOADTEST_DATABASE) {
+    // A real (throwaway) database: no emulator wipe endpoint, so delete what the test creates.
+    for (const c of COLLECTIONS) await db.recursiveDelete(db.collection(c));
+    return;
+  }
   await fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/${PROJECT}/databases/default/documents`, { method: 'DELETE' });
 }
 

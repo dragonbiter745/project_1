@@ -4,9 +4,10 @@
 # It turns on: 7-day point-in-time recovery, daily + weekly backups, delete protection on the database,
 # and log-based alerts for the things that mean money or orders are at risk. Nothing here deletes data.
 set -euo pipefail
-PROJECT="${PROJECT:?set PROJECT}"; EMAIL="${ALERT_EMAIL:?set ALERT_EMAIL}"; DB="${DB:-default}"
+PROJECT="${PROJECT:?set PROJECT}"; EMAIL="${ALERT_EMAIL:-}"; DB="${DB:-default}"  # ALERT_EMAIL optional: without it alerts open incidents in the console only
 g() { echo "+ $*"; "$@"; }
 
+if [ -z "${SKIP_DB:-}" ]; then
 echo "== 1. Point-in-time recovery (7 days) and delete protection"
 g gcloud firestore databases update --database="$DB" --project="$PROJECT" --enable-pitr --delete-protection
 
@@ -17,9 +18,14 @@ if [ -z "$existing" ]; then
   g gcloud firestore backups schedules create --database="$DB" --project="$PROJECT" --recurrence=weekly --day-of-week=SUN --retention=14w
 else echo "schedules already exist:"; echo "$existing"; fi
 
+fi
+
 echo "== 3. Alert channel"
-chan="$(gcloud alpha monitoring channels list --project="$PROJECT" --filter="labels.email_address=$EMAIL" --format='value(name)' | head -1)"
-[ -n "$chan" ] || chan="$(gcloud alpha monitoring channels create --project="$PROJECT" --display-name="Qrave on-call" --type=email --channel-labels="email_address=$EMAIL" --format='value(name)')"
+chan=""
+if [ -n "$EMAIL" ]; then
+  chan="$(gcloud monitoring channels list --project="$PROJECT" --filter="labels.email_address=$EMAIL" --format='value(name)' | head -1)"
+  [ -n "$chan" ] || chan="$(gcloud monitoring channels create --project="$PROJECT" --display-name="Qrave on-call" --type=email --channel-labels="email_address=$EMAIL" --format='value(name)')"
+fi
 
 echo "== 4. Log-based metrics and alert policies"
 metric() { # name, filter
@@ -28,11 +34,11 @@ metric() { # name, filter
 policy() { # display name, metric
   local f; f="$(mktemp)"
   cat >"$f" <<JSON
-{"displayName":"$1","combiner":"OR","notificationChannels":["$chan"],
- "conditions":[{"displayName":"$1","conditionThreshold":{"filter":"metric.type=\"logging.googleapis.com/user/$2\" resource.type=\"cloud_function\"",
+{"displayName":"$1","combiner":"OR","notificationChannels":[$([ -n "$chan" ] && echo "\"$chan\"")],
+ "conditions":[{"displayName":"$1","conditionThreshold":{"filter":"metric.type=\"logging.googleapis.com/user/$2\" resource.type=\"cloud_run_revision\"",
  "comparison":"COMPARISON_GT","thresholdValue":0,"duration":"0s","aggregations":[{"alignmentPeriod":"300s","perSeriesAligner":"ALIGN_SUM"}]}}]}
 JSON
-  gcloud alpha monitoring policies list --project="$PROJECT" --filter="displayName=\"$1\"" --format='value(name)' | grep -q . || g gcloud alpha monitoring policies create --project="$PROJECT" --policy-from-file="$f"
+  gcloud monitoring policies list --project="$PROJECT" --filter="displayName=\"$1\"" --format='value(name)' | grep -q . || g gcloud monitoring policies create --project="$PROJECT" --policy-from-file="$f"
 }
 metric qrave_webhook_failures 'resource.type="cloud_run_revision" AND jsonPayload.message:"Webhook handling failed"'
 metric qrave_bad_signatures   'resource.type="cloud_run_revision" AND jsonPayload.message:"Rejected unsigned or badly signed webhook"'
@@ -43,6 +49,6 @@ metric qrave_checkout_errors  'resource.type="cloud_run_revision" AND resource.l
 for m in webhook_failures amount_mismatch reconcile_diff razorpay_down checkout_errors; do policy "Qrave: $m" "qrave_$m"; done
 
 echo "== Verify"
-g gcloud firestore databases describe --database="$DB" --project="$PROJECT" --format='value(pointInTimeRecoveryEnablement,deleteProtectionState)'
-g gcloud firestore backups schedules list --database="$DB" --project="$PROJECT"
+[ -n "${SKIP_DB:-}" ] || g gcloud firestore databases describe --database="$DB" --project="$PROJECT" --format='value(pointInTimeRecoveryEnablement,deleteProtectionState)'
+[ -n "${SKIP_DB:-}" ] || g gcloud firestore backups schedules list --database="$DB" --project="$PROJECT"
 echo "Done. Now do the restore drill in docs/runbook.md section 8; a backup you have not restored is not a backup."
