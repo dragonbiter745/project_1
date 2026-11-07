@@ -13,9 +13,7 @@ export const RAZORPAY_WEBHOOK_SECRET = defineSecret('RAZORPAY_WEBHOOK_SECRET');
 export const CUSTOMER_URL = defineString('CUSTOMER_URL', { default: 'https://order.getqrave.in' });
 
 // Vendor logins by email (Resend). The key lives in Secret Manager; the sender address must be on a domain verified in Resend.
-// Not bound as a Secret Manager secret yet (the email team owns that); until then the key is empty and invites say
-// "Email is not set up yet". To enable: create the secret, switch this to defineSecret and re-add it to vendorAccess.
-export const RESEND_API_KEY = { value: (): string => process.env.RESEND_API_KEY ?? '' };
+export const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
 export const MAIL_FROM = defineString('MAIL_FROM', { default: 'Qrave <accounts@getqrave.in>' });
 /** Where the emailed set-password link lands: kitchen logins open the kitchen display, finance logins shop admin. */
 export const VENDOR_URL = defineString('VENDOR_URL', { default: 'https://reva-nest-vendor.web.app' });

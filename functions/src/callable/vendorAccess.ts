@@ -13,7 +13,7 @@ import {
   type VendorLoginRole,
   type VendorLoginRow,
 } from '@foodcourt/shared';
-import { BRAND_URL, REGION, SHOP_ADMIN_URL, VENDOR_URL, APP_CHECK_ENFORCE } from '../config';
+import { BRAND_URL, REGION, RESEND_API_KEY, SHOP_ADMIN_URL, VENDOR_URL, APP_CHECK_ENFORCE } from '../config';
 import { app, db } from '../db';
 import { clientIp, limitLocal, limitShared, requireUid, roleOf } from '../lib/guard';
 import { inviteEmail } from '../lib/inviteEmail';
@@ -63,7 +63,7 @@ async function allUsers(auth: AuthApi): Promise<UserRecord[]> {
   return users;
 }
 
-export const vendorAccess = onCall({ region: REGION, maxInstances: 5, timeoutSeconds: 60 }, async (req) => {
+export const vendorAccess = onCall({ region: REGION, maxInstances: 5, timeoutSeconds: 60, secrets: [RESEND_API_KEY] }, async (req) => {
   const by = requireUid(req);
   if (roleOf(req).role !== 'master') throw new HttpsError('permission-denied', 'Only the court manager can do this.');
   await limitShared(`vendor-access:${by}`, 120, 300);
