@@ -53,21 +53,25 @@ export async function timeOutUnaccepted(now = Date.now()): Promise<number> {
 const CHECK_AT_MIN = new Set([2, 3, 5, 8, 12, 16, 21, 26]);
 const CHECK_EVERY_AFTER_MIN = 26;
 
-/** Catches payments whose webhook never arrived, and expires orders nobody paid for. */
+/**
+ * Catches payments whose webhook never arrived, and expires orders nobody paid for. Oldest first and up to 500 a
+ * minute, so a lunch rush of abandoned carts can never push a real payment out of the batch; the gateway calls
+ * run ten at a time so a full batch still fits well inside the function's time limit.
+ */
 export async function reconcilePayments(now = Date.now()): Promise<{ paid: number; expired: number }> {
-  const pending = await db.collection('orders').where('status', '==', 'PENDING_PAYMENT').where('createdAt', '<', now - 2 * 60_000).limit(100).get();
+  const pending = await db.collection('orders').where('status', '==', 'PENDING_PAYMENT').where('createdAt', '<', now - 2 * 60_000).orderBy('createdAt').limit(500).get();
   let paid = 0;
   let expired = 0;
-  for (const doc of pending.docs) {
+  const check = async (doc: FirebaseFirestore.QueryDocumentSnapshot) => {
     const order = doc.data() as Order;
     const ageMin = Math.floor((now - order.createdAt) / 60_000);
-    if (ageMin <= CHECK_EVERY_AFTER_MIN && !CHECK_AT_MIN.has(ageMin)) continue;
+    if (ageMin <= CHECK_EVERY_AFTER_MIN && !CHECK_AT_MIN.has(ageMin)) return;
     try {
       const captured = order.payment.rzpOrderId ? await getCapturedPayment(order.payment.rzpOrderId) : undefined;
       if (captured) {
         const outcome = await materializePaidOrder(doc.id, { amountPaise: captured.amount, rzpPaymentId: captured.id, method: captured.method ?? 'RECONCILED' });
         if (outcome === 'created') paid++;
-        continue;
+        return;
       }
       const tooOld = now > (order.expiresAt ?? order.createdAt + 15 * 60_000) + 5 * 60_000;
       if (tooOld && canTransitionOrder('PENDING_PAYMENT', 'EXPIRED')) {
@@ -77,13 +81,14 @@ export async function reconcilePayments(now = Date.now()): Promise<{ paid: numbe
     } catch (err) {
       logger.warn('Reconcile failed for order', { orderId: doc.id, err: (err as Error).message });
     }
-  }
+  };
+  for (let i = 0; i < pending.docs.length; i += 10) await Promise.all(pending.docs.slice(i, i + 10).map(check));
   return { paid, expired };
 }
 
 /** Refunds Razorpay accepted but has not finished: poll until they settle. A refund whose request never got an answer is re-sent (idempotent on its id). */
 export async function refreshRefunds(): Promise<number> {
-  const pending = await db.collection('subOrders').where('refund.status', '==', 'PENDING').limit(100).get();
+  const pending = await db.collection('subOrders').where('refund.status', '==', 'PENDING').limit(300).get();
   let settled = 0;
   for (const doc of pending.docs) {
     const t = doc.data() as SubOrder;

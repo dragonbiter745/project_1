@@ -194,5 +194,24 @@ service cloud.firestore {
     match /rateLimits/{id} {
       allow read, write: if false;
     }
+
+    // Append-only gateway event ledger and the nightly money check: written by functions only.
+    match /paymentEvents/{id} {
+      allow read, write: if false;
+    }
+    match /reconciliationReports/{id} {
+      allow read: if isMaster();
+      allow write: if false;
+    }
+    // Vendor login invites (hashed tokens) and the local-only mail outbox: functions only.
+    match /invites/{id} {
+      allow read, write: if false;
+    }
+    match /vendorAccess/{id} {
+      allow read, write: if false;
+    }
+    match /mailOutbox/{id} {
+      allow read, write: if false;
+    }
   }
 }

@@ -167,3 +167,40 @@ orders), including a leaked key, an open database rule, or a lost founder laptop
 Keep: Cloud Logging and audit logs for at least **180 days** (CERT-In) and ideally 1 year; check the log bucket
 retention in Google Cloud Console → Logging → Log storage. Staff consoles must use strong passwords and Google
 2-step verification for every founder account with Firebase or Razorpay access.
+
+## 8. Disaster recovery (data loss, bad deploy, gateway outage)
+
+Targets: **RPO** (most data we can lose) ≈ 1 minute with point-in-time recovery; **RTO** (time to be taking orders again) under 60 minutes for a bad deploy, under 2 hours for a database restore. Payments are never lost because Razorpay is the second copy of every rupee: `paymentEvents` (our ledger) and the nightly `reconciliationReports` prove the two sides agree.
+
+### One-time setup (project owner)
+`PROJECT=reva-nest-foodcourt ALERT_EMAIL=<you> bash scripts/ops/harden-infra.sh` turns on 7-day point-in-time recovery, daily (7 days) and weekly (14 weeks) backups, database delete protection, and email alerts for webhook failures, amount mismatches, reconciliation differences, Razorpay outages and checkout errors. Check it took effect: `gcloud firestore databases describe --database=default --project reva-nest-foodcourt` must show PITR enabled and delete protection enabled. **Do the restore drill below once before launch and every quarter.**
+
+### Scenarios
+| What happened | First 5 minutes | Recovery |
+|---|---|---|
+| Our functions are down or erroring | Check Firebase status and `firebase functions:log`. Set Settings > maintenance on (diners see a pause message). | Roll back: redeploy the last good commit (`git revert` then the backend pipeline). Razorpay keeps retrying webhooks for 24 h; the sweeper and the nightly reconciliation settle anything missed. |
+| Razorpay down | Checkout already answers "Payments are not responding. Nothing was charged." Turn `paymentsEnabled` off in Settings to switch the court to pay-at-counter. | Turn it back on. Orders created but not paid expire by themselves; captured ones settle on the next sweep. |
+| Webhook was disabled by Razorpay (24 h of failures) | Razorpay emails the owner. Fix the cause, re-enable the webhook in the dashboard. | In the dashboard, replay the missed events (same `x-razorpay-event-id`, so replays are safe). Also run the reconciliation (below). |
+| Bad data written (a bug, a mistaken edit) | Note the time. Stop the cause (roll back or maintenance mode). | Read the data as it was: `gcloud firestore databases clone` (below) to a new database from a minute before, compare, and copy the documents back with a script. Never restore over production blind. |
+| Database deleted or corrupted | Delete protection should have blocked deletion. Switch on maintenance. | Restore the newest backup into a new database (below), point the functions at it (`DATABASE` in `functions/src/config.ts`), redeploy, then run reconciliation to re-settle anything paid after the backup. |
+| Someone abuses the app (fake orders, coupon farming) | Per-user and per-IP limits already apply. Disable the abusing account in Firebase Auth; pause the coupon in the Coupons page. | Orders from the abuser are refunded through the normal refund path; see `auditLogs`. |
+
+### Restore commands
+```
+# Point in time (any minute in the last 7 days): clone into a NEW database, never over production
+gcloud firestore databases clone --source-database=projects/reva-nest-foodcourt/databases/default \
+  --destination-database=restore-check --snapshot-time=2026-11-08T10:15:00Z --project reva-nest-foodcourt
+# From a backup
+gcloud firestore backups list --project reva-nest-foodcourt
+gcloud firestore databases restore --source-backup=<backup-resource-name> --destination-database=restore-check --project reva-nest-foodcourt
+```
+Verify in the console that `orders`, `subOrders` and `paymentEvents` look right, then delete `restore-check`. (Flag names follow Google's documented gcloud reference; if a flag is rejected run `gcloud firestore databases clone --help`.)
+
+### Money check, any time
+In the master console the nightly `reconciliationReports/{date}` document says `ok: true` when Razorpay and our books agree for that IST day. If it says `ok: false` the `samples` list names each order and payment. To run one by hand, call `reconcileDay(dateKey)` from a shell with admin credentials, or wait for 23:30 / 06:30 IST. A payment Razorpay took that we never settled is settled automatically; an amount difference or money we recorded but Razorpay never received is never auto-fixed and needs a human.
+
+### Things that must NOT be turned on
+`KILL_SWITCH_ENABLED` unlinks billing when a budget is hit. For a business taking real payments that would switch the whole service off in the middle of lunch. Keep it `false`, keep budget **alerts**, and decide manually.
+
+### Cleanup the owner should do
+`firebase functions:delete cashfreeWebhook --region asia-south1 --project reva-nest-foodcourt` (the old Cashfree webhook is still deployed after the move to Razorpay).

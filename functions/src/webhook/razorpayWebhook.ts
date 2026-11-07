@@ -4,6 +4,8 @@ import { RAZORPAY_SECRETS, RAZORPAY_WEBHOOK_SECRET, REGION } from '../config';
 import { db } from '../db';
 import { verifyWebhookSignature } from '../lib/razorpay';
 import { materializePaidOrder } from '../lib/orders';
+import * as crypto from 'crypto';
+import { recordPaymentEvent, setPaymentEventOutcome } from '../lib/ledger';
 
 interface PaymentEntity {
   id?: string;
@@ -45,6 +47,19 @@ export const razorpayWebhook = onRequest({ region: REGION, secrets: RAZORPAY_SEC
     res.status(400).send('Bad payload');
     return;
   }
+
+  // The ledger key: Razorpay's own event id (stable across redeliveries), or a hash of the signed body if absent.
+  const eventId = (req.get('x-razorpay-event-id') || crypto.createHash('sha256').update(rawBody).digest('hex')).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 120);
+  const pay = event.payload?.payment?.entity;
+  await recordPaymentEvent({
+    eventId,
+    event: String(event.event ?? 'unknown'),
+    rzpOrderId: pay?.order_id ?? null,
+    rzpPaymentId: pay?.id ?? event.payload?.refund?.entity?.id ?? null,
+    amountPaise: typeof pay?.amount === 'number' ? pay.amount : null,
+    currency: pay?.currency ?? null,
+    method: pay?.method ?? null,
+  });
 
   try {
     const refund = event.payload?.refund?.entity;
@@ -95,8 +110,10 @@ export const razorpayWebhook = onRequest({ region: REGION, secrets: RAZORPAY_SEC
       logger.error('Payment amount mismatch', { orderId: orderDoc.id, amountPaise: payment.amount });
       await orderDoc.ref.update({ 'payment.status': 'FLAGGED', updatedAt: Date.now() });
     }
+    await setPaymentEventOutcome(eventId, outcome);
     res.status(200).json({ ok: true, outcome });
   } catch (err) {
+    await setPaymentEventOutcome(eventId, 'error');
     logger.error('Webhook handling failed', { err: (err as Error).message });
     res.status(500).send('Retry later');
   }

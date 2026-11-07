@@ -43,6 +43,7 @@ async function call<T>(path: string, init: { method: 'GET' | 'POST'; body?: unkn
       // The stand-in never confirms a payment: verifyPayment then defers to the webhook, which e2e signs itself.
       throw new RazorpayError(503, 'Stand-in cannot read payments back');
     }
+    if (/^\/payments\?/.test(path) && init.method === 'GET') return { items: [] } as T;
     if (/^\/orders\/[^/]+\/payments$/.test(path)) {
       return { items: [{ id: 'pay_mock', order_id: path.split('/')[2], amount: 100, currency: 'INR', status: 'captured', method: 'upi' }] } as T;
     }
@@ -95,6 +96,8 @@ export interface RzpPayment {
   currency: string;
   status: 'created' | 'authorized' | 'captured' | 'refunded' | 'failed';
   method?: string;
+  /** Epoch seconds. */
+  created_at?: number;
 }
 
 export const getPayment = (paymentId: string) => call<RzpPayment>(`/payments/${encodeURIComponent(paymentId)}`, { method: 'GET' });
@@ -103,6 +106,20 @@ export const getPayment = (paymentId: string) => call<RzpPayment>(`/payments/${e
 export async function getCapturedPayment(rzpOrderId: string): Promise<RzpPayment | undefined> {
   const list = await call<{ items: RzpPayment[] }>(`/orders/${encodeURIComponent(rzpOrderId)}/payments`, { method: 'GET' });
   return list.items.find((p) => p.status === 'captured');
+}
+
+/**
+ * Every payment Razorpay received in [fromSec, toSec) that actually took money (captured, or captured and later
+ * refunded). Pages of 100 until Razorpay runs out. Used by the nightly reconciliation to compare against our books.
+ */
+export async function listReceivedPayments(fromSec: number, toSec: number): Promise<RzpPayment[]> {
+  const out: RzpPayment[] = [];
+  for (let skip = 0; skip < 50_000; skip += 100) {
+    const page = await call<{ items: RzpPayment[] }>(`/payments?from=${fromSec}&to=${toSec}&count=100&skip=${skip}`, { method: 'GET' });
+    out.push(...page.items.filter((p) => p.status === 'captured' || p.status === 'refunded'));
+    if (page.items.length < 100) break;
+  }
+  return out;
 }
 
 export interface RzpRefund {

@@ -18,6 +18,7 @@ export { onTicketNotify } from './triggers/notify';
 export { razorpayWebhook } from './webhook/razorpayWebhook';
 export { verifyPayment } from './callable/verifyPayment';
 export { sweeper } from './scheduled/sweeper';
+export { dailyReconcile, morningReconcile } from './scheduled/dailyReconcile';
 export { catalog, onFlagsChanged, onMenuChanged, onShopChanged, onStockChanged } from './catalog';
 export { billingGuard } from './billing/killSwitch';
 export { onTicketFailed } from './triggers/refunds';
