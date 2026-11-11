@@ -8,7 +8,7 @@ import { adminAction } from '../src/callable/adminAction';
 import { razorpayWebhook } from '../src/webhook/razorpayWebhook';
 import { verifyPayment } from '../src/callable/verifyPayment';
 import { reconcilePayments, timeOutUnaccepted } from '../src/scheduled/sweeper';
-import { refundTicket } from '../src/triggers/refunds';
+import { processRefund } from '../src/lib/refunds';
 import { QR, call, fakeRazorpay, resetDb, seed, sessionFor, sign, signPayment, uniqueUid, webhookCall } from './helpers';
 
 const cart = [
@@ -289,14 +289,15 @@ describe('vendorAction and refunds', () => {
   });
 
   it('refunds online-paid tickets proportionally and skips counter orders', async () => {
-    const before = (await db.doc(`subOrders/${ticketId}`).get()).data() as any;
-    const after = { ...before, status: 'REJECTED' };
-    expect(await refundTicket(ticketId, before, after)).toBe('not-required');
+    // A counter order took no online money: rejecting it records that nothing is owed, in the same write.
+    await call(vendorAction, { subOrderId: ticketId, action: 'REJECT', reason: 'Sold out' }, uniqueUid('staff'), rm);
+    expect((await db.doc(`subOrders/${ticketId}`).get()).data()!.refund).toMatchObject({ status: 'NOT_REQUIRED', amountPaise: 0 });
+    expect(await processRefund(ticketId)).toBe('not-required');
 
     await db.doc(`orders/${orderId}`).update({ 'payment.mode': 'ONLINE', 'payment.status': 'SUCCESS', 'payment.rzpPaymentId': 'pay_ref1' });
-    await db.doc(`subOrders/${ticketId}`).update({ refund: null });
+    await db.doc(`subOrders/${ticketId}`).update({ refund: { status: 'REQUIRED', amountPaise: 0 } });
     const calls = fakeRazorpay({ refund: (_u, body) => ({ json: { id: 'rfnd_1', amount: body.amount, receipt: body.receipt, status: 'pending' } }) });
-    expect(await refundTicket(ticketId, before, { ...after, refund: undefined })).toBe('refunded');
+    expect(await processRefund(ticketId)).toBe('claimed');
     expect(calls[0]!.url).toBe('https://api.razorpay.com/v1/payments/pay_ref1/refund');
     expect(calls[0]!.body.amount).toBe(24000);
     expect(calls[0]!.headers['X-Refund-Idempotency']).toBe(`rf_${ticketId}`.slice(0, 40));

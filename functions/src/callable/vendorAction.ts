@@ -12,6 +12,7 @@ import { REGION } from '../config';
 import { db } from '../db';
 import { limitLocal, requireUid, roleOf } from '../lib/guard';
 import { syncParentStatus, timelineKey } from '../lib/orders';
+import { refundOwed } from '../lib/refunds';
 
 /**
  * Every kitchen status change goes through here and the shared status machine. Shop staff can only
@@ -47,9 +48,19 @@ export const vendorAction = onCall({ region: REGION, maxInstances: 50, concurren
     if (prepTimeOverrideMin) updates.prepTimeOverrideMin = prepTimeOverrideMin;
     if (action === 'REJECT') updates.rejectReason = reason;
     if (action === 'CANCEL') updates.cancelReason = reason;
+    // The refund owed is written with the rejection itself, so it exists even if no trigger ever runs.
+    if (action === 'REJECT' || action === 'CANCEL') updates.refund = refundOwed(ticket.paymentMode, now);
     tx.update(ref, updates);
     return { ticket, status: updates.status as string, now };
   });
+
+  // Rejecting and cancelling move a diner's money: record who did it, when and why.
+  if (action === 'REJECT' || action === 'CANCEL') {
+    await db
+      .collection('auditLogs')
+      .add({ at: result.now, by: typeof req.auth?.token.email === 'string' ? req.auth.token.email : uid, area: 'kitchen', action, subOrderId, orderId: result.ticket.orderId, vendorId: result.ticket.vendorId, reason: reason ?? null })
+      .catch(() => undefined);
+  }
 
   // Only these steps can change the order's overall status (all collected, or a ticket refunded); accepting,
   // marking ready and undoing ready never can, so they skip the query and read the re-check would cost.

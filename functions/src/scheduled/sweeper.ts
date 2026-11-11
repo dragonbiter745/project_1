@@ -3,8 +3,9 @@ import { logger } from 'firebase-functions/v2';
 import { canTransitionOrder, canTransitionSubOrder, type Order, type SubOrder, type Vendor } from '@foodcourt/shared';
 import { DEFAULT_ACCEPT_SLA_SEC, RAZORPAY_SECRETS, REGION } from '../config';
 import { db } from '../db';
-import { createRefund, getCapturedPayment, getRefund } from '../lib/razorpay';
+import { getCapturedPayment } from '../lib/razorpay';
 import { materializePaidOrder, syncParentStatus } from '../lib/orders';
+import { refundOwed, sweepRefunds } from '../lib/refunds';
 
 // Shops' accept deadlines change rarely, so a minute-by-minute sweep must not re-read every shop each time.
 const SLA_TTL_MS = 10 * 60_000;
@@ -30,20 +31,28 @@ export async function timeOutUnaccepted(now = Date.now()): Promise<number> {
   for (const doc of stale.docs) {
     const placed = doc.data() as SubOrder;
     if (now - placed.ts.placed < (sla.get(placed.vendorId) ?? DEFAULT_ACCEPT_SLA_SEC * 1000)) continue;
-    const timedOut = await db.runTransaction(async (tx) => {
-      const fresh = await tx.get(doc.ref);
-      const t = fresh.data() as SubOrder | undefined;
-      if (!t || !canTransitionSubOrder(t.status, 'TIMED_OUT')) return false;
-      if (now - t.ts.placed < (sla.get(t.vendorId) ?? DEFAULT_ACCEPT_SLA_SEC * 1000)) return false;
-      tx.update(doc.ref, { status: 'TIMED_OUT', 'ts.timedOut': now, updatedAt: now });
-      return true;
-    });
-    if (timedOut) {
-      n++;
-      parents.add((doc.data() as SubOrder).orderId);
+    try {
+      const timedOut = await db.runTransaction(async (tx) => {
+        const fresh = await tx.get(doc.ref);
+        const t = fresh.data() as SubOrder | undefined;
+        if (!t || !canTransitionSubOrder(t.status, 'TIMED_OUT')) return false;
+        if (now - t.ts.placed < (sla.get(t.vendorId) ?? DEFAULT_ACCEPT_SLA_SEC * 1000)) return false;
+        // The refund owed is written with the timeout itself, so it exists even if no trigger ever runs.
+        tx.update(doc.ref, { status: 'TIMED_OUT', 'ts.timedOut': now, updatedAt: now, refund: refundOwed(t.paymentMode, now) });
+        return true;
+      });
+      if (timedOut) {
+        n++;
+        parents.add(placed.orderId);
+      }
+    } catch (err) {
+      // One ticket that cannot be timed out must not stop the others (or the rest of the sweep).
+      logger.error('Sweeper step failed', { step: 'timeout-ticket', subOrderId: doc.id, err: (err as Error).message });
     }
   }
-  for (const id of parents) await syncParentStatus(id);
+  for (const id of parents) {
+    await syncParentStatus(id).catch((err) => logger.error('Sweeper step failed', { step: 'sync-parent', orderId: id, err: (err as Error).message }));
+  }
   return n;
 }
 
@@ -86,38 +95,24 @@ export async function reconcilePayments(now = Date.now()): Promise<{ paid: numbe
   return { paid, expired };
 }
 
-/** Refunds Razorpay accepted but has not finished: poll until they settle. A refund whose request never got an answer is re-sent (idempotent on its id). */
-export async function refreshRefunds(): Promise<number> {
-  const pending = await db.collection('subOrders').where('refund.status', '==', 'PENDING').limit(300).get();
-  let settled = 0;
-  for (const doc of pending.docs) {
-    const t = doc.data() as SubOrder;
-    if (!t.refund?.refundId) continue;
-    try {
-      let r;
-      if (t.refund.gatewayRefundId) {
-        r = await getRefund(t.refund.gatewayRefundId);
-      } else {
-        const paymentId = ((await db.collection('orders').doc(t.orderId).get()).data() as Order | undefined)?.payment.rzpPaymentId;
-        if (!paymentId) continue;
-        r = await createRefund(paymentId, t.refund.refundId, t.refund.amountPaise, `${t.token} retry`);
-        await doc.ref.update({ 'refund.gatewayRefundId': r.id });
-      }
-      if (r.status === 'pending') continue;
-      await doc.ref.update({ 'refund.status': r.status === 'processed' ? 'PROCESSED' : 'FAILED', 'refund.updatedAt': Date.now() });
-      settled++;
-    } catch (err) {
-      logger.warn('Refund status check failed', { subOrderId: doc.id, err: (err as Error).message });
-    }
+/** Runs one part of the sweep on its own: if it throws, the failure is logged at ERROR (an alert watches for it) and the other parts still run. */
+export async function sweepStep<T>(step: string, fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    logger.error('Sweeper step failed', { step, err: (err as Error).message });
+    return fallback;
   }
-  return settled;
 }
 
-// Every minute, but only while the court can be ordering (06:00-21:59 IST). Overnight there is nothing to
-// sweep, and anything left over is settled at 06:00.
-export const sweeper = onSchedule({ schedule: '* 6-21 * * *', timeZone: 'Asia/Kolkata', region: REGION, secrets: RAZORPAY_SECRETS, timeoutSeconds: 120, maxInstances: 1, retryCount: 0 }, async () => {
-  const timedOut = await timeOutUnaccepted();
-  const payments = await reconcilePayments();
-  const refunds = await refreshRefunds();
-  if (timedOut || payments.paid || payments.expired || refunds) logger.info('Sweep', { timedOut, ...payments, refunds });
-});
+/** One full sweep. Each part is independent: a bug or an outage in one never stops payments being recovered or refunds being sent. */
+export async function sweep(): Promise<void> {
+  const timedOut = await sweepStep('timeouts', () => timeOutUnaccepted(), 0);
+  const payments = await sweepStep('payments', () => reconcilePayments(), { paid: 0, expired: 0 });
+  const refunds = await sweepStep('refunds', () => sweepRefunds(), { sent: 0, settled: 0 });
+  if (timedOut || payments.paid || payments.expired || refunds.sent || refunds.settled) logger.info('Sweep', { timedOut, ...payments, refundsSent: refunds.sent, refundsSettled: refunds.settled });
+}
+
+// Every minute, around the clock. A payment or a refund can be owed at any hour (a late UPI approval, an order
+// placed just before closing), and an idle sweep is four small queries, so there is no hour worth skipping.
+export const sweeper = onSchedule({ schedule: '* * * * *', timeZone: 'Asia/Kolkata', region: REGION, secrets: RAZORPAY_SECRETS, timeoutSeconds: 120, maxInstances: 1, retryCount: 0 }, sweep);

@@ -23,9 +23,10 @@ import {
   type ShopReport,
   type Vendor,
 } from '@foodcourt/shared';
-import { REGION } from '../config';
+import { RAZORPAY_SECRETS, REGION } from '../config';
 import { db } from '../db';
 import { limitLocal, limitShared, requireUid, roleOf } from '../lib/guard';
+import { retryRefund } from '../lib/refunds';
 
 const FAILED = [...REFUNDABLE_STATUSES];
 const ALL_TIME: Window = { from: '2000-01-01', to: '9999-12-31' };
@@ -92,17 +93,12 @@ function ticketQuery(vendorId: string | null, mode: 'ONLINE' | 'COUNTER', w: Win
  */
 async function ticketTotals(vendorId: string | null, mode: 'ONLINE' | 'COUNTER', w: Window): Promise<TicketTotals> {
   const q = ticketQuery(vendorId, mode, w);
-  const [all, failed] = await Promise.all([
+  // Failed tickets are counted by status alone, in their own query: a failed ticket whose refund record is
+  // missing or incomplete must still come out of sales, whatever the refund sum does with it.
+  const [all, failed, refunded] = await Promise.all([
     q.aggregate({ n: AggregateField.count(), sales: AggregateField.sum('subtotalPaise'), commission: AggregateField.sum('commissionPaise') }).get(),
-    q
-      .where('status', 'in', FAILED)
-      .aggregate({
-        n: AggregateField.count(),
-        sales: AggregateField.sum('subtotalPaise'),
-        commission: AggregateField.sum('commissionPaise'),
-        refunds: AggregateField.sum('refund.amountPaise'),
-      })
-      .get(),
+    q.where('status', 'in', FAILED).aggregate({ n: AggregateField.count(), sales: AggregateField.sum('subtotalPaise'), commission: AggregateField.sum('commissionPaise') }).get(),
+    q.where('status', 'in', FAILED).aggregate({ refunds: AggregateField.sum('refund.amountPaise') }).get(),
   ]);
   const a = all.data();
   const f = failed.data();
@@ -110,7 +106,7 @@ async function ticketTotals(vendorId: string | null, mode: 'ONLINE' | 'COUNTER',
     orders: a.n - f.n,
     salesPaise: (a.sales ?? 0) - (f.sales ?? 0),
     commissionPaise: (a.commission ?? 0) - (f.commission ?? 0),
-    refundsPaise: f.refunds ?? 0,
+    refundsPaise: refunded.data().refunds ?? 0,
   };
 }
 
@@ -306,7 +302,7 @@ export const financeReport = onCall({ region: REGION, maxInstances: 10, timeoutS
   return buildFinanceReport(parsed.data.from, parsed.data.to);
 });
 
-export const financeAction = onCall({ region: REGION, maxInstances: 10, timeoutSeconds: 30 }, async (req) => {
+export const financeAction = onCall({ region: REGION, secrets: RAZORPAY_SECRETS, maxInstances: 10, timeoutSeconds: 30 }, async (req) => {
   const uid = requireCourt(req);
   await limitShared(`finance-action:${uid}`, 60, 300);
   const parsed = FinanceActionSchema.safeParse(req.data);
@@ -389,6 +385,18 @@ export const financeAction = onCall({ region: REGION, maxInstances: 10, timeoutS
     });
     if (result === 'voided') await audit({ action: 'VOID_ENTRY', entryId: input.entryId, reason: input.reason });
     return { entryId: input.entryId, status: 'VOID' };
+  }
+
+  if (input.action === 'RETRY_REFUND') {
+    let outcome: 'retried' | 'already-processed';
+    try {
+      outcome = await retryRefund(input.subOrderId);
+    } catch (err) {
+      if ((err as Error).message === 'not-failed') throw new HttpsError('failed-precondition', 'Only a failed refund can be sent again.');
+      throw err;
+    }
+    await audit({ action: 'RETRY_REFUND', subOrderId: input.subOrderId, outcome });
+    return { subOrderId: input.subOrderId, outcome };
   }
 
   const ref = db.collection('vendors').doc(input.vendorId);

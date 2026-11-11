@@ -229,10 +229,14 @@ export interface SubOrder {
   cancelReason?: string;
   prepTimeOverrideMin?: number;
   refund?: {
-    status: 'PENDING' | 'PROCESSED' | 'FAILED' | 'NOT_REQUIRED';
+    /** REQUIRED: owed, written with the status change that failed the ticket; not yet claimed or sent. */
+    status: 'REQUIRED' | 'PENDING' | 'PROCESSED' | 'FAILED' | 'NOT_REQUIRED';
     amountPaise: number;
     refundId?: string;
     gatewayRefundId?: string;
+    /** Manager retries of a failed refund; each gets a new refundId. */
+    attempt?: number;
+    failReason?: string;
     updatedAt?: number;
   };
 }

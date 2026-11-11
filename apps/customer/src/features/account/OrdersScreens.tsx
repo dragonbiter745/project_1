@@ -165,6 +165,7 @@ function refundText(t: SubOrder): string | null {
   const r = t.refund;
   if (!r) return null;
   if (r.status === 'NOT_REQUIRED') return 'Nothing was charged for this part';
+  if (r.status === 'REQUIRED') return 'Your refund for this part is on its way';
   if (r.status === 'PROCESSED') return `Refunded ${formatPaise(r.amountPaise)}`;
   if (r.status === 'FAILED') return `Refund of ${formatPaise(r.amountPaise)} delayed. We're on it`;
   return `Refund of ${formatPaise(r.amountPaise)} on its way`;

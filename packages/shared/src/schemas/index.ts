@@ -158,6 +158,8 @@ export const FinanceActionSchema = z.discriminatedUnion('action', [
   }),
   z.object({ action: z.literal('RECORD_ENTRY'), requestKey: z.string().min(8).max(80), ...ENTRY_FIELDS }),
   z.object({ action: z.literal('VOID_ENTRY'), entryId: z.string().min(1).max(100), reason: z.string().trim().min(3, 'Say why').max(200) }),
+  // Sends a refund Razorpay marked failed again (a new attempt with a new refund id); audited.
+  z.object({ action: z.literal('RETRY_REFUND'), subOrderId: z.string().min(1).max(200) }),
   // Applies to tickets created from now on.
   z.object({
     action: z.literal('SET_COMMISSION'),

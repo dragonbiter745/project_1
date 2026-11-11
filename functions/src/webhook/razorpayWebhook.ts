@@ -4,6 +4,7 @@ import { RAZORPAY_SECRETS, RAZORPAY_WEBHOOK_SECRET, REGION } from '../config';
 import { db } from '../db';
 import { verifyWebhookSignature } from '../lib/razorpay';
 import { materializePaidOrder } from '../lib/orders';
+import { settleRefund } from '../lib/refunds';
 import * as crypto from 'crypto';
 import { recordPaymentEvent, setPaymentEventOutcome } from '../lib/ledger';
 
@@ -66,10 +67,8 @@ export const razorpayWebhook = onRequest({ region: REGION, secrets: RAZORPAY_SEC
     if ((event.event === 'refund.processed' || event.event === 'refund.failed') && refund?.receipt) {
       const ticket = await db.collection('subOrders').where('refund.refundId', '==', refund.receipt).limit(1).get();
       const doc = ticket.docs[0];
-      if (doc) {
-        const status = event.event === 'refund.processed' ? 'PROCESSED' : 'FAILED';
-        await doc.ref.update({ 'refund.status': status, 'refund.gatewayRefundId': refund.id ?? '', 'refund.updatedAt': Date.now() });
-      }
+      // settleRefund never moves a PROCESSED refund back, and a failure opens an issue for the manager.
+      if (doc) await settleRefund(doc.id, event.event === 'refund.processed' ? 'PROCESSED' : 'FAILED', refund.id || undefined);
       res.status(200).json({ ok: true });
       return;
     }

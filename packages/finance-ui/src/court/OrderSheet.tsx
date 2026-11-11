@@ -4,7 +4,7 @@ import { formatPaise, type SubOrder } from '@foodcourt/shared';
 import { Sheet, Skeleton, cx } from '@foodcourt/ui';
 import { ORDER_STATUS, formatTime, methodLabel } from '../lib/orderStatus';
 
-const REFUND: Record<string, string> = { PENDING: 'Refund in progress', PROCESSED: 'Refunded', FAILED: 'Refund failed', NOT_REQUIRED: 'No refund needed' };
+const REFUND: Record<string, string> = { REQUIRED: 'Refund due', PENDING: 'Refund in progress', PROCESSED: 'Refunded', FAILED: 'Refund failed', NOT_REQUIRED: 'No refund needed' };
 
 /** Everything about one payment: gateway ids for Razorpay support, and each shop's ticket with its refund. */
 export function OrderSheet({ order, onClose }: { order: LedgerOrder | null; onClose: () => void }) {
