@@ -176,8 +176,10 @@ describe('razorpayWebhook', () => {
   it('refuses to fulfil a payment whose amount does not match the order', async () => {
     await signed(captured(100));
     const order = (await db.doc(`orders/${orderId}`).get()).data()!;
-    expect(order.status).toBe('PENDING_PAYMENT');
+    // Never fulfilled, and never left hanging: the order is closed and the wrong amount is owed back in full.
+    expect(order.status).toBe('FAILED');
     expect(order.payment.status).toBe('FLAGGED');
+    expect(order.lateRefund).toMatchObject({ reason: 'amount-mismatch', amountPaise: 100 });
     expect((await db.collection('subOrders').get()).size).toBe(0);
   });
 

@@ -78,7 +78,11 @@ export function writeTickets(
   }
 }
 
-export type Materialized = 'created' | 'already' | 'missing' | 'amount-mismatch';
+/**
+ * `late`: the order is no longer payable (it expired, failed or was cancelled before the money arrived), so it
+ * must not reach a kitchen. The caller refunds the payment in full (lib/payments.ts).
+ */
+export type Materialized = 'created' | 'already' | 'missing' | 'amount-mismatch' | 'late';
 
 /**
  * Retries a transaction that lost a lock race, with jitter. A burst of payments for one shop all take
@@ -153,6 +157,7 @@ export async function materializePaidOrder(orderId: string, payment: { amountPai
   if (!before.exists) return 'missing';
   const first = before.data() as Order;
   if (DONE.has(first.status)) return 'already';
+  if (first.status !== 'PENDING_PAYMENT') return 'late';
   if (payment.amountPaise !== first.totals.totalPaise) return 'amount-mismatch';
   const tokens = await reserveTokens(orderId, first);
   return retryContention(() => db.runTransaction(async (tx): Promise<Materialized> => {
@@ -160,6 +165,7 @@ export async function materializePaidOrder(orderId: string, payment: { amountPai
     if (!snap.exists) return 'missing';
     const order = snap.data() as Order & { displayName?: string };
     if (DONE.has(order.status)) return 'already';
+    if (order.status !== 'PENDING_PAYMENT') return 'late';
     if (payment.amountPaise !== order.totals.totalPaise) return 'amount-mismatch';
     const reads = await readForTickets(tx, orderId, order, { counters: false });
     const now = Date.now();

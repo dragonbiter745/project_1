@@ -24,7 +24,9 @@ export type PaymentStatus =
   | 'SUCCESS'
   | 'FAILED'
   | 'USER_DROPPED'
-  | 'REFUNDED';
+  | 'REFUNDED'
+  /** The amount Razorpay captured is not the order total: never fulfilled, refunded in full. */
+  | 'FLAGGED';
 
 export type UserRole = 'master' | 'vendorFinance' | 'vendorAdmin' | 'vendorStaff' | 'customer';
 
@@ -184,6 +186,22 @@ export interface Order {
   updatedAt?: number;
   /** Unpaid online orders expire at this time. */
   expiresAt?: number;
+  /** When the sweeper expired it; a payment can still land for a while after, so it keeps being checked. */
+  expiredAt?: number;
+  /**
+   * Money Razorpay captured for an order that could not be fulfilled (the order had expired, or the
+   * amount was wrong). It is sent straight back in full.
+   */
+  lateRefund?: {
+    status: 'PENDING' | 'PROCESSED' | 'FAILED';
+    reason: 'late' | 'amount-mismatch';
+    amountPaise: number;
+    paymentId: string;
+    refundId: string;
+    gatewayRefundId?: string;
+    createdAt: number;
+    updatedAt?: number;
+  };
   coupon?: OrderCoupon;
 }
 

@@ -4,7 +4,8 @@ import { canTransitionOrder, canTransitionSubOrder, type Order, type SubOrder, t
 import { DEFAULT_ACCEPT_SLA_SEC, RAZORPAY_SECRETS, REGION } from '../config';
 import { db } from '../db';
 import { getCapturedPayment } from '../lib/razorpay';
-import { materializePaidOrder, syncParentStatus } from '../lib/orders';
+import { syncParentStatus } from '../lib/orders';
+import { settleCapture, sweepLateRefunds } from '../lib/payments';
 import { refundOwed, sweepRefunds } from '../lib/refunds';
 
 // Shops' accept deadlines change rarely, so a minute-by-minute sweep must not re-read every shop each time.
@@ -61,6 +62,8 @@ export async function timeOutUnaccepted(now = Date.now()): Promise<number> {
 // payment window is 20 minutes, the order is expired here once it is 5 minutes past that (Razorpay orders never expire by themselves), and the age fallback applies from 26.
 const CHECK_AT_MIN = new Set([2, 3, 5, 8, 12, 16, 21, 26]);
 const CHECK_EVERY_AFTER_MIN = 26;
+const PAGE = 500;
+const SWEEP_BUDGET_MS = 75_000;
 
 /**
  * Catches payments whose webhook never arrived, and expires orders nobody paid for. Oldest first and up to 500 a
@@ -68,7 +71,6 @@ const CHECK_EVERY_AFTER_MIN = 26;
  * run ten at a time so a full batch still fits well inside the function's time limit.
  */
 export async function reconcilePayments(now = Date.now()): Promise<{ paid: number; expired: number }> {
-  const pending = await db.collection('orders').where('status', '==', 'PENDING_PAYMENT').where('createdAt', '<', now - 2 * 60_000).orderBy('createdAt').limit(500).get();
   let paid = 0;
   let expired = 0;
   const check = async (doc: FirebaseFirestore.QueryDocumentSnapshot) => {
@@ -78,21 +80,62 @@ export async function reconcilePayments(now = Date.now()): Promise<{ paid: numbe
     try {
       const captured = order.payment.rzpOrderId ? await getCapturedPayment(order.payment.rzpOrderId) : undefined;
       if (captured) {
-        const outcome = await materializePaidOrder(doc.id, { amountPaise: captured.amount, rzpPaymentId: captured.id, method: captured.method ?? 'RECONCILED' });
+        const outcome = await settleCapture(doc.id, { amountPaise: captured.amount, rzpPaymentId: captured.id, method: captured.method ?? 'RECONCILED' });
         if (outcome === 'created') paid++;
         return;
       }
       const tooOld = now > (order.expiresAt ?? order.createdAt + 15 * 60_000) + 5 * 60_000;
-      if (tooOld && canTransitionOrder('PENDING_PAYMENT', 'EXPIRED')) {
-        await doc.ref.update({ status: 'EXPIRED', 'payment.status': 'FAILED', updatedAt: now });
-        expired++;
-      }
+      if (!tooOld) return;
+      // In a transaction: a webhook can settle this order between the check above and this write, and an
+      // order that has just been paid must never be stamped EXPIRED over the top.
+      const done = await db.runTransaction(async (tx) => {
+        const fresh = (await tx.get(doc.ref)).data() as Order | undefined;
+        if (!fresh || !canTransitionOrder(fresh.status, 'EXPIRED')) return false;
+        tx.update(doc.ref, { status: 'EXPIRED', 'payment.status': 'FAILED', expiredAt: now, updatedAt: now });
+        return true;
+      });
+      if (done) expired++;
     } catch (err) {
       logger.warn('Reconcile failed for order', { orderId: doc.id, err: (err as Error).message });
     }
   };
-  for (let i = 0; i < pending.docs.length; i += 10) await Promise.all(pending.docs.slice(i, i + 10).map(check));
+  // Every unpaid order, a page at a time, oldest first: however many carts a rush abandons, none is skipped.
+  // The time budget keeps one sweep inside the function's limit; whatever is left is first in line next minute.
+  const started = Date.now();
+  let last: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+  for (;;) {
+    let q = db.collection('orders').where('status', '==', 'PENDING_PAYMENT').where('createdAt', '<', now - 2 * 60_000).orderBy('createdAt').limit(PAGE);
+    if (last) q = q.startAfter(last);
+    const page = await q.get();
+    for (let i = 0; i < page.docs.length; i += 10) await Promise.all(page.docs.slice(i, i + 10).map(check));
+    if (page.size < PAGE || Date.now() - started > SWEEP_BUDGET_MS) break;
+    last = page.docs[page.docs.length - 1];
+  }
   return { paid, expired };
+}
+
+// A Razorpay order never closes by itself, so a diner can still complete a payment after we expired the
+// order (a UPI request approved late, a checkout window left open). Expired orders are therefore checked
+// again at these ages (minutes since expiry); a payment found is refunded in full, never cooked.
+const RECHECK_EXPIRED_AT_MIN = new Set([0, 1, 2, 5, 15, 30, 60, 120]);
+
+export async function recheckExpired(now = Date.now()): Promise<number> {
+  const recent = await db.collection('orders').where('status', '==', 'EXPIRED').where('expiredAt', '>=', now - 121 * 60_000).orderBy('expiredAt').limit(PAGE).get();
+  let refunded = 0;
+  const check = async (doc: FirebaseFirestore.QueryDocumentSnapshot) => {
+    const order = doc.data() as Order;
+    if (order.lateRefund || !order.payment.rzpOrderId || !order.expiredAt) return;
+    if (!RECHECK_EXPIRED_AT_MIN.has(Math.floor((now - order.expiredAt) / 60_000))) return;
+    try {
+      const captured = await getCapturedPayment(order.payment.rzpOrderId);
+      if (!captured) return;
+      if ((await settleCapture(doc.id, { amountPaise: captured.amount, rzpPaymentId: captured.id, method: captured.method ?? 'RECONCILED' })) === 'late') refunded++;
+    } catch (err) {
+      logger.warn('Reconcile failed for order', { orderId: doc.id, err: (err as Error).message });
+    }
+  };
+  for (let i = 0; i < recent.docs.length; i += 10) await Promise.all(recent.docs.slice(i, i + 10).map(check));
+  return refunded;
 }
 
 /** Runs one part of the sweep on its own: if it throws, the failure is logged at ERROR (an alert watches for it) and the other parts still run. */
@@ -109,8 +152,12 @@ export async function sweepStep<T>(step: string, fn: () => Promise<T>, fallback:
 export async function sweep(): Promise<void> {
   const timedOut = await sweepStep('timeouts', () => timeOutUnaccepted(), 0);
   const payments = await sweepStep('payments', () => reconcilePayments(), { paid: 0, expired: 0 });
+  const lateRefunded = await sweepStep('expired-recheck', () => recheckExpired(), 0);
   const refunds = await sweepStep('refunds', () => sweepRefunds(), { sent: 0, settled: 0 });
-  if (timedOut || payments.paid || payments.expired || refunds.sent || refunds.settled) logger.info('Sweep', { timedOut, ...payments, refundsSent: refunds.sent, refundsSettled: refunds.settled });
+  const lateSettled = await sweepStep('late-refunds', () => sweepLateRefunds(), 0);
+  if (timedOut || payments.paid || payments.expired || lateRefunded || refunds.sent || refunds.settled || lateSettled) {
+    logger.info('Sweep', { timedOut, ...payments, lateRefunded, refundsSent: refunds.sent, refundsSettled: refunds.settled, lateSettled });
+  }
 }
 
 // Every minute, around the clock. A payment or a refund can be owed at any hour (a late UPI approval, an order

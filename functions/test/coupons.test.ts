@@ -144,12 +144,17 @@ describe('coupons at checkout', () => {
   it('is single-use per diner and one payment at a time', async () => {
     await createCoupon({ code: 'ONCE', kind: 'FLAT', flatPaise: 1000 });
     const first = await checkout('coupon-key-02', 'ONCE');
-    // A second payment window with the same coupon while the first is open.
-    await expect(checkout('coupon-key-03', 'ONCE')).rejects.toMatchObject({ code: 'failed-precondition' });
+    // A second Pay press for the same cart is the same order (one payment window, never two).
+    expect((await checkout('coupon-key-03', 'ONCE')).orderId).toBe(first.orderId);
+    // A different cart with the same coupon while the first payment is open is refused.
+    const other = { sessionId, items: [rollAndDosa[0]!], customerPhone: '9123456780', couponCode: 'ONCE' };
+    await expect(call(createCheckout, { ...other, checkoutKey: 'coupon-key-3b' }, uid)).rejects.toMatchObject({ code: 'failed-precondition' });
     // Retrying the same checkout is the same order, not a second use.
     expect((await checkout('coupon-key-02', 'ONCE')).orderId).toBe(first.orderId);
     await pay(first.orderId, FULL - 1000);
-    await expect(checkout('coupon-key-04', 'ONCE')).rejects.toMatchObject({ message: "You've already used this coupon." });
+    // Pressing Pay again straight after paying shows the paid order; asking for a second one finds the coupon used.
+    expect(await checkout('coupon-key-04', 'ONCE')).toMatchObject({ orderId: first.orderId, alreadyPaid: true });
+    await expect(call(createCheckout, { sessionId, checkoutKey: 'coupon-key-05b', items: rollAndDosa, customerPhone: '9123456780', couponCode: 'ONCE', allowRepeat: true }, uid)).rejects.toMatchObject({ message: "You've already used this coupon." });
   });
 
   it('frees the coupon when the payment could not even start', async () => {

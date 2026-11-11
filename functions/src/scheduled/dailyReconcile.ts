@@ -4,7 +4,7 @@ import type { Order } from '@foodcourt/shared';
 import { RAZORPAY_SECRETS, REGION } from '../config';
 import { db } from '../db';
 import { listReceivedPayments } from '../lib/razorpay';
-import { materializePaidOrder } from '../lib/orders';
+import { settleCapture } from '../lib/payments';
 
 const IST_OFFSET_MS = 5.5 * 3600_000;
 const DONE = new Set(['PAID', 'PREPARING', 'READY', 'COMPLETED', 'PARTIALLY_FULFILLED', 'CANCELLED', 'REFUNDED']);
@@ -25,6 +25,8 @@ export interface ReconciliationReport {
   bookCount: number;
   bookPaise: number;
   healed: number;
+  /** Payments that arrived after their order had closed and were sent back in full. */
+  lateRefunded?: number;
   discrepancies: number;
   samples: Discrepancy[];
   ok: boolean;
@@ -60,6 +62,7 @@ export async function reconcileDay(dateKey: string): Promise<ReconciliationRepor
   const samples: Discrepancy[] = [];
   let discrepancies = 0;
   let healed = 0;
+  let lateRefunded = 0;
   const flag = (d: Discrepancy) => {
     discrepancies++;
     if (samples.length < 50) samples.push(d);
@@ -82,8 +85,12 @@ export async function reconcileDay(dateKey: string): Promise<ReconciliationRepor
     gatewayCount++;
     gatewayPaise += p.amount;
     if (!DONE.has(match.o.status) && match.o.payment?.status !== 'SUCCESS') {
-      const outcome = await materializePaidOrder(match.id, { amountPaise: p.amount, rzpPaymentId: p.id, method: 'RECONCILED' });
+      // A refunded payment took no money in the end: nothing to settle (and nothing left to refund).
+      if (p.status === 'refunded') continue;
+      const outcome = await settleCapture(match.id, { amountPaise: p.amount, rzpPaymentId: p.id, method: 'RECONCILED' });
       if (outcome === 'created') healed++;
+      // The order had closed before the money arrived: settleCapture sent it back in full. Not a difference.
+      else if (outcome === 'late') lateRefunded++;
       else if (outcome === 'amount-mismatch') flag({ kind: 'amount-differs', rzpPaymentId: p.id, orderId: match.id, gatewayPaise: p.amount, bookPaise: match.o.totals.totalPaise });
       else if (outcome !== 'already') flag({ kind: 'paid-at-gateway-not-in-books', rzpPaymentId: p.id, orderId: match.id, gatewayPaise: p.amount });
     } else if (match.o.totals.totalPaise !== p.amount) {
@@ -102,7 +109,7 @@ export async function reconcileDay(dateKey: string): Promise<ReconciliationRepor
     }
   }
 
-  const report: ReconciliationReport = { dateKey, ranAt: Date.now(), gatewayCount, gatewayPaise, bookCount, bookPaise, healed, discrepancies, samples, ok: discrepancies === 0 };
+  const report: ReconciliationReport = { dateKey, ranAt: Date.now(), gatewayCount, gatewayPaise, bookCount, bookPaise, healed, lateRefunded, discrepancies, samples, ok: discrepancies === 0 };
   await db.collection('reconciliationReports').doc(dateKey).set(report);
   if (!report.ok) logger.error('Reconciliation found differences between Razorpay and our books', { dateKey, discrepancies, gatewayPaise, bookPaise, samples: samples.slice(0, 5) });
   else logger.info('Reconciliation clean', { dateKey, gatewayCount, gatewayPaise, healed });

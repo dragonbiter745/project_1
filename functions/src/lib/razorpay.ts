@@ -104,8 +104,15 @@ export const getPayment = (paymentId: string) => call<RzpPayment>(`/payments/${e
 
 /** The captured payment for an order, if any (used when a webhook was missed). */
 export async function getCapturedPayment(rzpOrderId: string): Promise<RzpPayment | undefined> {
-  const list = await call<{ items: RzpPayment[] }>(`/orders/${encodeURIComponent(rzpOrderId)}/payments`, { method: 'GET' });
-  return list.items.find((p) => p.status === 'captured');
+  try {
+    const list = await call<{ items: RzpPayment[] }>(`/orders/${encodeURIComponent(rzpOrderId)}/payments`, { method: 'GET' });
+    return list.items.find((p) => p.status === 'captured');
+  } catch (err) {
+    // Razorpay does not know this order id (a test-mode id after going live, a mistyped record): there is no
+    // payment to find, and asking again every minute would never change that. The order simply expires.
+    if (err instanceof RazorpayError && (err.status === 400 || err.status === 404)) return undefined;
+    throw err;
+  }
 }
 
 /**

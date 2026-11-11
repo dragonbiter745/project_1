@@ -98,7 +98,12 @@ describe('nightly reconciliation against Razorpay', () => {
     gateway([pay('pay_R4', 'order_R4', 100)]);
     const r = await reconcileDay(dateKey);
     expect(r.samples[0]).toMatchObject({ kind: 'amount-differs', gatewayPaise: 100, bookPaise: TOTAL });
-    expect((await db.doc(`orders/${id}`).get()).data()!.status).toBe('PENDING_PAYMENT');
+    // Never fulfilled: closed, flagged, and the wrong amount is owed back in full.
+    const o = (await db.doc(`orders/${id}`).get()).data()!;
+    expect(o.status).toBe('FAILED');
+    expect(o.payment.status).toBe('FLAGGED');
+    expect(o.lateRefund).toMatchObject({ reason: 'amount-mismatch', amountPaise: 100, paymentId: 'pay_R4' });
+    expect((await db.collection('subOrders').get()).size).toBe(0);
   });
 
   it('reports a gateway payment we have no order for, and ignores refunded/failed correctly', async () => {

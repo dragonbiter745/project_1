@@ -3,7 +3,7 @@ import { logger } from 'firebase-functions/v2';
 import { RAZORPAY_SECRETS, RAZORPAY_WEBHOOK_SECRET, REGION } from '../config';
 import { db } from '../db';
 import { verifyWebhookSignature } from '../lib/razorpay';
-import { materializePaidOrder } from '../lib/orders';
+import { settleCapture, settleLateRefundByReceipt } from '../lib/payments';
 import { settleRefund } from '../lib/refunds';
 import * as crypto from 'crypto';
 import { recordPaymentEvent, setPaymentEventOutcome } from '../lib/ledger';
@@ -68,7 +68,10 @@ export const razorpayWebhook = onRequest({ region: REGION, secrets: RAZORPAY_SEC
       const ticket = await db.collection('subOrders').where('refund.refundId', '==', refund.receipt).limit(1).get();
       const doc = ticket.docs[0];
       // settleRefund never moves a PROCESSED refund back, and a failure opens an issue for the manager.
-      if (doc) await settleRefund(doc.id, event.event === 'refund.processed' ? 'PROCESSED' : 'FAILED', refund.id || undefined);
+      const status = event.event === 'refund.processed' ? 'PROCESSED' : 'FAILED';
+      if (doc) await settleRefund(doc.id, status, refund.id || undefined);
+      // Not a ticket's refund: it may be the full refund of a payment that arrived after its order closed.
+      else await settleLateRefundByReceipt(refund.receipt, status, refund.id || undefined);
       res.status(200).json({ ok: true });
       return;
     }
@@ -79,7 +82,9 @@ export const razorpayWebhook = onRequest({ region: REGION, secrets: RAZORPAY_SEC
       return;
     }
     if (!payment?.order_id) {
-      res.status(400).send('Missing order_id');
+      // Nothing we can settle, and an error answer would make Razorpay retry for a day and then switch the webhook off.
+      logger.error('Webhook payment without an order id', { rzpPaymentId: payment?.id ?? null });
+      res.status(200).json({ ok: true, ignored: true });
       return;
     }
     const match = await db.collection('orders').where('payment.rzpOrderId', '==', payment.order_id).limit(1).get();
@@ -99,16 +104,15 @@ export const razorpayWebhook = onRequest({ region: REGION, secrets: RAZORPAY_SEC
     }
 
     if (payment.currency && payment.currency !== 'INR') {
-      logger.error('Non-INR payment', { orderId: orderDoc.id });
-      res.status(400).send('Unsupported currency');
+      // Never fulfilled; acknowledged so Razorpay does not retry it for a day. Handle by hand from the dashboard.
+      logger.error('Non-INR payment', { orderId: orderDoc.id, rzpPaymentId: payment.id ?? null });
+      await setPaymentEventOutcome(eventId, 'non-inr');
+      res.status(200).json({ ok: true, ignored: true });
       return;
     }
-    const outcome = await materializePaidOrder(orderDoc.id, { amountPaise: payment.amount ?? 0, rzpPaymentId: payment.id ?? null, method: payment.method ?? null });
-    if (outcome === 'amount-mismatch') {
-      // Paid amount differs from what we computed: never fulfil it automatically.
-      logger.error('Payment amount mismatch', { orderId: orderDoc.id, amountPaise: payment.amount });
-      await orderDoc.ref.update({ 'payment.status': 'FLAGGED', updatedAt: Date.now() });
-    }
+    // Fulfils the order, or refunds the payment in full when the order can no longer be fulfilled
+    // (it expired before the money arrived, or the amount is not the order total).
+    const outcome = await settleCapture(orderDoc.id, { amountPaise: payment.amount ?? 0, rzpPaymentId: payment.id ?? null, method: payment.method ?? null });
     await setPaymentEventOutcome(eventId, outcome);
     res.status(200).json({ ok: true, outcome });
   } catch (err) {

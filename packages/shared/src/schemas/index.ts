@@ -32,6 +32,8 @@ export const CreateCheckoutSchema = z.object({
   customerPhone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').nullish(),
   // Re-checked from scratch on the server; the phone only says which code the diner entered.
   couponCode: z.string().trim().max(24).nullish(),
+  // The diner confirmed they want the same cart again minutes after paying for it (see createCheckout).
+  allowRepeat: z.boolean().optional(),
 });
 
 export type CreateCheckoutInput = z.infer<typeof CreateCheckoutSchema>;

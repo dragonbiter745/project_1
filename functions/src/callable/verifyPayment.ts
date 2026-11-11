@@ -5,7 +5,7 @@ import type { Order } from '@foodcourt/shared';
 import { RAZORPAY_KEY_SECRET, RAZORPAY_SECRETS, REGION, APP_CHECK_ENFORCE } from '../config';
 import { db } from '../db';
 import { clientIp, limitLocal, requireUid } from '../lib/guard';
-import { materializePaidOrder } from '../lib/orders';
+import { settleCapture } from '../lib/payments';
 import { getPayment, verifyPaymentSignature } from '../lib/razorpay';
 
 const VerifyPaymentSchema = z.object({
@@ -48,10 +48,9 @@ export const verifyPayment = onCall({ region: REGION, enforceAppCheck: APP_CHECK
   if (payment.order_id !== rzpOrderId) throw new HttpsError('invalid-argument', 'Payment could not be verified.');
   if (payment.status !== 'captured') return { verified: true, settled: false }; // e.g. still authorized; the webhook finishes it
 
-  const outcome = await materializePaidOrder(doc.id, { amountPaise: payment.amount, rzpPaymentId: payment.id, method: payment.method ?? null });
-  if (outcome === 'amount-mismatch') {
-    await doc.ref.update({ 'payment.status': 'FLAGGED', updatedAt: Date.now() });
-    throw new HttpsError('failed-precondition', 'Payment amount did not match the order. Please contact the counter.');
-  }
+  const outcome = await settleCapture(doc.id, { amountPaise: payment.amount, rzpPaymentId: payment.id, method: payment.method ?? null });
+  // In both cases the money is already on its way back in full (lib/payments.ts); say so plainly.
+  if (outcome === 'amount-mismatch') throw new HttpsError('failed-precondition', 'The amount paid did not match the order, so it is being refunded in full. Please order again.');
+  if (outcome === 'late') throw new HttpsError('failed-precondition', 'This order had already closed when the payment arrived, so it is being refunded in full. Please order again.');
   return { verified: true, settled: outcome === 'created' || outcome === 'already' };
 });
