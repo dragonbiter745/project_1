@@ -270,3 +270,61 @@ run in CI).
 - Razorpay account settings (auto-capture, webhook events, refund funding, fee on refunds) need the dashboard.
 - I did not read `firestore.rules` line by line in this pass, or the finance, coupon-admin and messaging callables in
   full. A focused rules and admin-callable review is worth doing before slice 7.
+
+## 9. Status, 12 Nov 2026
+
+Code is on local branch `fix/customer-checkout-recovery` (stacked: `fix/refund-safety` → `fix/checkout-safety` → this),
+5 commits on top of `main` 25a47dc. Not pushed. Backend and rules suite: **231 tests pass** (23 files, plus 18 in
+`launch.test.ts`); all five sites build; diner bundle 141 KB gz (budget 150).
+
+### Fixed in code (deploys with the next functions, rules, indexes and hosting deploy)
+
+C-01, C-02, H-01, H-02, H-03, H-09, M-01 to M-09, M-11, M-12, L-01 to L-06, L-08, L-09, L-11, L-12, and
+N-01 to N-05, N-08, N-09, N-11, N-13, N-14, N-15 (webhook, payment method, env file checked: public values only).
+Switches in code, off until their console step: H-05 (`REQUIRE_MFA`), M-10 (`APP_CHECK_ENFORCE`), L-07 (CSP is
+report-only; enforce after a clean week). C-03: CI key guard and the `staging` alias no longer points at production.
+
+Decisions taken (call out if you disagree):
+- Kitchens may cancel a ticket they accepted ("Can't make"), refunded and audited; a ready ticket stays manager-only.
+- Nightly close at 03:15 IST marks yesterday's READY tickets collected (`autoClosed: true`) and flags ones still cooking.
+- A shop with no kitchen heartbeat for 4 minutes is refused at checkout; shops that never ran the screen are not checked.
+- Minimum instances left at 0 (cost rule). The cart lock now makes a double press harmless, so a cold start only costs speed.
+- Payment window kept at 20 minutes; the app's Razorpay window closes a minute earlier.
+
+### Applied to the live project today
+
+- Log retention 30 → **180 days** (N-07).
+- TTL policy on `checkoutLocks.expireAt`.
+- Email alert channel attached to all 5 existing policies; **10 new alerts** (refund failed, refunds not sending,
+  chargeback, sweeper errors, app crashes, shop auto-paused, reconciliation missing, late refunds, function error rate,
+  bad webhook signatures); **uptime checks** on order.getqrave.in and /api/status with alerts (H-04).
+- Auth sign-up quota re-applied: 5,000/hour per IP until 19 Nov (H-08); `renewSignupQuota` keeps it renewed once deployed.
+- Export bucket `reva-nest-foodcourt-db-exports` (asia-south1, 35-day retention) and job `qrave-nightly-db-export`
+  (02:15 IST), **paused**: it needs one IAM grant (below).
+
+### Still open
+
+| Item | Why it is not done | What it takes |
+|---|---|---|
+| Deploy everything above | The deploy command was blocked by this machine's permission settings | Section 10 commands, after 15:00 or before 11:30 IST |
+| Nightly export job | Granting the export role was blocked by permission settings | `gcloud projects add-iam-policy-binding reva-nest-foodcourt --member=serviceAccount:298874069682-compute@developer.gserviceaccount.com --role=roles/datastore.importExportAdmin` then `gcloud scheduler jobs resume qrave-nightly-db-export --location=asia-south1 --project reva-nest-foodcourt` |
+| N-06 second owner | Needs another person's Google account | Add a co-founder as Owner; second admins on billing, Razorpay, GitHub, domain |
+| H-05 MFA | Each manager must enrol their own authenticator | Enable TOTP in Firebase Auth, enrol, then `REQUIRE_MFA=true` |
+| M-10 App Check | Needs a reCAPTCHA Enterprise key registered in the console | Register, add the site key to the apps, watch 3 days, `APP_CHECK_ENFORCE=true` |
+| H-06 staff passwords file | Owner action | Rotate, delete the file and iCloud copy |
+| H-07 legal placeholders (22) | Needs the company's legal details | Founders + lawyer |
+| H-08 permanent quota | Needs a Firebase support request | Until then the weekly renewal covers it |
+| C-03 staging project | Needs a billing-linked project and a Razorpay test login | Create `reva-nest-foodcourt-staging`; the alias already points there |
+| Razorpay dashboard | Dashboard only | Confirm auto-capture; add `payment.dispute.*` to the webhook events; ask how refunds are funded |
+| Load test at 3× | Needs staging | Section 7 of the remediation plan |
+
+## 10. Deploy order (production, outside 11:30–15:00 IST)
+
+```
+cd ~/Developer/qrave
+firebase deploy --only firestore:indexes --project reva-nest-foodcourt   # wait until every index shows Enabled
+firebase deploy --only firestore:rules --project reva-nest-foodcourt
+firebase deploy --only functions --project reva-nest-foodcourt
+firebase deploy --only hosting --project reva-nest-foodcourt
+```
+Then push the branch and merge to `main`, or the next CI deploy from `main` will put the old code back.
