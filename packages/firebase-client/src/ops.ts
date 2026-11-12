@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import type { VendorActionName } from '@foodcourt/shared';
 import { getDb } from './db';
 import { getFunctionsClient, httpsCallable } from './functions';
@@ -50,6 +50,12 @@ export const pauseOrders = (vendorId: string, until: number | null) =>
 
 export const resumeOrders = (vendorId: string) =>
   write(() => updateDoc(doc(getDb(), 'vendors', vendorId), { acceptingOrders: true, pausedUntil: null, updatedAt: Date.now() }));
+
+/**
+ * "This kitchen's screen is open and online." Written once a minute while the board runs; checkout refuses
+ * a shop whose screen has been silent for a few minutes, so nobody pays for food no one can see.
+ */
+export const sendHeartbeat = (vendorId: string) => setDoc(doc(getDb(), 'presence', vendorId), { vendorId, at: serverTimestamp() });
 
 export const setPrepMinutes = (vendorId: string, minutes: number) =>
   write(() => updateDoc(doc(getDb(), 'vendors', vendorId), { defaultPrepMin: Math.min(60, Math.max(3, Math.round(minutes))), updatedAt: Date.now() }));

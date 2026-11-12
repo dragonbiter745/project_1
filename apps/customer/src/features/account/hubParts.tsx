@@ -139,12 +139,13 @@ export const ORDER_STATUS: Record<OrderStatus, { label: string; tone: Tone }> = 
   EXPIRED: { label: 'Not paid', tone: 'muted' },
   COMPLETED: { label: 'Collected', tone: 'ready' },
   PARTIALLY_REFUNDED: { label: 'Part refunded', tone: 'danger' },
+  REFUNDED: { label: 'Refunded', tone: 'danger' },
   CANCELLED: { label: 'Refunded', tone: 'danger' },
 };
 
 const SIX_HOURS = 6 * 3_600_000;
 export const isLive = (o: Order, now = Date.now()) => (o.status === 'PAID' || o.status === 'PENDING_PAYMENT') && now - o.createdAt < SIX_HOURS;
-export const isPaid = (o: Order) => o.status === 'PAID' || o.status === 'COMPLETED' || o.status === 'PARTIALLY_REFUNDED';
+export const isPaid = (o: Order) => o.status === 'PAID' || o.status === 'COMPLETED' || o.status === 'PARTIALLY_REFUNDED' || o.status === 'REFUNDED';
 
 export const dayFormat = new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
 export const timeFormat = new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });

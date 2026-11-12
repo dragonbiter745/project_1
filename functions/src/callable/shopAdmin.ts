@@ -3,7 +3,7 @@ import { getAuth, type Auth } from 'firebase-admin/auth';
 import { FieldValue } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { ShopAdminActionSchema, type MenuCategory, type MenuItem, type ShopAdminInput, type VendorMenu } from '@foodcourt/shared';
-import { REGION } from '../config';
+import { REGION, projectId } from '../config';
 import { app, db } from '../db';
 import { limitShared, requireUid, roleOf } from '../lib/guard';
 
@@ -19,12 +19,29 @@ const MAX_CATEGORIES = 30;
 
 const hash = (s: string, n = 16) => crypto.createHash('sha256').update(s).digest('hex').slice(0, n);
 
+const OWN_BUCKETS = new Set(
+  [
+    (() => {
+      try {
+        return (JSON.parse(process.env.FIREBASE_CONFIG ?? '{}') as { storageBucket?: string }).storageBucket;
+      } catch {
+        return undefined;
+      }
+    })(),
+    `${projectId()}.firebasestorage.app`,
+    `${projectId()}.appspot.com`,
+  ].filter((b): b is string => Boolean(b))
+);
+
 /** Photos and logos must be this shop's own uploads in Firebase Storage, never a link to somewhere else. */
 function ownUpload(url: string | null | undefined, vendorId: string): boolean {
   if (!url) return true;
   try {
     const u = new URL(url);
     if (u.protocol !== 'https:' || u.hostname !== 'firebasestorage.googleapis.com') return false;
+    // /v0/b/<bucket>/o/<object>: the bucket must be this project's, or a photo could point at anyone's files.
+    const bucket = decodeURIComponent(u.pathname.split('/b/')[1]?.split('/')[0] ?? '');
+    if (!OWN_BUCKETS.has(bucket)) return false;
     const name = decodeURIComponent(u.pathname.split('/o/')[1] ?? '');
     return name.startsWith(`menus/${vendorId}/`) && !name.includes('..');
   } catch {

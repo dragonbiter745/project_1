@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ErrorBoundary, installErrorReporting } from '@foodcourt/ui';
 import App from './App';
 import { recentTable } from './features/session/orderMode';
 import './styles/index.css';
@@ -11,8 +12,12 @@ if (window.location.pathname === '/') {
   if (last) window.location.replace(`/t/${last}${window.location.search}`);
 }
 
+installErrorReporting('customer');
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>
 );

@@ -126,6 +126,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Deploy window
+        run: node scripts/ci/deploy-window.mjs
+
       - uses: actions/download-artifact@v4
         with:
           name: dist-${{ inputs.app }}

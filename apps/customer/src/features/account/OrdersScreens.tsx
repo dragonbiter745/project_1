@@ -30,7 +30,7 @@ export function OrdersScreen() {
   const shown = useMemo(
     () =>
       orders.filter((o) =>
-        filter === 'live' ? isLive(o) : filter === 'refunds' ? o.status === 'PARTIALLY_REFUNDED' || o.status === 'CANCELLED' : true
+        filter === 'live' ? isLive(o) : filter === 'refunds' ? o.status === 'PARTIALLY_REFUNDED' || o.status === 'REFUNDED' || o.status === 'CANCELLED' : true
       ),
     [orders, filter]
   );

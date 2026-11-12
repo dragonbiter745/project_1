@@ -3,7 +3,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { AdminActionSchema } from '@foodcourt/shared';
 import { REGION } from '../config';
 import { db } from '../db';
-import { limitShared, requireUid, roleOf } from '../lib/guard';
+import { limitShared, requireUid, requireSecondFactor, roleOf } from '../lib/guard';
 
 /** 128 random bits, URL-safe: the QR link cannot be guessed from the table number. */
 export const newQrToken = () => crypto.randomBytes(16).toString('base64url');
@@ -11,6 +11,7 @@ export const newQrToken = () => crypto.randomBytes(16).toString('base64url');
 export const adminAction = onCall({ region: REGION, maxInstances: 10, timeoutSeconds: 60 }, async (req) => {
   const uid = requireUid(req);
   if (roleOf(req).role !== 'master') throw new HttpsError('permission-denied', 'Only the court manager can do this.');
+  requireSecondFactor(req);
   await limitShared(`admin:${uid}`, 60, 300);
   const parsed = AdminActionSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid action.');

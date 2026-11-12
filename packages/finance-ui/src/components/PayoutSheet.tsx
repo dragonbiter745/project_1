@@ -47,10 +47,13 @@ export function PayoutSheet({ open, shops, vendorId, onClose, onSaved }: PayoutS
     if (!selected) return setError('Pick a shop.');
     if (!amountPaise || amountPaise < 100) return setError('Enter the amount you sent, at least ₹1.');
     if (reference.trim().length < 3) return setError('Enter the bank UTR or UPI reference so this payout can be traced.');
+    // More than the court owes: allowed (an advance, a correction) but the note must say why.
+    const overDue = amountPaise > Math.max(0, selected.balanceDuePaise);
+    if (overDue && note.trim().length < 3) return setError('This is more than the court owes this shop. Say why in the note to record it.');
     setBusy(true);
     setError('');
     try {
-      await recordPayout({ requestKey, vendorId: selected.vendorId, amountPaise, paidOn, reference: reference.trim(), ...(note.trim() ? { note: note.trim() } : {}) });
+      await recordPayout({ requestKey, vendorId: selected.vendorId, amountPaise, paidOn, reference: reference.trim(), ...(note.trim() ? { note: note.trim() } : {}), ...(overDue ? { overBalanceReason: note.trim() } : {}) });
       onSaved();
       onClose();
     } catch (err) {

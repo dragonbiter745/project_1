@@ -38,7 +38,7 @@ export async function readForTickets(tx: Transaction, orderId: string, order: Pi
 export function writeTickets(
   tx: Transaction,
   orderId: string,
-  order: Pick<Order, 'items' | 'dateKey' | 'uid' | 'sessionId' | 'tableId' | 'tableLabel'> & { displayName?: string },
+  order: Pick<Order, 'items' | 'dateKey' | 'uid' | 'sessionId' | 'tableId' | 'tableLabel' | 'commissionTerms'> & { displayName?: string },
   reads: TicketReads,
   now: number,
   paymentMode: 'ONLINE' | 'COUNTER',
@@ -70,7 +70,7 @@ export function writeTickets(
       items: items.map((i) => ({ id: i.itemId, name: i.name, qty: i.qty, pricePaise: i.pricePaise, ...(i.note ? { note: i.note } : {}) })),
       subtotalPaise,
       paymentMode,
-      commissionPaise: commissionFor(subtotalPaise, vendor ?? {}),
+      commissionPaise: commissionFor(subtotalPaise, order.commissionTerms?.[vendorId] ?? vendor ?? {}),
       status: 'NEW',
       ts: { placed: now },
     };
@@ -111,7 +111,7 @@ export async function retryContention<T>(fn: () => Promise<T>, attempts = 8): Pr
   }
 }
 
-const DONE = new Set(['PAID', 'COMPLETED', 'PARTIALLY_REFUNDED']);
+const DONE = new Set(['PAID', 'COMPLETED', 'PARTIALLY_REFUNDED', 'REFUNDED']);
 
 /**
  * Takes this order's token at each of its shops, one tiny transaction per shop (that shop's counter and
@@ -174,12 +174,12 @@ export async function materializePaidOrder(orderId: string, payment: { amountPai
       'payment.status': 'SUCCESS',
       'payment.paidAt': now,
       'payment.rzpPaymentId': payment.rzpPaymentId ?? null,
-      'payment.method': payment.method ?? 'UPI',
+      'payment.method': payment.method ?? 'UNKNOWN',
       updatedAt: now,
     });
     writeTickets(tx, orderId, order, reads, now, 'ONLINE', tokens);
     writeCustomerOrder(tx, order, now);
-    writeCouponUse(tx, order, now);
+    writeCouponUse(tx, order, now, orderId);
     return 'created';
   }));
 }
@@ -187,14 +187,21 @@ export async function materializePaidOrder(orderId: string, payment: { amountPai
 /** Recomputes an order's status from its tickets after any ticket changes. */
 export async function syncParentStatus(orderId: string): Promise<void> {
   const orderRef = db.collection('orders').doc(orderId);
-  const [tickets, parent] = await Promise.all([db.collection('subOrders').where('orderId', '==', orderId).get(), orderRef.get()]);
-  if (tickets.empty) return;
-  const all = tickets.docs.map((d) => d.data() as SubOrder);
-  const status = deriveParentOrderStatus(all);
-  // Most kitchen steps leave the order's overall status as it was: skip the write (and the listeners' re-reads).
-  if (parent.data()?.status !== status) await orderRef.update({ status, updatedAt: Date.now() });
+  // Read the tickets and write the order in one transaction: two shops finishing at the same moment can
+  // otherwise each compute the status from a stale view and the last write wins with the wrong answer.
+  const allFailed = await retryContention(() =>
+    db.runTransaction(async (tx) => {
+      const [tickets, parent] = await Promise.all([tx.get(db.collection('subOrders').where('orderId', '==', orderId)), tx.get(orderRef)]);
+      if (tickets.empty || !parent.exists) return false;
+      const all = tickets.docs.map((d) => d.data() as SubOrder);
+      const status = deriveParentOrderStatus(all);
+      // Most kitchen steps leave the order's overall status as it was: skip the write (and the listeners' re-reads).
+      if (parent.data()?.status !== status) tx.update(orderRef, { status, updatedAt: Date.now() });
+      return all.every((t) => REFUNDABLE_STATUSES.has(t.status));
+    })
+  );
   // Nothing was eaten: hand the diner's coupon use back.
-  if (all.every((t) => REFUNDABLE_STATUSES.has(t.status))) await releaseCouponUse(orderId);
+  if (allFailed) await releaseCouponUse(orderId);
 }
 
 /** A ticket's share of what the diner actually paid (GST and fees included), in paise. */

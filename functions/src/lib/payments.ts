@@ -15,7 +15,7 @@ export interface Capture {
 }
 
 type LateRefund = NonNullable<Order['lateRefund']>;
-const FULFILLED = new Set(['PAID', 'COMPLETED', 'PARTIALLY_REFUNDED']);
+const FULFILLED = new Set(['PAID', 'COMPLETED', 'PARTIALLY_REFUNDED', 'REFUNDED']);
 const lateRefundId = (orderId: string) => `rl_${orderId}`.slice(0, 40);
 
 /** Settles a captured payment: fulfils the order, or refunds it in full when it can no longer be fulfilled. */

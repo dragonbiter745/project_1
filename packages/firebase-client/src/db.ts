@@ -8,6 +8,9 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseApp, shouldUseEmulators } from './app';
 
+/** The named database; VITE_FIRESTORE_DATABASE points the apps at a restored copy with a rebuild, no code change. */
+const DATABASE_ID: string = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_FIRESTORE_DATABASE || 'default';
+
 let db: Firestore | null = null;
 let persistent = false;
 
@@ -25,13 +28,13 @@ export function getDb(): Firestore {
   const app = getFirebaseApp();
   if (persistent && !shouldUseEmulators()) {
     try {
-      db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }, 'default');
+      db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }, DATABASE_ID);
     } catch {
       // No IndexedDB here (private mode, old browser) or already started: use the normal in-memory cache.
       db = null;
     }
   }
-  db ??= getFirestore(app, 'default');
+  db ??= getFirestore(app, DATABASE_ID);
   if (shouldUseEmulators()) {
     try {
       connectFirestoreEmulator(db, 'localhost', 8080);

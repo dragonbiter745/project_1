@@ -65,8 +65,10 @@ export interface ShopFinance {
   orders: number;
   /** Food sold online, after taking out failed tickets. */
   salesPaise: number;
-  /** Returned to diners for this shop's failed tickets. */
+  /** Returned to diners for this shop's failed tickets (refunds Razorpay has processed). */
   refundsPaise: number;
+  /** Owed to diners but not yet processed by Razorpay (due, in flight, or failed and awaiting a retry). */
+  refundsPendingPaise?: number;
   commissionPaise: number;
   /** salesPaise minus commission: what the court owes the shop for the period. */
   payablePaise: number;
@@ -89,6 +91,7 @@ export interface PeriodTotals {
   orders: number;
   salesPaise: number;
   refundsPaise: number;
+  refundsPendingPaise?: number;
   /** Court commission on online and counter tickets. */
   commissionPaise: number;
   /** What the shop(s) earned: online sales minus all commission. */
@@ -118,6 +121,8 @@ export interface FinanceReport {
   collectedPaise: number;
   paidOrders: number;
   refundsPaise: number;
+  /** Refunds owed or in flight (not yet processed): shown on their own line, never counted as refunded. */
+  refundsPendingPaise?: number;
   netPaise: number;
   /** Coupon discounts the court paid for (shops still get full price); comes off court income. */
   couponsPaise: number;

@@ -10,7 +10,7 @@ const IST_OFFSET_MS = 5.5 * 3600_000;
 const DONE = new Set(['PAID', 'PREPARING', 'READY', 'COMPLETED', 'PARTIALLY_FULFILLED', 'CANCELLED', 'REFUNDED']);
 
 export interface Discrepancy {
-  kind: 'paid-at-gateway-not-in-books' | 'in-books-not-at-gateway' | 'amount-differs' | 'unknown-gateway-payment';
+  kind: 'paid-at-gateway-not-in-books' | 'in-books-not-at-gateway' | 'amount-differs' | 'unknown-gateway-payment' | 'totals-differ';
   rzpPaymentId?: string;
   orderId?: string;
   gatewayPaise?: number;
@@ -50,7 +50,8 @@ export async function reconcileDay(dateKey: string): Promise<ReconciliationRepor
   // A day's orders can be paid just after midnight and a payment can predate its order's date key, so books are
   // read with an hour of slack on each side and only judged on the payments actually inside the day.
   const gateway = await listReceivedPayments(fromSec - 3600, toSec + 3600);
-  const orders = await db.collection('orders').where('dateKey', 'in', [dateKey]).get();
+  // Only the fields the comparison needs: a 10,000-order day then fits comfortably in memory.
+  const orders = await db.collection('orders').where('dateKey', 'in', [dateKey]).select('status', 'payment', 'totals', 'lateRefund').get();
   const byRzp = new Map<string, { id: string; o: Order }>();
   const byPayment = new Map<string, { id: string; o: Order }>();
   for (const d of orders.docs) {
@@ -63,6 +64,9 @@ export async function reconcileDay(dateKey: string): Promise<ReconciliationRepor
   let discrepancies = 0;
   let healed = 0;
   let lateRefunded = 0;
+  // Money Razorpay took for orders that could not be served and sent back in full: in the gateway's total,
+  // deliberately not in the books.
+  let latePaise = 0;
   const flag = (d: Discrepancy) => {
     discrepancies++;
     if (samples.length < 50) samples.push(d);
@@ -86,11 +90,17 @@ export async function reconcileDay(dateKey: string): Promise<ReconciliationRepor
     gatewayPaise += p.amount;
     if (!DONE.has(match.o.status) && match.o.payment?.status !== 'SUCCESS') {
       // A refunded payment took no money in the end: nothing to settle (and nothing left to refund).
-      if (p.status === 'refunded') continue;
+      if (p.status === 'refunded') {
+        latePaise += p.amount;
+        continue;
+      }
       const outcome = await settleCapture(match.id, { amountPaise: p.amount, rzpPaymentId: p.id, method: 'RECONCILED' });
       if (outcome === 'created') healed++;
       // The order had closed before the money arrived: settleCapture sent it back in full. Not a difference.
-      else if (outcome === 'late') lateRefunded++;
+      else if (outcome === 'late') {
+        lateRefunded++;
+        latePaise += p.amount;
+      } else if (outcome === 'amount-mismatch' && match.o.lateRefund) latePaise += p.amount;
       else if (outcome === 'amount-mismatch') flag({ kind: 'amount-differs', rzpPaymentId: p.id, orderId: match.id, gatewayPaise: p.amount, bookPaise: match.o.totals.totalPaise });
       else if (outcome !== 'already') flag({ kind: 'paid-at-gateway-not-in-books', rzpPaymentId: p.id, orderId: match.id, gatewayPaise: p.amount });
     } else if (match.o.totals.totalPaise !== p.amount) {
@@ -109,6 +119,9 @@ export async function reconcileDay(dateKey: string): Promise<ReconciliationRepor
     }
   }
 
+  // Every payment can match one by one and the day can still be out (a payment counted twice, an order
+  // marked paid twice): ok also needs Razorpay's total to equal our books plus what was sent straight back.
+  if (discrepancies === 0 && gatewayPaise !== bookPaise + latePaise) flag({ kind: 'totals-differ', gatewayPaise, bookPaise: bookPaise + latePaise });
   const report: ReconciliationReport = { dateKey, ranAt: Date.now(), gatewayCount, gatewayPaise, bookCount, bookPaise, healed, lateRefunded, discrepancies, samples, ok: discrepancies === 0 };
   await db.collection('reconciliationReports').doc(dateKey).set(report);
   if (!report.ok) logger.error('Reconciliation found differences between Razorpay and our books', { dateKey, discrepancies, gatewayPaise, bookPaise, samples: samples.slice(0, 5) });
@@ -119,9 +132,12 @@ export async function reconcileDay(dateKey: string): Promise<ReconciliationRepor
 const istKey = (ms: number) => new Date(ms + IST_OFFSET_MS).toISOString().slice(0, 10);
 
 // 23:30 IST for today, and 06:30 IST for yesterday again, so late payments and webhook retries (24 h) are caught.
-export const dailyReconcile = onSchedule({ schedule: '30 23 * * *', timeZone: 'Asia/Kolkata', region: REGION, secrets: RAZORPAY_SECRETS, timeoutSeconds: 540, maxInstances: 1, retryCount: 0 }, async () => {
+export const dailyReconcile = onSchedule({ schedule: '30 23 * * *', timeZone: 'Asia/Kolkata', region: REGION, secrets: RAZORPAY_SECRETS, timeoutSeconds: 540, memory: '1GiB', maxInstances: 1, retryCount: 1 }, async () => {
   await reconcileDay(istKey(Date.now()));
 });
-export const morningReconcile = onSchedule({ schedule: '30 6 * * *', timeZone: 'Asia/Kolkata', region: REGION, secrets: RAZORPAY_SECRETS, timeoutSeconds: 540, maxInstances: 1, retryCount: 0 }, async () => {
-  await reconcileDay(istKey(Date.now() - 86_400_000));
+export const morningReconcile = onSchedule({ schedule: '30 6 * * *', timeZone: 'Asia/Kolkata', region: REGION, secrets: RAZORPAY_SECRETS, timeoutSeconds: 540, memory: '1GiB', maxInstances: 1, retryCount: 1 }, async () => {
+  const yesterday = istKey(Date.now() - 86_400_000);
+  // No report at all looks exactly like a clean night unless someone says so: last night's run never finished.
+  if (!(await db.collection('reconciliationReports').doc(yesterday).get()).exists) logger.error('Reconciliation report missing', { dateKey: yesterday });
+  await reconcileDay(yesterday);
 });

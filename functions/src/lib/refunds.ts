@@ -4,6 +4,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { REFUNDABLE_STATUSES, type Order, type SubOrder } from '@foodcourt/shared';
 import { db } from '../db';
 import { createRefund, getRefund, RazorpayError } from './razorpay';
+import { retryContention } from './orders';
 
 // Refunds follow one rule: the debt is written in the same transaction that fails the ticket
 // (refund.status = REQUIRED), and after that anyone may pay it (the trigger, the sweeper, a manager's
@@ -39,7 +40,8 @@ export type Claim =
  */
 export async function claimRefund(subOrderId: string): Promise<Claim> {
   const ref = db.collection('subOrders').doc(subOrderId);
-  return db.runTransaction(async (tx): Promise<Claim> => {
+  // Several callers can claim at the same instant (trigger, sweeper, retry): a lost lock race is retried.
+  return retryContention(() => db.runTransaction(async (tx): Promise<Claim> => {
     const t = (await tx.get(ref)).data() as SubOrder | undefined;
     if (!t || !REFUNDABLE_STATUSES.has(t.status)) return { state: 'skipped' };
     if (t.refund?.status === 'NOT_REQUIRED') return { state: 'not-required' };
@@ -66,8 +68,15 @@ export async function claimRefund(subOrderId: string): Promise<Claim> {
     }
     const refund: Refund = { status: 'PENDING', amountPaise, refundId: refundIdFor(subOrderId), updatedAt: now };
     tx.update(ref, { refund });
+    // The court no longer pays this ticket's part of the coupon (the shop is not paid for it either), so its
+    // share comes off the order's coupon cost: collected − refunded = payable + commission − coupons, exactly.
+    const couponLeft = (order as Order & { couponCostPaise?: number }).couponCostPaise ?? 0;
+    if (couponLeft > 0 && order.coupon && !order.coupon.released) {
+      const couponShare = othersSettled ? couponLeft : Math.min(couponLeft, subtotalPaise > 0 ? Math.floor((order.coupon.discountPaise * t.subtotalPaise) / subtotalPaise) : 0);
+      if (couponShare > 0) tx.update(db.collection('orders').doc(t.orderId), { couponCostPaise: couponLeft - couponShare });
+    }
     return { state: 'claimed', refund, paymentId, token: t.token, ticketStatus: t.status };
-  });
+  }));
 }
 
 /**
@@ -78,7 +87,7 @@ export async function claimRefund(subOrderId: string): Promise<Claim> {
 export async function settleRefund(subOrderId: string, status: 'PENDING' | 'PROCESSED' | 'FAILED', gatewayRefundId?: string, failReason?: string): Promise<boolean> {
   const ref = db.collection('subOrders').doc(subOrderId);
   const now = Date.now();
-  const changed = await db.runTransaction(async (tx) => {
+  const changed = await retryContention(() => db.runTransaction(async (tx) => {
     const t = (await tx.get(ref)).data() as SubOrder | undefined;
     const r = t?.refund;
     if (!t || !r || r.status === 'PROCESSED' || r.status === 'NOT_REQUIRED' || r.status === 'REQUIRED') return null;
@@ -101,7 +110,7 @@ export async function settleRefund(subOrderId: string, status: 'PENDING' | 'PROC
       });
     }
     return { newlyFailed, changed: r.status !== status, t, r };
-  });
+  }));
   if (changed?.newlyFailed) logger.error('Refund failed', { subOrderId, orderId: changed.t.orderId, amountPaise: changed.r.amountPaise, failReason: failReason ?? null });
   return Boolean(changed?.changed);
 }

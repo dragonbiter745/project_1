@@ -23,7 +23,7 @@ export function RejectSheet({
     <Sheet
       open={sub !== null}
       onClose={onClose}
-      title={sub ? `Reject ${sub.token}?` : 'Reject order'}
+      title={sub ? (sub.status === 'NEW' ? `Reject ${sub.token}?` : `Can't make ${sub.token}?`) : 'Reject order'}
       description={sub ? `The diner is refunded ${formatPaise(sub.subtotalPaise)} automatically.` : undefined}
       footer={
         <div className="grid grid-cols-2 gap-2">

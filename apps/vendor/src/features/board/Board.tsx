@@ -3,7 +3,7 @@ import { ChefHat, Inbox, PackageCheck, type LucideIcon } from 'lucide-react';
 import type { SubOrder, SubOrderStatus } from '@foodcourt/shared';
 import { cx, prefersReducedMotion, useNow } from '@foodcourt/ui';
 import { run } from '@foodcourt/ui';
-import { acceptOrder, markCollected, markReady, rejectOrder, undoReady } from '@foodcourt/firebase-client/ops';
+import { acceptOrder, cancelSubOrder, markCollected, markReady, rejectOrder, undoReady } from '@foodcourt/firebase-client/ops';
 import { buzz } from '../../lib/device';
 import { playNewOrderChime } from '../../lib/sound';
 import { jsonEqual, useLocal } from '../../lib/store';
@@ -363,7 +363,8 @@ export function Board({ vendorId, alarmOn, phone, onMore, moreAlert }: BoardProp
         sub={rejecting}
         onClose={() => setRejecting(null)}
         onConfirm={(sub, reason) => {
-          void run(rejectOrder(sub.id, reason));
+          // A new ticket is rejected; one already accepted is cancelled. Both refund the diner automatically.
+          void run(sub.status === 'NEW' ? rejectOrder(sub.id, reason) : cancelSubOrder(sub.id, reason));
           setRejecting(null);
         }}
       />

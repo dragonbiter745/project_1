@@ -31,6 +31,18 @@ export function signInProvider(req: Pick<CallableRequest, 'auth'>): string | nul
   return typeof firebase?.sign_in_provider === 'string' ? firebase.sign_in_provider : null;
 }
 
+/**
+ * Counts as a member for member-only coupons and perks: any real account, except an email-and-password one
+ * whose address has not been verified (anyone can type someone else's email, or a throwaway one, to farm
+ * "new member" offers).
+ */
+export function isVerifiedMember(req: Pick<CallableRequest, 'auth'>): boolean {
+  const provider = signInProvider(req);
+  if (!provider || provider === 'anonymous') return false;
+  if (provider === 'password') return (req.auth?.token as { email_verified?: unknown } | undefined)?.email_verified === true;
+  return true;
+}
+
 function requireMember(req: CallableRequest): string {
   const uid = requireUid(req);
   const provider = signInProvider(req);

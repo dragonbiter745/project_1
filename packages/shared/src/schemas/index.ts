@@ -145,6 +145,8 @@ export const FinanceActionSchema = z.discriminatedUnion('action', [
     paidOn: DATE_KEY,
     reference: z.string().trim().min(3, 'Enter the UTR or UPI reference').max(60),
     note: z.string().trim().max(200).optional(),
+    // Required only when the amount is more than the court owes the shop (an advance or a correction).
+    overBalanceReason: z.string().trim().min(3, 'Say why').max(200).optional(),
   }),
   // Payouts are never deleted: a mistaken one is voided with a reason and stays in the history.
   z.object({ action: z.literal('VOID_PAYOUT'), payoutId: z.string().min(1).max(100), reason: z.string().trim().min(3, 'Say why').max(200) }),
@@ -162,6 +164,12 @@ export const FinanceActionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('VOID_ENTRY'), entryId: z.string().min(1).max(100), reason: z.string().trim().min(3, 'Say why').max(200) }),
   // Sends a refund Razorpay marked failed again (a new attempt with a new refund id); audited.
   z.object({ action: z.literal('RETRY_REFUND'), subOrderId: z.string().min(1).max(200) }),
+  // Asks Razorpay about one unpaid order now (settles it if paid, refunds it if it arrived too late).
+  z.object({ action: z.literal('CHECK_PAYMENT'), orderId: z.string().min(1).max(200) }),
+  // Runs the money check for one IST day now instead of waiting for the night.
+  z.object({ action: z.literal('RUN_RECONCILE'), dateKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }),
+  // Marks a money issue handled, with what was done.
+  z.object({ action: z.literal('RESOLVE_ISSUE'), issueId: z.string().min(1).max(200), note: z.string().trim().min(3, 'Say what was done').max(300) }),
   // Applies to tickets created from now on.
   z.object({
     action: z.literal('SET_COMMISSION'),

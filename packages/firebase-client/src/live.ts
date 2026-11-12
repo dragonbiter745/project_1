@@ -81,11 +81,27 @@ export function connectVendor(vendorId: string, store: LiveStore = liveStore): U
       store.markLoaded('vendors');
     }, onError(store, 'vendor')),
     ...watchShop(store, [vendorId]),
-    daily((dateKey) => [
-      watchQuery<SubOrder>(store, query(collection(db, 'subOrders'), where('vendorId', '==', vendorId), where('dateKey', '==', dateKey), orderBy('ts.placed', 'desc'), limit(800)), (rows) => {
-        store.getState().subOrders = Object.fromEntries(rows.map((r) => [r.id, r]));
-      }, 'subOrders'),
-    ]),
+    daily((dateKey) => {
+      // Two views merged: every ticket still open (any day, never capped, so a busy day can never push an
+      // unfinished ticket off the board), and the latest finished ones for today's history.
+      let open: Record<string, SubOrder> = {};
+      let recent: Record<string, SubOrder> = {};
+      const publish = () => {
+        store.getState().subOrders = { ...recent, ...open };
+      };
+      return [
+        watchQuery<SubOrder>(store, query(collection(db, 'subOrders'), where('vendorId', '==', vendorId), where('status', 'in', ['NEW', 'ACCEPTED', 'PREPARING', 'READY'])), (rows) => {
+          open = Object.fromEntries(rows.map((r) => [r.id, r]));
+          publish();
+        }, 'subOrders'),
+        watchQuery<SubOrder>(store, query(collection(db, 'subOrders'), where('vendorId', '==', vendorId), where('dateKey', '==', dateKey), orderBy('ts.placed', 'desc'), limit(400)), (rows) => {
+          recent = Object.fromEntries(rows.map((r) => [r.id, r]));
+          // A ticket that just finished leaves the open view; keep the open view authoritative for open ones.
+          for (const id of Object.keys(recent)) if (open[id] && recent[id]!.status !== open[id]!.status && ['COLLECTED', 'REJECTED', 'TIMED_OUT', 'CANCELLED'].includes(recent[id]!.status)) delete open[id];
+          publish();
+        }, 'subOrders'),
+      ];
+    }),
   ];
   return () => subs.forEach((u) => u());
 }

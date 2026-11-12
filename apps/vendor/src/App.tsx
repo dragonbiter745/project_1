@@ -7,7 +7,7 @@ import { connectVendor, loadShopList } from '@foodcourt/firebase-client/live';
 import { AnnouncementBar } from './features/board/AnnouncementBar';
 
 import { staffSignIn, staffSignOut, watchStaff, type StaffUser } from '@foodcourt/firebase-client/staff';
-import { pauseOrders, resumeOrders } from '@foodcourt/firebase-client/ops';
+import { pauseOrders, resumeOrders, sendHeartbeat } from '@foodcourt/firebase-client/ops';
 import { Board } from './features/board/Board';
 
 import { MoreSheet } from './features/controls/MoreSheet';
@@ -107,6 +107,24 @@ function Kitchen({ staff }: { staff: StaffUser }) {
   const now = useNow(15_000, Boolean(vendor && !vendor.acceptingOrders));
 
   useWakeLock(started && Boolean(vendor));
+
+  // While the board is open and in front, tell the server this kitchen can see new orders. If the tablet
+  // sleeps, loses Wi-Fi or the tab is closed, the beats stop and checkout stops taking money for this shop.
+  useEffect(() => {
+    if (!started || !vendorId || isMaster) return;
+    const beat = () => {
+      if (document.visibilityState === 'visible') void sendHeartbeat(vendorId).catch(() => undefined);
+    };
+    beat();
+    const timer = window.setInterval(beat, 60_000);
+    document.addEventListener('visibilitychange', beat);
+    window.addEventListener('online', beat);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', beat);
+      window.removeEventListener('online', beat);
+    };
+  }, [started, vendorId, isMaster]);
 
   // Timed pauses end on their own (PRD FR-V3 auto-resume).
   useEffect(() => {

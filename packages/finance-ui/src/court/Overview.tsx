@@ -64,7 +64,18 @@ export function Overview({ range, report: { report, loading, error, reload } }: 
         />
         <KpiTile label="Collected online" value={money(r.collectedPaise)} icon={IndianRupee} tone="ready" hint={<Delta now={r.collectedPaise} before={r.previous.collectedPaise} label={cmp} />} />
         <KpiTile label="Paid orders" value={r.paidOrders.toLocaleString('en-IN')} icon={ShoppingBag} tone="prep" hint={<Delta now={r.paidOrders} before={r.previous.paidOrders} label={cmp} />} />
-        <KpiTile label="Refunded to diners" value={money(r.refundsPaise)} icon={RotateCcw} tone="neutral" hint={<Delta now={r.refundsPaise} before={r.previous.refundsPaise} label={cmp} goodWhenDown />} />
+        <KpiTile
+          label="Refunded to diners"
+          value={money(r.refundsPaise)}
+          icon={RotateCcw}
+          tone="neutral"
+          hint={
+            <>
+              <Delta now={r.refundsPaise} before={r.previous.refundsPaise} label={cmp} goodWhenDown />
+              {(r.refundsPendingPaise ?? 0) > 0 && <span className="mt-1 block">{money(r.refundsPendingPaise ?? 0)} more owed or on its way</span>}
+            </>
+          }
+        />
       </dl>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-3">

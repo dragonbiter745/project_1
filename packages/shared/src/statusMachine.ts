@@ -3,11 +3,12 @@ import type { OrderStatus, SubOrderStatus } from './types';
 export const ALLOWED_ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   CREATED: ['PENDING_PAYMENT', 'CANCELLED'],
   PENDING_PAYMENT: ['PAID', 'FAILED', 'EXPIRED', 'CANCELLED'],
-  PAID: ['COMPLETED', 'PARTIALLY_REFUNDED', 'CANCELLED'],
+  PAID: ['COMPLETED', 'PARTIALLY_REFUNDED', 'REFUNDED', 'CANCELLED'],
   FAILED: ['PENDING_PAYMENT', 'CANCELLED'],
   EXPIRED: ['CANCELLED'],
   COMPLETED: ['PARTIALLY_REFUNDED'],
-  PARTIALLY_REFUNDED: [],
+  PARTIALLY_REFUNDED: ['REFUNDED'],
+  REFUNDED: [],
   CANCELLED: [],
 };
 
@@ -51,6 +52,8 @@ export function deriveParentOrderStatus(
       s.status === 'CANCELLED' ||
       s.refund?.status === 'PROCESSED'
   );
+  // Every part failed: the whole payment goes back, so say "refunded", not "part refunded".
+  if (subOrders.every((s) => s.status === 'REJECTED' || s.status === 'TIMED_OUT' || s.status === 'CANCELLED')) return 'REFUNDED';
   if (anyRefunded) return 'PARTIALLY_REFUNDED';
 
   return 'PAID';

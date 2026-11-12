@@ -26,7 +26,7 @@ const FILTER_STATUSES: Record<Exclude<LedgerFilter, 'all'>, OrderStatus[]> = {
   paid: ['PAID', 'COMPLETED'],
   pending: ['PENDING_PAYMENT'],
   failed: ['FAILED', 'EXPIRED'],
-  refunded: ['PARTIALLY_REFUNDED'],
+  refunded: ['PARTIALLY_REFUNDED', 'REFUNDED'],
 };
 
 function message(err: unknown): string {
@@ -55,9 +55,29 @@ export interface PayoutInput {
   paidOn: string;
   reference: string;
   note?: string;
+  /** Why more than the balance due is being paid (required by the server in that case). */
+  overBalanceReason?: string;
 }
 
 export const recordPayout = (input: PayoutInput) => action<{ payoutId: string; duplicate: boolean }>({ action: 'RECORD_PAYOUT', ...input });
+export const retryRefund = (subOrderId: string) => action<{ subOrderId: string; outcome: string }>({ action: 'RETRY_REFUND', subOrderId });
+export const checkPayment = (orderId: string) => action<{ orderId: string; outcome: string }>({ action: 'CHECK_PAYMENT', orderId });
+export const runReconcile = (dateKey: string) => action<{ dateKey: string; ok: boolean; discrepancies: number }>({ action: 'RUN_RECONCILE', dateKey });
+export const resolveIssue = (issueId: string, note: string) => action<{ issueId: string }>({ action: 'RESOLVE_ISSUE', issueId, note });
+export const getMoneyHealth = () => guarded(async () => (await httpsCallable<unknown, MoneyHealthView>(getFunctionsClient(), 'moneyHealth')({})).data);
+
+/** What the Money health page shows (mirrors functions/src/callable/moneyHealth.ts). */
+export interface MoneyHealthView {
+  generatedAt: number;
+  sweeper: { lastRunAt: number | null; lastOkAt: number | null; failedSteps: string[] };
+  unpaid: Array<{ orderId: string; createdAt: number; totalPaise: number; rzpOrderId: string | null }>;
+  refunds: { due: number; pending: number; failed: Array<{ subOrderId: string; orderId: string; token: string; vendorName: string; amountPaise: number; failReason: string | null; updatedAt: number | null }> };
+  lateRefunds: Array<{ orderId: string; status: string; reason: string; amountPaise: number; paymentId: string }>;
+  issues: Array<{ id: string; reason: string; text: string; orderId: string | null; createdAt: number }>;
+  reconciliation: { dateKey: string; ok: boolean; discrepancies: number; gatewayPaise: number; bookPaise: number; ranAt: number } | null;
+  settlement: { dateKey: string; ok: boolean; netPaise: number; feePaise: number; taxPaise: number; unknownPayments: number; ranAt: number } | null;
+}
+
 export const voidPayout = (payoutId: string, reason: string) => action<{ payoutId: string }>({ action: 'VOID_PAYOUT', payoutId, reason });
 export const setCommission = (vendorId: string, feePct: number, perOrderFeePaise: number) =>
   action<{ vendorId: string }>({ action: 'SET_COMMISSION', vendorId, feePct, perOrderFeePaise });

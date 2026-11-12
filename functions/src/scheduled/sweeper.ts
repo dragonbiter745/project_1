@@ -1,6 +1,6 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions/v2';
-import { canTransitionOrder, canTransitionSubOrder, type Order, type SubOrder, type Vendor } from '@foodcourt/shared';
+import { canTransitionOrder, canTransitionSubOrder, getIstDateKey, type Order, type SubOrder, type Vendor } from '@foodcourt/shared';
 import { DEFAULT_ACCEPT_SLA_SEC, RAZORPAY_SECRETS, REGION } from '../config';
 import { db } from '../db';
 import { getCapturedPayment } from '../lib/razorpay';
@@ -29,6 +29,7 @@ export async function timeOutUnaccepted(now = Date.now()): Promise<number> {
   const sla = await acceptDeadlines(now);
   let n = 0;
   const parents = new Set<string>();
+  const timedOutShops = new Set<string>();
   for (const doc of stale.docs) {
     const placed = doc.data() as SubOrder;
     if (now - placed.ts.placed < (sla.get(placed.vendorId) ?? DEFAULT_ACCEPT_SLA_SEC * 1000)) continue;
@@ -45,6 +46,7 @@ export async function timeOutUnaccepted(now = Date.now()): Promise<number> {
       if (timedOut) {
         n++;
         parents.add(placed.orderId);
+        timedOutShops.add(placed.vendorId);
       }
     } catch (err) {
       // One ticket that cannot be timed out must not stop the others (or the rest of the sweep).
@@ -54,7 +56,39 @@ export async function timeOutUnaccepted(now = Date.now()): Promise<number> {
   for (const id of parents) {
     await syncParentStatus(id).catch((err) => logger.error('Sweeper step failed', { step: 'sync-parent', orderId: id, err: (err as Error).message }));
   }
+  for (const vendorId of timedOutShops) {
+    await pauseIfUnattended(vendorId, now).catch((err) => logger.error('Sweeper step failed', { step: 'auto-pause', vendorId, err: (err as Error).message }));
+  }
   return n;
+}
+
+/**
+ * Two tickets in a row that nobody accepted means nobody is watching this kitchen. Every further diner
+ * would pay, wait three minutes and be refunded, so the shop is paused and the court manager is told.
+ * The kitchen resumes it with one tap when someone is back at the screen.
+ */
+export async function pauseIfUnattended(vendorId: string, now = Date.now()): Promise<boolean> {
+  const latest = await db.collection('subOrders').where('vendorId', '==', vendorId).where('dateKey', '==', getIstDateKey(new Date(now))).orderBy('ts.placed', 'desc').limit(2).get();
+  if (latest.size < 2 || !latest.docs.every((d) => (d.data() as SubOrder).status === 'TIMED_OUT')) return false;
+  const ref = db.collection('vendors').doc(vendorId);
+  const paused = await db.runTransaction(async (tx) => {
+    const v = (await tx.get(ref)).data() as Vendor | undefined;
+    if (!v || !v.acceptingOrders) return null;
+    tx.update(ref, { acceptingOrders: false, pausedUntil: null, autoPausedAt: now, updatedAt: now });
+    tx.set(db.collection('issues').doc(`autopause_${vendorId}_${now}`), {
+      orderId: null,
+      subOrderId: null,
+      vendorId,
+      reason: 'shop_unattended',
+      text: `${v.name} was paused automatically: its last two orders were not accepted in time (both diners are being refunded). Check the kitchen screen, then resume the shop from the kitchen display.`,
+      uid: null,
+      status: 'open',
+      createdAt: now,
+    });
+    return v.name;
+  });
+  if (paused) logger.error('Shop auto-paused', { vendorId, name: paused });
+  return Boolean(paused);
 }
 
 // An unpaid order is checked with Razorpay at these ages (whole minutes) and then every sweep once it is
@@ -139,10 +173,12 @@ export async function recheckExpired(now = Date.now()): Promise<number> {
 }
 
 /** Runs one part of the sweep on its own: if it throws, the failure is logged at ERROR (an alert watches for it) and the other parts still run. */
+let failedSteps: string[] = [];
 export async function sweepStep<T>(step: string, fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await fn();
   } catch (err) {
+    failedSteps.push(step);
     logger.error('Sweeper step failed', { step, err: (err as Error).message });
     return fallback;
   }
@@ -150,6 +186,8 @@ export async function sweepStep<T>(step: string, fn: () => Promise<T>, fallback:
 
 /** One full sweep. Each part is independent: a bug or an outage in one never stops payments being recovered or refunds being sent. */
 export async function sweep(): Promise<void> {
+  failedSteps = [];
+  const startedAt = Date.now();
   const timedOut = await sweepStep('timeouts', () => timeOutUnaccepted(), 0);
   const payments = await sweepStep('payments', () => reconcilePayments(), { paid: 0, expired: 0 });
   const lateRefunded = await sweepStep('expired-recheck', () => recheckExpired(), 0);
@@ -158,8 +196,57 @@ export async function sweep(): Promise<void> {
   if (timedOut || payments.paid || payments.expired || lateRefunded || refunds.sent || refunds.settled || lateSettled) {
     logger.info('Sweep', { timedOut, ...payments, lateRefunded, refundsSent: refunds.sent, refundsSettled: refunds.settled, lateSettled });
   }
+  // The manager console shows this: a sweep that has not run (or not succeeded) for a few minutes is red.
+  const health: Record<string, unknown> = { lastRunAt: startedAt, tookMs: Date.now() - startedAt, failedSteps };
+  if (failedSteps.length === 0) health.lastOkAt = startedAt;
+  await db.collection('ops').doc('sweeper').set(health, { merge: true }).catch(() => undefined);
 }
 
 // Every minute, around the clock. A payment or a refund can be owed at any hour (a late UPI approval, an order
 // placed just before closing), and an idle sweep is four small queries, so there is no hour worth skipping.
+/**
+ * End of day: a ready ticket nobody marked collected was handed over (the diner had the food), so it is
+ * closed as collected and flagged autoClosed; a ticket still cooking from yesterday is listed for the
+ * court manager. Without this, yesterday's open tickets stay open for ever and their orders never finish.
+ */
+export async function closeYesterday(now = Date.now()): Promise<{ closed: number; flagged: number }> {
+  const today = getIstDateKey(new Date(now));
+  const open = await db.collection('subOrders').where('status', 'in', ['READY', 'ACCEPTED', 'PREPARING']).where('dateKey', '<', today).limit(500).get();
+  let closed = 0;
+  let flagged = 0;
+  const parents = new Set<string>();
+  for (const doc of open.docs) {
+    const t = doc.data() as SubOrder;
+    try {
+      if (t.status === 'READY') {
+        const done = await db.runTransaction(async (tx) => {
+          const fresh = (await tx.get(doc.ref)).data() as SubOrder | undefined;
+          if (!fresh || !canTransitionSubOrder(fresh.status, 'COLLECTED')) return false;
+          tx.update(doc.ref, { status: 'COLLECTED', 'ts.collected': now, autoClosed: true, updatedAt: now });
+          return true;
+        });
+        if (done) {
+          closed++;
+          parents.add(t.orderId);
+        }
+      } else {
+        const issue = db.collection('issues').doc(`stuck_${doc.id}`);
+        if (!(await issue.get()).exists) {
+          await issue.set({ orderId: t.orderId, subOrderId: doc.id, vendorId: t.vendorId, reason: 'ticket_stuck', text: `${t.token} at ${t.vendorName} was accepted on ${t.dateKey} but never marked ready. Ask the shop: if the diner was served, mark it collected; if not, cancel it to refund them.`, uid: t.uid ?? null, status: 'open', createdAt: now });
+          flagged++;
+        }
+      }
+    } catch (err) {
+      logger.error('Sweeper step failed', { step: 'close-yesterday', subOrderId: doc.id, err: (err as Error).message });
+    }
+  }
+  for (const id of parents) await syncParentStatus(id).catch(() => undefined);
+  if (closed || flagged) logger.info('Closed yesterday', { closed, flagged });
+  return { closed, flagged };
+}
+
+export const nightlyClose = onSchedule({ schedule: '15 3 * * *', timeZone: 'Asia/Kolkata', region: REGION, timeoutSeconds: 300, maxInstances: 1, retryCount: 1 }, async () => {
+  await closeYesterday();
+});
+
 export const sweeper = onSchedule({ schedule: '* * * * *', timeZone: 'Asia/Kolkata', region: REGION, secrets: RAZORPAY_SECRETS, timeoutSeconds: 120, maxInstances: 1, retryCount: 0 }, sweep);

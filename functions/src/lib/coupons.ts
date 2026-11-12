@@ -59,21 +59,35 @@ export async function discountForCheckout(
 export async function holdCoupon(code: string, uid: string, orderId: string, expiresAt: number, now: number): Promise<void> {
   const ref = holdRef(code, uid);
   await db.runTransaction(async (tx) => {
-    const hold = (await tx.get(ref)).data() as { orderId: string; expiresAt: number } | undefined;
+    const [holdSnap, couponSnap] = await Promise.all([tx.get(ref), tx.get(couponRef(code))]);
+    const hold = holdSnap.data() as { orderId: string; expiresAt: number } | undefined;
     if (hold && hold.orderId !== orderId && hold.expiresAt > now) {
       throw new HttpsError('failed-precondition', 'This coupon is already in another payment. Finish or close that one first.');
+    }
+    // A coupon with a total limit is reserved here, inside the same transaction, so eight diners pressing Pay
+    // together cannot all use a 3-use coupon: open payments count against the limit until they lapse.
+    const coupon = couponSnap.data() as (Coupon & { pending?: Record<string, number> }) | undefined;
+    if (coupon && coupon.totalLimit != null) {
+      const pending = Object.fromEntries(Object.entries(coupon.pending ?? {}).filter(([id, until]) => until > now && id !== orderId));
+      if ((coupon.usedCount ?? 0) + Object.keys(pending).length >= coupon.totalLimit) throw new HttpsError('failed-precondition', 'This coupon has been fully used.');
+      tx.update(couponRef(code), { pending: { ...pending, [orderId]: expiresAt } });
     }
     tx.set(ref, { orderId, expiresAt, code, uid });
   });
 }
 
-export const releaseHold = (code: string, uid: string) => holdRef(code, uid).delete();
+/** The payment could not start: free the diner's hold and the coupon's reservation for this order. */
+export async function releaseHold(code: string, uid: string, orderId?: string): Promise<void> {
+  await holdRef(code, uid).delete();
+  if (orderId) await couponRef(code).update({ [`pending.${orderId}`]: FieldValue.delete() }).catch(() => undefined);
+}
 
 /** Counts a coupon use when its order is paid. Writes only, so it fits after the payment transaction's reads. */
-export function writeCouponUse(tx: Transaction, order: Pick<Order, 'uid' | 'coupon'>, now: number): void {
+export function writeCouponUse(tx: Transaction, order: Pick<Order, 'uid' | 'coupon'>, now: number, orderId?: string): void {
   const c = order.coupon;
   if (!c || !order.uid) return;
-  tx.set(couponRef(c.code), { usedCount: FieldValue.increment(1), discountGivenPaise: FieldValue.increment(c.discountPaise), lastUsedAt: now }, { merge: true });
+  // The reservation made at checkout turns into a use.
+  tx.set(couponRef(c.code), { usedCount: FieldValue.increment(1), discountGivenPaise: FieldValue.increment(c.discountPaise), lastUsedAt: now, ...(orderId ? { pending: { [orderId]: FieldValue.delete() } } : {}) }, { merge: true });
   tx.set(useRef(c.code, order.uid), { code: c.code, uid: order.uid, count: FieldValue.increment(1), lastUsedAt: now }, { merge: true });
   tx.delete(holdRef(c.code, order.uid));
 }

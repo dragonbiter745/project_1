@@ -1,8 +1,11 @@
 import { defineBoolean, defineSecret, defineString } from 'firebase-functions/params';
 
 export const REGION = 'asia-south1';
-/** Firestore lives in the named database "default" (not "(default)"). */
-export const DATABASE = 'default';
+/**
+ * Firestore lives in the named database "default" (not "(default)"). After a restore into a new database,
+ * set FIRESTORE_DATABASE=<restored id> in functions/.env.<project> and redeploy: no code change.
+ */
+export const DATABASE = process.env.FIRESTORE_DATABASE || 'default';
 
 // Razorpay: the key id is public (the checkout window needs it); the secrets live in Secret Manager, never in code.
 // A rzp_live_ key id means live payments, rzp_test_ means test mode, so switching is a key swap, not a code change.
@@ -29,6 +32,13 @@ export const RAZORPAY_SECRETS = [RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET];
  * because turning it on first would lock out every phone that has no token yet.
  */
 export const APP_CHECK_ENFORCE = defineBoolean('APP_CHECK_ENFORCE', { default: false });
+
+/**
+ * Second factor for money roles. When on, the court manager's finance, vendor-access and admin calls need an
+ * ID token signed in with a second factor (TOTP). Off until every master login has enrolled, or switching it
+ * on would lock the managers out.
+ */
+export const REQUIRE_MFA = defineBoolean('REQUIRE_MFA', { default: false });
 
 export const isEmulator = () => process.env.FUNCTIONS_EMULATOR === 'true';
 

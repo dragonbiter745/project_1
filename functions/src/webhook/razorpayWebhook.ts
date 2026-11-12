@@ -20,6 +20,7 @@ interface WebhookEvent {
   payload?: {
     payment?: { entity?: PaymentEntity };
     refund?: { entity?: { id?: string; receipt?: string | null; status?: string } };
+    dispute?: { entity?: { id?: string; payment_id?: string; amount?: number; reason_code?: string; status?: string; respond_by?: number; phase?: string } };
   };
 }
 
@@ -72,6 +73,26 @@ export const razorpayWebhook = onRequest({ region: REGION, secrets: RAZORPAY_SEC
       if (doc) await settleRefund(doc.id, status, refund.id || undefined);
       // Not a ticket's refund: it may be the full refund of a payment that arrived after its order closed.
       else await settleLateRefundByReceipt(refund.receipt, status, refund.id || undefined);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // A chargeback: the bank is taking a diner's payment back. Recorded, raised with the court manager, and
+    // logged at ERROR so the alert fires; it must be answered in the Razorpay dashboard before respond_by.
+    const dispute = event.payload?.dispute?.entity;
+    if (event.event?.startsWith('payment.dispute.') && dispute?.id) {
+      const now = Date.now();
+      const id = dispute.id.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 100);
+      const order = dispute.payment_id ? (await db.collection('orders').where('payment.rzpPaymentId', '==', dispute.payment_id).limit(1).get()).docs[0] : undefined;
+      await db.collection('disputes').doc(id).set(
+        { disputeId: dispute.id, paymentId: dispute.payment_id ?? null, orderId: order?.id ?? null, amountPaise: dispute.amount ?? 0, reasonCode: dispute.reason_code ?? null, status: dispute.status ?? event.event.slice('payment.dispute.'.length), phase: dispute.phase ?? null, respondBy: dispute.respond_by ? dispute.respond_by * 1000 : null, lastEvent: event.event, updatedAt: now },
+        { merge: true }
+      );
+      if (event.event === 'payment.dispute.created') {
+        await db.collection('issues').doc(`dispute_${id}`).set({ orderId: order?.id ?? null, subOrderId: null, vendorId: null, reason: 'chargeback', text: `Chargeback of ${dispute.amount ?? 0} paise on payment ${dispute.payment_id ?? '?'}. Answer it in the Razorpay dashboard${dispute.respond_by ? ` by ${new Date(dispute.respond_by * 1000).toISOString().slice(0, 10)}` : ''} with the order record.`, uid: null, status: 'open', createdAt: now });
+        logger.error('Chargeback opened', { disputeId: dispute.id, paymentId: dispute.payment_id ?? null, amountPaise: dispute.amount ?? 0 });
+      }
+      await setPaymentEventOutcome(eventId, 'dispute');
       res.status(200).json({ ok: true });
       return;
     }

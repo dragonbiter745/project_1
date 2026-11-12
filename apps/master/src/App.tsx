@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { BarChart3, LogOut, Megaphone, QrCode, Radio, Settings2, ShieldAlert, Store, TicketPercent, UserPlus, Users, Wallet } from 'lucide-react';
+import { BarChart3, HeartPulse, LogOut, Megaphone, QrCode, Radio, Settings2, ShieldAlert, Store, TicketPercent, UserPlus, Users, Wallet } from 'lucide-react';
 import { CourtFinance } from '@foodcourt/finance-ui';
 import { ActionToast, BrandMark, Button, StaffLogin, cx, useNow } from '@foodcourt/ui';
 import { connectMaster, whenVisible } from '@foodcourt/firebase-client/live';
@@ -9,16 +9,18 @@ import { Customers } from './features/customers/Customers';
 import { Insights } from './features/insights/Insights';
 import { Messages } from './features/messages/Messages';
 import { LiveOrders } from './features/live/LiveOrders';
+import { MoneyHealth } from './features/money/MoneyHealth';
 import { Settings } from './features/settings/Settings';
 import { Shops } from './features/shops/Shops';
 import { TablesQr } from './features/tables/TablesQr';
 import { Vendors } from './features/vendors/Vendors';
 import { jsonEqual, useLocal } from './lib/store';
 
-type Page = 'live' | 'shops' | 'vendors' | 'tables' | 'insights' | 'customers' | 'coupons' | 'messages' | 'finance' | 'settings';
+type Page = 'live' | 'money' | 'shops' | 'vendors' | 'tables' | 'insights' | 'customers' | 'coupons' | 'messages' | 'finance' | 'settings';
 
 const PAGES: Array<{ key: Page; label: string; blurb: string; icon: typeof Radio; component: ComponentType }> = [
   { key: 'live', label: 'Live orders', blurb: 'Every ticket in every kitchen, as it happens.', icon: Radio, component: LiveOrders },
+  { key: 'money', label: 'Money health', blurb: 'Stuck payments, refunds, chargebacks and the nightly checks against Razorpay.', icon: HeartPulse, component: MoneyHealth },
   { key: 'shops', label: 'Shops', blurb: 'How each kitchen is doing today.', icon: Store, component: Shops },
   { key: 'vendors', label: 'Vendors', blurb: 'Add shops, email logins and reset passwords.', icon: UserPlus, component: Vendors },
   { key: 'tables', label: 'Tables and QR', blurb: 'Print and replace the codes on every table.', icon: QrCode, component: TablesQr },

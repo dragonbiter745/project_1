@@ -447,6 +447,7 @@ const ORDER_LABEL: Partial<Record<Order['status'], string>> = {
   PAID: 'In the kitchen',
   COMPLETED: 'Collected',
   PARTIALLY_REFUNDED: 'Part refunded',
+  REFUNDED: 'Refunded',
   CANCELLED: 'Refunded',
   PENDING_PAYMENT: 'Awaiting payment',
   FAILED: 'Payment failed',

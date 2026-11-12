@@ -1,5 +1,6 @@
 import { HttpsError, type CallableRequest } from 'firebase-functions/v2/https';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { REQUIRE_MFA } from '../config';
 import { db } from '../db';
 
 export type Role = 'master' | 'vendorFinance' | 'vendorAdmin' | 'vendorStaff';
@@ -10,17 +11,31 @@ export function requireUid(req: CallableRequest): string {
   return uid;
 }
 
+/**
+ * When REQUIRE_MFA is on, a court-manager call must come from a session signed in with a second factor.
+ * Firebase puts the factor in the ID token (firebase.sign_in_second_factor) after a TOTP sign-in.
+ */
+export function requireSecondFactor(req: CallableRequest): void {
+  if (!REQUIRE_MFA.value()) return;
+  const firebase = (req.auth?.token as { firebase?: { sign_in_second_factor?: unknown } } | undefined)?.firebase;
+  if (!firebase?.sign_in_second_factor) throw new HttpsError('permission-denied', 'Sign in again with your authenticator code to do this.');
+}
+
 export function roleOf(req: CallableRequest): { role: Role | null; vendorId: string | null } {
   const t = (req.auth?.token ?? {}) as Record<string, unknown>;
   const role = t.role === 'master' || t.role === 'vendorFinance' || t.role === 'vendorAdmin' || t.role === 'vendorStaff' ? (t.role as Role) : null;
   return { role, vendorId: typeof t.vendorId === 'string' ? t.vendorId : null };
 }
 
-/** First hop of X-Forwarded-For (set by Google's front end), falling back to the socket address. */
+/**
+ * The caller's address for rate limits: the right-most X-Forwarded-For entry, which Google's front end
+ * appends with the address it actually saw. Anything to its left was sent by the caller and can be made up,
+ * so keying on the first entry would let a script dodge every per-IP limit by inventing a new one each time.
+ */
 export function clientIp(req: { rawRequest?: { headers?: Record<string, unknown>; ip?: string } }): string {
   const fwd = req.rawRequest?.headers?.['x-forwarded-for'];
-  const first = typeof fwd === 'string' ? fwd.split(',')[0]?.trim() : undefined;
-  return first || req.rawRequest?.ip || 'unknown';
+  const hops = typeof fwd === 'string' ? fwd.split(',').map((h) => h.trim()).filter(Boolean) : [];
+  return hops[hops.length - 1] || req.rawRequest?.ip || 'unknown';
 }
 
 // ─── Rate limiting ─────────────────────────────────────────────────────────

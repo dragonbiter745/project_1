@@ -1,7 +1,7 @@
 {
   "projects": {
     "default": "reva-nest-foodcourt",
-    "staging": "reva-nest-foodcourt",
+    "staging": "reva-nest-foodcourt-staging",
     "prod": "reva-nest-foodcourt"
   },
   "targets": {

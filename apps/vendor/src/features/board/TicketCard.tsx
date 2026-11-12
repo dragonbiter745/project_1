@@ -111,9 +111,15 @@ export const TicketCard = memo(function TicketCard({ sub, now, compact, onAccept
           </div>
         )}
         {(sub.status === 'ACCEPTED' || sub.status === 'PREPARING') && (
-          <Button variant="positive" size="lg" block onClick={() => onReady(sub)}>
-            Mark ready
-          </Button>
+          // Ran out mid-rush: the kitchen can still give up on a ticket it accepted, and the diner is refunded.
+          <div className="grid grid-cols-[auto_1fr] gap-2">
+            <Button variant="danger" size="lg" onClick={() => onReject(sub)} className="bg-danger-tint px-4 ring-1 ring-inset ring-danger/40">
+              Can't make
+            </Button>
+            <Button variant="positive" size="lg" onClick={() => onReady(sub)}>
+              Mark ready
+            </Button>
+          </div>
         )}
         {isReady && (
           <Button variant="outline" size="lg" block onClick={() => onCollect(sub)}>

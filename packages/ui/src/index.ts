@@ -17,3 +17,4 @@ export * from './kit/useNow';
 export * from './kit/useWakeLock';
 export * from './kit/useStoreSelector';
 export * from './kit/utils';
+export * from './kit/errorReporting';

@@ -6,6 +6,7 @@ import { LoginSheet } from './features/auth/LoginSheet';
 
 import { CartBar } from './features/cart/CartBar';
 import { CartSheet } from './features/cart/CartSheet';
+import { useCheckoutRecovery } from './features/checkout/useCheckout';
 import { CouponSheet } from './features/coupons/CouponSheet';
 import { MenuScreen } from './features/menu/MenuScreen';
 import { useAuth } from './lib/authStore';
@@ -42,6 +43,7 @@ export default function App() {
   useProfileSync();
   useInboxSync();
   useReturnFromPayment();
+  useCheckoutRecovery();
   const uid = useAuth((s) => s.user?.uid ?? null);
 
   useEffect(() => {

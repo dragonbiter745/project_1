@@ -36,7 +36,9 @@ export const vendorAction = onCall({ region: REGION, maxInstances: 50, concurren
     const ticket = snap.data() as SubOrder;
     const isMaster = role === 'master';
     if (!isMaster && staffVendor !== ticket.vendorId) throw new HttpsError('permission-denied', 'This ticket belongs to another shop.');
-    if (action === 'CANCEL' && !isMaster) throw new HttpsError('permission-denied', 'Only the court manager can cancel; reject the ticket instead.');
+    // A kitchen may give up on a ticket it accepted but has not finished (ran out of an ingredient); the diner is
+    // refunded. A ready ticket is food on the counter: only the court manager can cancel that.
+    if (action === 'CANCEL' && !isMaster && ticket.status !== 'ACCEPTED' && ticket.status !== 'PREPARING') throw new HttpsError('permission-denied', 'Only the court manager can cancel this ticket.');
     if (!canApplyVendorAction(ticket.status, action)) {
       throw new HttpsError('failed-precondition', `This ticket is already ${ticket.status.toLowerCase().replace('_', ' ')}.`);
     }

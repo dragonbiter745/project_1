@@ -15,7 +15,7 @@ import {
 } from '@foodcourt/shared';
 import { BRAND_URL, REGION, RESEND_API_KEY, SHOP_ADMIN_URL, VENDOR_URL, APP_CHECK_ENFORCE } from '../config';
 import { app, db } from '../db';
-import { clientIp, limitLocal, limitShared, requireUid, roleOf } from '../lib/guard';
+import { clientIp, limitLocal, limitShared, requireUid, requireSecondFactor, roleOf } from '../lib/guard';
 import { inviteEmail } from '../lib/inviteEmail';
 import { sendMail } from '../lib/mailer';
 
@@ -66,6 +66,7 @@ async function allUsers(auth: AuthApi): Promise<UserRecord[]> {
 export const vendorAccess = onCall({ region: REGION, maxInstances: 5, timeoutSeconds: 60, secrets: [RESEND_API_KEY] }, async (req) => {
   const by = requireUid(req);
   if (roleOf(req).role !== 'master') throw new HttpsError('permission-denied', 'Only the court manager can do this.');
+  requireSecondFactor(req);
   await limitShared(`vendor-access:${by}`, 120, 300);
   const parsed = VendorAccessActionSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid request.');

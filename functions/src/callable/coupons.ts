@@ -5,7 +5,7 @@ import { REGION, APP_CHECK_ENFORCE } from '../config';
 import { db } from '../db';
 import { couponRef, dinerContext, readCoupon } from '../lib/coupons';
 import { limitLocal, limitShared, requireUid, roleOf } from '../lib/guard';
-import { signInProvider } from './account';
+import { isVerifiedMember } from './account';
 
 /** The court manager creates, edits and pauses coupons. Usage counters are only ever moved by payments. */
 export const couponAdmin = onCall({ region: REGION, maxInstances: 10, timeoutSeconds: 30 }, async (req) => {
@@ -91,8 +91,7 @@ export const dinerCoupons = onCall({ region: REGION, enforceAppCheck: APP_CHECK_
   const uid = requireUid(req);
   const parsed = DinerSchema.safeParse(req.data);
   if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Check the code.');
-  const provider = signInProvider(req);
-  const member = Boolean(provider && provider !== 'anonymous');
+  const member = isVerifiedMember(req);
   const now = Date.now();
 
   if (parsed.data.action === 'WALLET') {

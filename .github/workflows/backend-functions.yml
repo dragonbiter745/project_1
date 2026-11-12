@@ -96,6 +96,14 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
+      - name: Deploy window and key guard
+        if: env.HAS_FIREBASE_SA == 'true'
+        env:
+          FORCE_DEPLOY: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+        run: |
+          node scripts/ci/deploy-window.mjs
+          node scripts/ci/check-keys.mjs "$FIREBASE_PROJECT_ID"
+
       - name: Deploy functions
         if: env.HAS_FIREBASE_SA == 'true'
         run: npx --yes firebase-tools@13 deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive

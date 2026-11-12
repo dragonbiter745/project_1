@@ -6,16 +6,17 @@
   1. Razorpay webhook dropped or delayed by PG.
   2. Webhook signature mismatch (webhook secret rotated or not matching the dashboard).
 - **Resolution Steps:**
-  1. The automated scheduled task `reconcilePayments` runs every 2 minutes for orders in `PENDING_PAYMENT` older than 2 minutes. It asks Razorpay for the order's payments and marks `PAID` if one is captured (auto-capture must be on in the dashboard: an `authorized` payment is never settled).
-  2. In Master Admin (`/live-ops`), search order by `orderId` or customer `dailyNo`.
-  3. Click **Force Check Status**: queries Razorpay directly and triggers fulfillment if captured.
-  4. If payment failed at PG, client receives `PAYMENT_FAILED` notice and can retry immediately with preserved cart.
+  1. The `sweeper` (every minute, around the clock) asks Razorpay about unpaid orders at 2, 3, 5, 8, 12, 16, 21 and 26 minutes and settles any captured payment (auto-capture must be on in the dashboard: an `authorized` payment is never settled). A payment that lands after the order expired is refunded in full, never cooked.
+  2. Master console → **Money health** → Unpaid orders → **Check with Razorpay** on the diner's order: settles it now if paid.
+  3. The diner's app re-checks by itself when they return from the UPI app, and never lets them pay twice for the same cart.
 
 ## 2. Vendor SLA Timeout & Auto-Refund
 - **SLA Rule:** Vendor has 3 minutes (180 seconds, configurable in `vendors/{vendorId}.acceptSlaSec`) to accept an incoming order.
 - **Auto-action:**
-  - If unaccepted after 180s, `vendorSlaTimeout` marks sub-order `TIMED_OUT`.
-  - Razorpay Refund API is dispatched for that sub-order's exact paise amount (`receipt = rf_{subOrderId}` with the same value as idempotency key).
+  - If unaccepted after 180s, the `sweeper` marks the ticket `TIMED_OUT` and, in the same write, records the refund owed (`refund.status = REQUIRED`).
+  - The refund is sent by the `onTicketFailed` trigger within seconds, or by the sweeper within a minute if the trigger is lost (`receipt = rf_{subOrderId}`, same value as idempotency key). A failed refund appears on **Money health** with a Retry button and raises an alert.
+  - Two timeouts in a row pause the shop automatically (nobody is watching that screen) and raise an issue; the kitchen resumes with one tap.
+  - A kitchen that stops sending its heartbeat (screen closed, tablet asleep, Wi-Fi down) for 4 minutes is refused at checkout.
   - Diner receives alert banner + option to re-order from another shop in the court.
 
 ## 3. Rush Hour Vendor Management

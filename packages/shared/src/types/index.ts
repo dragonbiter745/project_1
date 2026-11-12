@@ -7,6 +7,8 @@ export type OrderStatus =
   | 'EXPIRED'
   | 'COMPLETED'
   | 'PARTIALLY_REFUNDED'
+  /** Paid, but every shop's part failed and was refunded: nothing was served. */
+  | 'REFUNDED'
   | 'CANCELLED';
 
 export type SubOrderStatus =
@@ -186,6 +188,8 @@ export interface Order {
   updatedAt?: number;
   /** Unpaid online orders expire at this time. */
   expiresAt?: number;
+  /** Each shop's commission terms when the order was placed (older orders fall back to the shop's current terms). */
+  commissionTerms?: Record<string, { feePct: number; perOrderFeePaise: number }>;
   /** When the sweeper expired it; a payment can still land for a while after, so it keeps being checked. */
   expiredAt?: number;
   /**

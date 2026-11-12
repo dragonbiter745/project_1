@@ -182,6 +182,56 @@ describe('firestore.rules', () => {
     await assertSucceeds(updateDoc(doc(master(), 'config/global'), { 'flags.maintenance': true }));
   });
 
+  it('lets a kitchen send only its own heartbeat, stamped with the server clock', async () => {
+    const { serverTimestamp, deleteDoc } = await import('firebase/firestore');
+    await assertSucceeds(setDoc(doc(staff(), 'presence/v-rm'), { vendorId: 'v-rm', at: serverTimestamp() }));
+    // Another shop's beat, a made-up time, or extra fields are refused.
+    await assertFails(setDoc(doc(staff('v-sv'), 'presence/v-rm'), { vendorId: 'v-rm', at: serverTimestamp() }));
+    await assertFails(setDoc(doc(staff(), 'presence/v-rm'), { vendorId: 'v-rm', at: new Date(Date.now() + 3600_000) }));
+    await assertFails(setDoc(doc(staff(), 'presence/v-rm'), { vendorId: 'v-rm', at: serverTimestamp(), note: 'x' }));
+    await assertFails(setDoc(doc(diner(), 'presence/v-rm'), { vendorId: 'v-rm', at: serverTimestamp() }));
+    await assertSucceeds(getDoc(doc(master(), 'presence/v-rm')));
+    await assertFails(deleteDoc(doc(staff(), 'presence/v-rm')));
+  });
+
+  it('never deletes a shop from a client, even the master (removal archives through the function)', async () => {
+    const { deleteDoc } = await import('firebase/firestore');
+    await assertFails(deleteDoc(doc(master(), 'vendors/v-rm')));
+    await assertFails(deleteDoc(doc(staff(), 'vendors/v-rm')));
+  });
+
+  it("shows a kitchen only announcements for every shop or for its own", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'announcements/all'), { title: 'All', audience: ['ALL'], createdAt: 1 });
+      await setDoc(doc(db, 'announcements/mine'), { title: 'Mine', audience: ['v-rm'], createdAt: 1 });
+      await setDoc(doc(db, 'announcements/theirs'), { title: 'Theirs', audience: ['v-sv'], createdAt: 1 });
+    });
+    await assertSucceeds(getDoc(doc(staff(), 'announcements/all')));
+    await assertSucceeds(getDoc(doc(staff(), 'announcements/mine')));
+    await assertFails(getDoc(doc(staff(), 'announcements/theirs')));
+    const { orderBy, limit } = await import('firebase/firestore');
+    await assertSucceeds(getDocs(query(collection(staff(), 'announcements'), where('audience', 'array-contains-any', ['ALL', 'v-rm']), orderBy('createdAt', 'desc'), limit(5))));
+  });
+
+  it('keeps money reports, disputes and server bookkeeping away from clients', async () => {
+    for (const path of ['settlementReports/2026-11-11', 'disputes/d1', 'ops/sweeper']) {
+      await assertFails(getDoc(doc(staff(), path)));
+      await assertFails(getDoc(doc(diner(), path)));
+      await assertSucceeds(getDoc(doc(master(), path)));
+      await assertFails(setDoc(doc(master(), path), { x: 1 }));
+    }
+    for (const path of ['checkoutLocks/k', 'payoutRefs/r']) {
+      await assertFails(getDoc(doc(master(), path)));
+      await assertFails(setDoc(doc(diner(), path), { x: 1 }));
+    }
+  });
+
+  it('lets a kitchen read its open tickets from any day (the board query)', async () => {
+    await assertSucceeds(getDocs(query(collection(staff(), 'subOrders'), where('vendorId', '==', 'v-rm'), where('status', 'in', ['NEW', 'ACCEPTED', 'PREPARING', 'READY']))));
+    await assertFails(getDocs(query(collection(staff(), 'subOrders'), where('status', 'in', ['NEW']))));
+  });
+
   it('keeps the shop catalogue off the public internet, because every read is billed to the project', async () => {
     const nobody = env.unauthenticatedContext().firestore();
     for (const ctx of [nobody, diner()]) {

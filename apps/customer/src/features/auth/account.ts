@@ -120,7 +120,7 @@ export interface SignUpDetails {
  */
 export async function signUpWithEmail(details: SignUpDetails, accept: Acceptance, sessionId?: string): Promise<SignInResult> {
   await ensureAnonymousUser();
-  const { getAuthClient, EmailAuthProvider, linkWithCredential, updateProfile } = await import('@foodcourt/firebase-client/auth');
+  const { getAuthClient, EmailAuthProvider, linkWithCredential, updateProfile, sendEmailVerification } = await import('@foodcourt/firebase-client/auth');
   const auth = getAuthClient();
   const current = auth.currentUser;
   if (!current) throw Object.assign(new Error('No guest user'), { code: 'auth/network-request-failed' });
@@ -128,6 +128,8 @@ export async function signUpWithEmail(details: SignUpDetails, accept: Acceptance
   // A signed-in diner never reaches the sign-up form, so this is always the guest being upgraded.
   await linkWithCredential(current, EmailAuthProvider.credential(details.email.trim(), details.password));
   await updateProfile(auth.currentUser!, { displayName: name });
+  // Member-only offers unlock once the address is confirmed (the server checks email_verified).
+  void sendEmailVerification(auth.currentUser!).catch(() => undefined);
   await finishSignIn(auth, accept, sessionId);
   const { profile } = await accountCall<{ profile: AccountProfile }>({ action: 'UPDATE_PROFILE', name, phone: details.phone, ...(sessionId ? { sessionId } : {}) });
   rememberDetails(profile);

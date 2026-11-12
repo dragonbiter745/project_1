@@ -9,7 +9,7 @@ import { createOrder, MIN_AMOUNT_PAISE, RazorpayError } from '../lib/razorpay';
 import { clientIp, limitLocal, limitShared, requireUid } from '../lib/guard';
 import { discountForCheckout, holdCoupon, releaseHold } from '../lib/coupons';
 import { writeCustomerOrder } from '../lib/customers';
-import { signInProvider } from './account';
+import { isVerifiedMember } from './account';
 import { readForTickets, retryContention, writeTickets } from '../lib/orders';
 
 const FALLBACK_CONFIG: GlobalConfig = {
@@ -26,6 +26,9 @@ const FALLBACK_CONFIG: GlobalConfig = {
  * money is trusted. The same (diner, checkoutKey) always maps to the same order, so double taps and
  * retries cannot create a second order or a second payment.
  */
+/** A kitchen whose screen has sent no heartbeat for this long is treated as away. Beats come once a minute. */
+const KITCHEN_SILENT_MS = 4 * 60_000;
+
 /** A just-paid cart pressed again within this long is shown its paid order instead of being charged again. */
 const REPEAT_GUARD_MS = 5 * 60_000;
 
@@ -94,7 +97,8 @@ export const createCheckout = onCall(
   },
   async (req) => {
     const uid = requireUid(req);
-    limitLocal(`ip:${clientIp(req)}:checkout`, 600, 60);
+    // A campus shares a few public addresses, so this stays generous: peak lunch is a few orders a second court-wide.
+    limitLocal(`ip:${clientIp(req)}:checkout`, 300, 60);
 
     const parsed = CreateCheckoutSchema.safeParse(req.data);
     if (!parsed.success) throw new HttpsError('invalid-argument', parsed.error.issues[0]?.message ?? 'Invalid order.');
@@ -116,8 +120,7 @@ export const createCheckout = onCall(
     if (!session || session.uid !== uid || (session.expiresAt as number) < now) {
       throw new HttpsError('failed-precondition', pickup ? 'Your order session ended. Refresh the page and try again.' : 'Your table session ended. Scan the QR on your table again.');
     }
-    const provider = signInProvider(req);
-    const member = Boolean(provider && provider !== 'anonymous');
+    const member = isVerifiedMember(req);
     const config = (configSnap.exists ? configSnap.data() : FALLBACK_CONFIG) as GlobalConfig;
     if (config.flags.maintenance) throw new HttpsError('unavailable', 'Ordering is paused for a few minutes. Please try again shortly.');
     // Pickup orders come from people who are not at a table yet, signed in or not: paid up front only.
@@ -125,9 +128,9 @@ export const createCheckout = onCall(
 
     // Read every shop's menu, stock and status in parallel.
     const vendorIds = [...new Set(items.map((i) => i.vendorId))];
-    const docs = await Promise.all(vendorIds.flatMap((v) => [db.collection('menus').doc(v).get(), db.collection('availability').doc(v).get(), db.collection('vendors').doc(v).get()]));
+    const docs = await Promise.all(vendorIds.flatMap((v) => [db.collection('menus').doc(v).get(), db.collection('availability').doc(v).get(), db.collection('vendors').doc(v).get(), db.collection('presence').doc(v).get()]));
     const verified = items.map((line) => {
-      const k = vendorIds.indexOf(line.vendorId) * 3;
+      const k = vendorIds.indexOf(line.vendorId) * 4;
       const menu = docs[k]!.data() as VendorMenu | undefined;
       const stock = docs[k + 1]!.data() as VendorAvailability | undefined;
       const vendor = docs[k + 2]!.data() as Vendor | undefined;
@@ -136,6 +139,10 @@ export const createCheckout = onCall(
       if (paused) throw new HttpsError('failed-precondition', `${vendor.name} is not taking orders right now.`);
       // Outside its hours nobody is in the kitchen: taking the money would only mean a timeout and a refund.
       if (!isOpenAt(vendor.hours, new Date(now))) throw new HttpsError('failed-precondition', `${vendor.name} is closed right now. It opens at ${vendor.hours.open}.`);
+      // The kitchen's screen has gone quiet (tablet asleep, Wi-Fi down, logged out): nobody would see the ticket,
+      // so the diner would pay, wait three minutes and be refunded. Shops that never ran a screen are not checked.
+      const beat = docs[k + 3]!.data()?.at as { toMillis?: () => number } | undefined;
+      if (beat?.toMillis && now - beat.toMillis() > KITCHEN_SILENT_MS) throw new HttpsError('failed-precondition', `${vendor.name} is not taking orders right now. Please try again in a few minutes.`);
       const category = menu.categories.find((c) => c.items.some((i) => i.id === line.itemId));
       const item = category?.items.find((i) => i.id === line.itemId);
       if (!category || !item) throw new HttpsError('not-found', `"${line.name}" is no longer on the menu.`);
@@ -215,6 +222,14 @@ export const createCheckout = onCall(
         totals,
         checkoutKey,
         createdAt: now,
+        // Each shop's commission as it stood when the diner ordered: a rate changed while the payment is
+        // open applies to the next order, never to this one.
+        commissionTerms: Object.fromEntries(
+          vendorIds.map((v, i) => {
+            const shop = docs[i * 4 + 2]!.data() as Vendor;
+            return [v, { feePct: shop.feePct ?? 0, perOrderFeePaise: shop.perOrderFeePaise ?? 0 }];
+          })
+        ),
         ...(coupon ? { coupon, couponCostPaise: coupon.discountPaise } : {}),
       };
 
@@ -291,7 +306,7 @@ export const createCheckout = onCall(
           'payment.status': 'FAILED',
           updatedAt: Date.now(),
         });
-        if (coupon) await releaseHold(coupon.code, uid);
+        if (coupon) await releaseHold(coupon.code, uid, orderId);
         // No Razorpay order exists, so no payment window ever opened for this attempt.
         throw new HttpsError('unavailable', 'Payments are not responding right now. Please try again in a moment.');
       }

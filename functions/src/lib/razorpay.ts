@@ -129,6 +129,31 @@ export async function listReceivedPayments(fromSec: number, toSec: number): Prom
   return out;
 }
 
+/** One row of Razorpay's combined settlement report (payments, refunds, disputes and adjustments). */
+export interface ReconItem {
+  entity_id?: string;
+  type?: 'payment' | 'refund' | 'transfer' | 'adjustment' | 'dispute' | string;
+  amount?: number;
+  credit?: number;
+  debit?: number;
+  fee?: number;
+  tax?: number;
+  settlement_id?: string | null;
+  settlement_utr?: string | null;
+  payment_id?: string | null;
+}
+
+/** Everything Razorpay settled on one day (year, month 1-12, day), 100 rows a page. */
+export async function listSettlementRecon(year: number, month: number, day: number): Promise<ReconItem[]> {
+  const out: ReconItem[] = [];
+  for (let skip = 0; skip < 50_000; skip += 100) {
+    const page = await call<{ items: ReconItem[] }>(`/settlements/recon/combined?year=${year}&month=${month}&day=${day}&count=100&skip=${skip}`, { method: 'GET' });
+    out.push(...(page.items ?? []));
+    if ((page.items ?? []).length < 100) break;
+  }
+  return out;
+}
+
 export interface RzpRefund {
   id: string;
   amount: number;

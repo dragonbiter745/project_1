@@ -39,6 +39,13 @@
       ],
       "rewrites": [
         {
+          "source": "/api/client-error",
+          "function": {
+            "functionId": "clientError",
+            "region": "asia-south1"
+          }
+        },
+        {
           "source": "/api/status",
           "function": {
             "functionId": "catalog",
@@ -134,6 +141,10 @@
             {
               "key": "Content-Security-Policy",
               "value": "frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+            },
+            {
+              "key": "Content-Security-Policy-Report-Only",
+              "value": "default-src 'self'; script-src 'self' https://checkout.razorpay.com https://apis.google.com https://www.gstatic.com https://www.google.com; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net https://*.run.app https://*.razorpay.com https://*.firebaseio.com wss://*.firebaseio.com https://www.google-analytics.com; img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://*.razorpay.com https://getqrave.in; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://api.razorpay.com https://checkout.razorpay.com https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; report-uri /api/client-error"
             }
           ]
         }
@@ -149,6 +160,13 @@
       ],
       "rewrites": [
         {
+          "source": "/api/client-error",
+          "function": {
+            "functionId": "clientError",
+            "region": "asia-south1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -207,6 +225,10 @@
             {
               "key": "X-Robots-Tag",
               "value": "noindex, nofollow"
+            },
+            {
+              "key": "Content-Security-Policy-Report-Only",
+              "value": "default-src 'self'; script-src 'self' https://checkout.razorpay.com https://apis.google.com https://www.gstatic.com https://www.google.com; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net https://*.run.app https://*.razorpay.com https://*.firebaseio.com wss://*.firebaseio.com https://www.google-analytics.com; img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://*.razorpay.com https://getqrave.in; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://api.razorpay.com https://checkout.razorpay.com https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; report-uri /api/client-error"
             }
           ]
         }
@@ -222,6 +244,13 @@
       ],
       "rewrites": [
         {
+          "source": "/api/client-error",
+          "function": {
+            "functionId": "clientError",
+            "region": "asia-south1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -280,6 +309,10 @@
             {
               "key": "X-Robots-Tag",
               "value": "noindex, nofollow"
+            },
+            {
+              "key": "Content-Security-Policy-Report-Only",
+              "value": "default-src 'self'; script-src 'self' https://checkout.razorpay.com https://apis.google.com https://www.gstatic.com https://www.google.com; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net https://*.run.app https://*.razorpay.com https://*.firebaseio.com wss://*.firebaseio.com https://www.google-analytics.com; img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://*.razorpay.com https://getqrave.in; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://api.razorpay.com https://checkout.razorpay.com https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; report-uri /api/client-error"
             }
           ]
         }
@@ -426,11 +459,22 @@
             {
               "key": "Content-Security-Policy",
               "value": "frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+            },
+            {
+              "key": "Content-Security-Policy-Report-Only",
+              "value": "default-src 'self'; script-src 'self' https://checkout.razorpay.com https://apis.google.com https://www.gstatic.com https://www.google.com; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net https://*.run.app https://*.razorpay.com https://*.firebaseio.com wss://*.firebaseio.com https://www.google-analytics.com; img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com https://*.razorpay.com https://getqrave.in; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://api.razorpay.com https://checkout.razorpay.com https://*.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; report-uri /api/client-error"
             }
           ]
         }
       ],
       "rewrites": [
+        {
+          "source": "/api/client-error",
+          "function": {
+            "functionId": "clientError",
+            "region": "asia-south1"
+          }
+        },
         {
           "source": "**",
           "destination": "/index.html"

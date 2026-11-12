@@ -26,6 +26,7 @@ export {
   EmailAuthProvider,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   signOut,
   type User,

@@ -25,8 +25,11 @@ import {
 } from '@foodcourt/shared';
 import { RAZORPAY_SECRETS, REGION } from '../config';
 import { db } from '../db';
-import { limitLocal, limitShared, requireUid, roleOf } from '../lib/guard';
+import { limitLocal, limitShared, requireSecondFactor, requireUid, roleOf } from '../lib/guard';
 import { retryRefund } from '../lib/refunds';
+import { getCapturedPayment } from '../lib/razorpay';
+import { settleCapture } from '../lib/payments';
+import { reconcileDay } from '../scheduled/dailyReconcile';
 
 const FAILED = [...REFUNDABLE_STATUSES];
 const ALL_TIME: Window = { from: '2000-01-01', to: '9999-12-31' };
@@ -66,6 +69,7 @@ function buildEntry(e: EntryInput, now: number, by: string): Omit<FounderEntry, 
 function requireCourt(req: CallableRequest): string {
   const uid = requireUid(req);
   if (roleOf(req).role !== 'master') throw new HttpsError('permission-denied', 'Only the court manager can open this.');
+  requireSecondFactor(req);
   return uid;
 }
 
@@ -77,6 +81,7 @@ interface TicketTotals {
   salesPaise: number;
   commissionPaise: number;
   refundsPaise: number;
+  refundsPendingPaise: number;
 }
 
 function ticketQuery(vendorId: string | null, mode: 'ONLINE' | 'COUNTER', w: Window): Query {
@@ -94,11 +99,13 @@ function ticketQuery(vendorId: string | null, mode: 'ONLINE' | 'COUNTER', w: Win
 async function ticketTotals(vendorId: string | null, mode: 'ONLINE' | 'COUNTER', w: Window): Promise<TicketTotals> {
   const q = ticketQuery(vendorId, mode, w);
   // Failed tickets are counted by status alone, in their own query: a failed ticket whose refund record is
-  // missing or incomplete must still come out of sales, whatever the refund sum does with it.
-  const [all, failed, refunded] = await Promise.all([
+  // missing or incomplete must still come out of sales, whatever the refund sums do with it. "Refunded" is
+  // only what Razorpay has processed; anything owed or in flight is reported on its own line.
+  const [all, failed, refunded, pending] = await Promise.all([
     q.aggregate({ n: AggregateField.count(), sales: AggregateField.sum('subtotalPaise'), commission: AggregateField.sum('commissionPaise') }).get(),
     q.where('status', 'in', FAILED).aggregate({ n: AggregateField.count(), sales: AggregateField.sum('subtotalPaise'), commission: AggregateField.sum('commissionPaise') }).get(),
-    q.where('status', 'in', FAILED).aggregate({ refunds: AggregateField.sum('refund.amountPaise') }).get(),
+    q.where('refund.status', '==', 'PROCESSED').aggregate({ refunds: AggregateField.sum('refund.amountPaise') }).get(),
+    q.where('refund.status', 'in', ['REQUIRED', 'PENDING', 'FAILED']).aggregate({ refunds: AggregateField.sum('refund.amountPaise') }).get(),
   ]);
   const a = all.data();
   const f = failed.data();
@@ -107,6 +114,7 @@ async function ticketTotals(vendorId: string | null, mode: 'ONLINE' | 'COUNTER',
     salesPaise: (a.sales ?? 0) - (f.sales ?? 0),
     commissionPaise: (a.commission ?? 0) - (f.commission ?? 0),
     refundsPaise: refunded.data().refunds ?? 0,
+    refundsPendingPaise: pending.data().refunds ?? 0,
   };
 }
 
@@ -115,6 +123,7 @@ const combine = (online: TicketTotals, counter: TicketTotals): PeriodTotals => (
   orders: online.orders,
   salesPaise: online.salesPaise,
   refundsPaise: online.refundsPaise,
+  refundsPendingPaise: online.refundsPendingPaise,
   commissionPaise: online.commissionPaise + counter.commissionPaise,
   payablePaise: online.salesPaise - online.commissionPaise - counter.commissionPaise,
   counterSalesPaise: counter.salesPaise,
@@ -179,6 +188,7 @@ async function shopFinance(vendorId: string, v: Partial<Vendor>, from: string, t
     orders: now.orders,
     salesPaise: now.salesPaise,
     refundsPaise: now.refundsPaise,
+    refundsPendingPaise: now.refundsPendingPaise,
     commissionPaise: now.commissionPaise,
     payablePaise: now.payablePaise,
     counterOrders: now.counterOrders,
@@ -266,6 +276,7 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
     collectedPaise,
     paidOrders: c.n,
     refundsPaise,
+    refundsPendingPaise: total('refundsPendingPaise'),
     netPaise: collectedPaise - refundsPaise,
     couponsPaise: coupons,
     averageOrderPaise: c.n > 0 ? Math.round(collectedPaise / c.n) : 0,
@@ -302,7 +313,7 @@ export const financeReport = onCall({ region: REGION, maxInstances: 10, timeoutS
   return buildFinanceReport(parsed.data.from, parsed.data.to);
 });
 
-export const financeAction = onCall({ region: REGION, secrets: RAZORPAY_SECRETS, maxInstances: 10, timeoutSeconds: 30 }, async (req) => {
+export const financeAction = onCall({ region: REGION, secrets: RAZORPAY_SECRETS, maxInstances: 10, timeoutSeconds: 300, memory: '1GiB' }, async (req) => {
   const uid = requireCourt(req);
   await limitShared(`finance-action:${uid}`, 60, 300);
   const parsed = FinanceActionSchema.safeParse(req.data);
@@ -318,6 +329,17 @@ export const financeAction = onCall({ region: REGION, secrets: RAZORPAY_SECRETS,
     if (!vendor.exists) throw new HttpsError('not-found', 'No such shop.');
     // Same person + same form submission → same payout id, so a double tap records it once.
     const id = 'p' + crypto.createHash('sha256').update(`${uid}:${input.requestKey}`).digest('hex').slice(0, 20);
+    // Paying a shop more than the court owes it is allowed (an advance, a correction) but never by accident.
+    const [ever, paidSnap] = await Promise.all([
+      periodTotals(input.vendorId, ALL_TIME),
+      db.collection('payouts').where('vendorId', '==', input.vendorId).where('status', '==', 'RECORDED').select('amountPaise').get(),
+    ]);
+    const owed = ever.payablePaise - paidSnap.docs.reduce((n, d) => n + ((d.data().amountPaise as number) ?? 0), 0);
+    if (input.amountPaise > owed && !input.overBalanceReason) {
+      throw new HttpsError('failed-precondition', `That is more than the ${(Math.max(0, owed) / 100).toFixed(2)} rupees the court owes this shop. Say why to record it anyway.`);
+    }
+    // One bank reference per shop: the same UTR entered twice is the same transfer, not a second payment.
+    const refKey = db.collection('payoutRefs').doc(crypto.createHash('sha256').update(`${input.vendorId}:${input.reference.replace(/\s+/g, '').toUpperCase()}`).digest('hex').slice(0, 32));
     const payout: Omit<Payout, 'id'> = {
       vendorId: input.vendorId,
       vendorName: (vendor.data() as Vendor).name ?? input.vendorId,
@@ -329,13 +351,21 @@ export const financeAction = onCall({ region: REGION, secrets: RAZORPAY_SECRETS,
       createdAt: now,
       createdBy: by,
     };
-    try {
-      await db.collection('payouts').doc(id).create(payout);
-    } catch (err) {
-      if ((err as { code?: number }).code === 6) return { payoutId: id, duplicate: true }; // ALREADY_EXISTS
-      throw err;
-    }
-    await audit({ action: 'RECORD_PAYOUT', payoutId: id, vendorId: input.vendorId, amountPaise: input.amountPaise });
+    const outcome = await db.runTransaction(async (tx) => {
+      const [existing, ref] = await Promise.all([tx.get(db.collection('payouts').doc(id)), tx.get(refKey)]);
+      if (existing.exists) return 'duplicate';
+      const used = ref.data() as { payoutId: string } | undefined;
+      if (used) {
+        const prior = (await tx.get(db.collection('payouts').doc(used.payoutId))).data() as Payout | undefined;
+        if (prior && prior.status !== 'VOID') return 'reference-used';
+      }
+      tx.create(db.collection('payouts').doc(id), { ...payout, ...(input.overBalanceReason ? { overBalanceReason: input.overBalanceReason } : {}) });
+      tx.set(refKey, { payoutId: id, vendorId: input.vendorId, reference: input.reference, at: now });
+      return 'created';
+    });
+    if (outcome === 'duplicate') return { payoutId: id, duplicate: true };
+    if (outcome === 'reference-used') throw new HttpsError('already-exists', 'A payout with that UTR is already recorded for this shop. Void it first if it was wrong.');
+    await audit({ action: 'RECORD_PAYOUT', payoutId: id, vendorId: input.vendorId, amountPaise: input.amountPaise, ...(input.overBalanceReason ? { overBalanceReason: input.overBalanceReason } : {}) });
     return { payoutId: id, duplicate: false };
   }
 
@@ -385,6 +415,30 @@ export const financeAction = onCall({ region: REGION, secrets: RAZORPAY_SECRETS,
     });
     if (result === 'voided') await audit({ action: 'VOID_ENTRY', entryId: input.entryId, reason: input.reason });
     return { entryId: input.entryId, status: 'VOID' };
+  }
+
+  if (input.action === 'CHECK_PAYMENT') {
+    const order = (await db.collection('orders').doc(input.orderId).get()).data() as { payment?: { rzpOrderId?: string } } | undefined;
+    if (!order?.payment?.rzpOrderId) throw new HttpsError('not-found', 'That order has no Razorpay order to check.');
+    const captured = await getCapturedPayment(order.payment.rzpOrderId);
+    const outcome = captured ? await settleCapture(input.orderId, { amountPaise: captured.amount, rzpPaymentId: captured.id, method: captured.method ?? 'RECONCILED' }) : 'unpaid';
+    await audit({ action: 'CHECK_PAYMENT', orderId: input.orderId, outcome });
+    return { orderId: input.orderId, outcome };
+  }
+
+  if (input.action === 'RUN_RECONCILE') {
+    if (input.dateKey > getIstDateKey()) throw new HttpsError('invalid-argument', 'That day has not happened yet.');
+    const report = await reconcileDay(input.dateKey);
+    await audit({ action: 'RUN_RECONCILE', dateKey: input.dateKey, ok: report.ok });
+    return { dateKey: input.dateKey, ok: report.ok, discrepancies: report.discrepancies };
+  }
+
+  if (input.action === 'RESOLVE_ISSUE') {
+    const ref = db.collection('issues').doc(input.issueId);
+    if (!(await ref.get()).exists) throw new HttpsError('not-found', 'No such issue.');
+    await ref.update({ status: 'resolved', resolvedAt: now, resolvedBy: by, resolution: input.note });
+    await audit({ action: 'RESOLVE_ISSUE', issueId: input.issueId, note: input.note });
+    return { issueId: input.issueId };
   }
 
   if (input.action === 'RETRY_REFUND') {

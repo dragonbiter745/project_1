@@ -264,7 +264,7 @@ export function PaymentsScreen() {
   const names = useVendorNames();
   const paidOnline = orders.filter((o) => isPaid(o) && o.payment.mode !== 'COUNTER');
   const refundedKey = orders
-    .filter((o) => o.status === 'PARTIALLY_REFUNDED' || o.status === 'CANCELLED')
+    .filter((o) => o.status === 'PARTIALLY_REFUNDED' || o.status === 'REFUNDED' || o.status === 'CANCELLED')
     .slice(0, 10)
     .map((o) => o.id)
     .join(',');
