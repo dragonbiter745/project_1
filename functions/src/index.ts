@@ -20,6 +20,7 @@ export { verifyPayment } from './callable/verifyPayment';
 export { nightlyClose, sweeper } from './scheduled/sweeper';
 export { dailyReconcile, morningReconcile } from './scheduled/dailyReconcile';
 export { settlementReconcile } from './scheduled/settlementReconcile';
+export { renewSignupQuota } from './scheduled/signupQuota';
 export { catalog, onFlagsChanged, onMenuChanged, onShopChanged, onStockChanged } from './catalog';
 export { billingGuard } from './billing/killSwitch';
 export { onTicketFailed } from './triggers/refunds';

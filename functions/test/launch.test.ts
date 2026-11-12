@@ -201,3 +201,26 @@ describe('rate-limit address', () => {
     expect(clientIp({ rawRequest: { ip: '10.0.0.1' } })).toBe('10.0.0.1');
   });
 });
+
+describe('sign-up quota renewal', () => {
+  it('asks Firebase for the raised quota for seven days, starting a minute from now', async () => {
+    const { renewQuota } = await import('../src/scheduled/signupQuota');
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fake = (async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      if (url.includes('metadata.google.internal')) return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 });
+      return new Response('{}', { status: 200 });
+    }) as unknown as typeof fetch;
+    const from = await renewQuota(fake, 'demo-proj', Date.UTC(2026, 10, 12, 0, 0));
+    expect(from).toBe('2026-11-12T00:01:00.000Z');
+    const patch = calls[1]!;
+    expect(patch.url).toContain('/projects/demo-proj/config?updateMask=quota.signUpQuotaConfig');
+    expect(JSON.parse(String(patch.init!.body))).toEqual({ quota: { signUpQuotaConfig: { quota: '5000', startTime: from, quotaDuration: '604800s' } } });
+  });
+
+  it('fails loudly when Firebase refuses', async () => {
+    const { renewQuota } = await import('../src/scheduled/signupQuota');
+    const fake = (async (url: string) => (url.includes('metadata') ? new Response(JSON.stringify({ access_token: 't' })) : new Response('denied', { status: 403 }))) as unknown as typeof fetch;
+    await expect(renewQuota(fake, 'p')).rejects.toThrow(/refused \(403\)/);
+  });
+});
